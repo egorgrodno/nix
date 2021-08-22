@@ -1,0 +1,2 @@
+{ security.sudo.wheelNeedsPassword = false;
+}
