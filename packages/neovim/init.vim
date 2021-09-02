@@ -3,7 +3,7 @@ set termguicolors
 colorscheme nord
 
 set cursorline
-set colorcolumn =80
+set colorcolumn =81
 let &t_SI = "\<Esc>[6 q"
 let &t_SR = "\<Esc>[4 q"
 let &t_EI = "\<Esc>[2 q"
@@ -21,6 +21,7 @@ set hlsearch
 set ignorecase
 set incsearch
 set nocompatible
+set number
 set relativenumber
 set showcmd
 set smartcase
@@ -34,9 +35,9 @@ set ttimeoutlen =0
 
 set nobackup nowritebackup
 
-" -----------------------------------------------------------------------------
+" ------------------------------------------------------------------------------
 "  common
-" -----------------------------------------------------------------------------
+" ------------------------------------------------------------------------------
 
 " leader key
 map <Space> <leader>
@@ -75,9 +76,9 @@ nmap <silent> <C-A-l> :wincmd l<CR>
 " toggle search highlighting
 nmap <silent> <F3> :set hlsearch!<CR>
 
-" -----------------------------------------------------------------------------
+" ------------------------------------------------------------------------------
 "  lightline
-" -----------------------------------------------------------------------------
+" ------------------------------------------------------------------------------
 
 " disable --INSERT-- message
 set noshowmode
@@ -120,15 +121,15 @@ endfunction
 
 nmap <leader>b :echo get(b:, 'coc_git_blame', '')<CR>
 
-" -----------------------------------------------------------------------------
+" ------------------------------------------------------------------------------
 "  indentLine
-" -----------------------------------------------------------------------------
+" ------------------------------------------------------------------------------
 
 autocmd FileType markdown,json let b:indentLine_enabled=0
 
-" -----------------------------------------------------------------------------
+" ------------------------------------------------------------------------------
 "  NERDTree
-" -----------------------------------------------------------------------------
+" ------------------------------------------------------------------------------
 
 let g:NERDTreeWinSize = 45
 let g:NERDTreeCaseSensitiveSort = 1
@@ -141,9 +142,9 @@ nmap <silent> <C-n> :NERDTreeToggle<CR>
 " find current buffer in Nerdtree
 nmap <leader>o :NERDTreeFind<cr>
 
-" -----------------------------------------------------------------------------
+" ------------------------------------------------------------------------------
 "  coc.nvim
-" -----------------------------------------------------------------------------
+" ------------------------------------------------------------------------------
 
 " better display for messages
 set cmdheight=2
@@ -159,9 +160,9 @@ set signcolumn=yes
 
 " completion
 inoremap <silent><expr> <TAB>
-      \ pumvisible() ? "\<C-n>" :
-      \ <SID>check_back_space() ? "\<TAB>" :
-      \ coc#refresh()
+  \ pumvisible() ? "\<C-n>" :
+  \ <SID>check_back_space() ? "\<TAB>" :
+  \ coc#refresh()
 inoremap <expr><S-TAB> pumvisible() ? "\<C-p>" : "\<C-h>"
 
 " trigger completion

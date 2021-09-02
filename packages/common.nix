@@ -3,7 +3,8 @@
 { environment.systemPackages =
     with pkgs; [
       git
-      unzip
       zip
+      unzip
+      xclip
     ];
 }

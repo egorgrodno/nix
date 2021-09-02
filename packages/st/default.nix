@@ -5,7 +5,7 @@
     };
 
   fonts.fonts =
-    [ (pkgs.nerdfonts.override { fonts = [ "LiberationMono" ]; })
+    [ (pkgs.nerdfonts.override { fonts = [ "LiberationMono" "Monoid" "SourceCodePro" ]; })
     ];
 
   environment.systemPackages =

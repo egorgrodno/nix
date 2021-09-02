@@ -1,0 +1,260 @@
+# i3 config file (v4)
+# see http://i3wm.org/docs/userguide.html for a complete reference
+
+# ------------------------------------------------------------------------------
+#  theme
+# ------------------------------------------------------------------------------
+
+set $nord0 #2E3440
+set $nord1 #3B4252
+set $nord2 #434C5E
+set $nord3 #4C566A
+
+set $nord4 #D8DEE9
+set $nord5 #E5E9F0
+set $nord6 #ECEFF4
+
+set $nord7 #8FBCBB
+set $nord8 #88C0D0
+set $nord9 #81A1C1
+set $nord10 #5E81AC
+
+set $nord11 #BF616A
+set $nord12 #D08770
+set $nord13 #EBCB8B
+set $nord14 #A3BE8C
+set $nord15 #B48EAD
+
+# class                 border  bground text    indicator child_border
+client.focused          $nord10 $nord1  $nord6  $nord7    $nord10
+client.focused_inactive $nord0  $nord1  $nord6  $nord0    $nord0
+client.unfocused        $nord0  $nord0  $nord6  $nord0    $nord0
+client.urgent           $nord11 $nord2  $nord6  $nord11   $nord11
+client.placeholder      $nord3  $nord3  $nord6  $nord3    $nord3
+
+client.background       $nord0
+
+# ------------------------------------------------------------------------------
+#  i3
+# ------------------------------------------------------------------------------
+
+# set mod key (Mod1=<Alt>, Mod4=<Super>)
+set $mod Mod1
+
+# set default desktop layout (default is tiling)
+# workspace_layout tabbed <stacking|tabbed>
+
+# configure border style <normal|1pixel|pixel xx|none|pixel>
+default_border pixel 1
+default_floating_border normal
+
+# hide borders
+hide_edge_borders none
+
+# change borders
+# bindsym $mod+u border none
+# bindsym $mod+y border pixel 1
+# bindsym $mod+n border normal
+
+# font for window titles
+font pango:SauceCodePro Nerd Font 10
+
+# use Mouse+$mod to drag floating windows
+floating_modifier $mod
+
+# start a terminal
+bindsym $mod+Return exec i3-sensible-terminal
+
+# kill focused window
+bindsym $mod+Shift+q kill
+
+# start program launcher
+bindsym $mod+d exec "dmenu_run_history -nb '$nord1' -nf '$nord6' -sb '$nord8' -sf '$nord0' -fn 'SauceCodePro Nerd Font-10' -p 'run:'"
+
+# disable mouse focus
+focus_follows_mouse no
+
+# change focus
+bindsym $mod+h focus left
+bindsym $mod+j focus down
+bindsym $mod+k focus up
+bindsym $mod+l focus right
+
+# move focused window
+bindsym $mod+Shift+h move left
+bindsym $mod+Shift+j move down
+bindsym $mod+Shift+k move up
+bindsym $mod+Shift+l move right
+
+# workspace back and forth (with/without active container)
+workspace_auto_back_and_forth yes
+bindsym $mod+b workspace back_and_forth
+bindsym $mod+Shift+b move container to workspace back_and_forth; workspace back_and_forth
+
+# split orientation
+bindsym $mod+z split h;exec notify-send 'tile horizontally'
+bindsym $mod+v split v;exec notify-send 'tile vertically'
+bindsym $mod+q split toggle
+
+# toggle fullscreen mode for the focused container
+bindsym $mod+f fullscreen toggle
+
+# change container layout (stacked, tabbed, toggle split)
+bindsym $mod+s layout stacking
+bindsym $mod+w layout tabbed
+bindsym $mod+e layout toggle split
+
+# toggle tiling / floating
+bindsym $mod+Shift+space floating toggle
+
+# change focus between tiling / floating windows
+bindsym $mod+space focus mode_toggle
+
+# toggle sticky
+bindsym $mod+Shift+s sticky toggle
+
+# focus the parent container
+bindsym $mod+a focus parent
+
+# move the currently focused window to the scratchpad
+bindsym $mod+Shift+minus move scratchpad
+
+# show the next scratchpad window or hide the focused scratchpad window.
+# if there are multiple scratchpad windows, this command cycles through them.
+bindsym $mod+minus scratchpad show
+
+# navigate workspaces next / previous
+bindsym $mod+Ctrl+h workspace next
+bindsym $mod+Ctrl+l workspace prev
+
+# workspace names
+set $ws1 1
+set $ws2 2
+set $ws3 3
+set $ws4 4
+set $ws5 5
+set $ws6 6
+set $ws7 7
+set $ws8 8
+
+# switch to workspace
+bindsym $mod+1 workspace $ws1
+bindsym $mod+2 workspace $ws2
+bindsym $mod+3 workspace $ws3
+bindsym $mod+4 workspace $ws4
+bindsym $mod+5 workspace $ws5
+bindsym $mod+6 workspace $ws6
+bindsym $mod+7 workspace $ws7
+bindsym $mod+8 workspace $ws8
+
+# Move focused container to workspace
+bindsym $mod+Ctrl+1 move container to workspace $ws1
+bindsym $mod+Ctrl+2 move container to workspace $ws2
+bindsym $mod+Ctrl+3 move container to workspace $ws3
+bindsym $mod+Ctrl+4 move container to workspace $ws4
+bindsym $mod+Ctrl+5 move container to workspace $ws5
+bindsym $mod+Ctrl+6 move container to workspace $ws6
+bindsym $mod+Ctrl+7 move container to workspace $ws7
+bindsym $mod+Ctrl+8 move container to workspace $ws8
+
+# Move to workspace with focused container
+bindsym $mod+Shift+1 move container to workspace $ws1
+bindsym $mod+Shift+2 move container to workspace $ws2
+bindsym $mod+Shift+3 move container to workspace $ws3
+bindsym $mod+Shift+4 move container to workspace $ws4
+bindsym $mod+Shift+5 move container to workspace $ws5
+bindsym $mod+Shift+6 move container to workspace $ws6
+bindsym $mod+Shift+7 move container to workspace $ws7
+bindsym $mod+Shift+8 move container to workspace $ws8
+
+# switch to workspace with urgent window automatically
+# for_window [urgent=latest] focus
+
+# reload the configuration file
+bindsym $mod+Shift+c reload
+
+# restart i3 inplace (preserves your layout/session, can be used to upgrade i3)
+bindsym $mod+Shift+r restart
+
+# exit i3 (logs you out of your X session)
+bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
+
+# set shut down, restart and locking features
+bindsym $mod+0 mode "$mode_system"
+set $mode_system (l)ock, (e)xit, switch_(u)ser, (s)uspend, (h)ibernate, (r)eboot, (Shift+s)hutdown
+mode "$mode_system" {
+  bindsym l exec --no-startup-id i3exit lock, mode "default"
+  bindsym s exec --no-startup-id i3exit suspend, mode "default"
+  bindsym u exec --no-startup-id i3exit switch_user, mode "default"
+  bindsym e exec --no-startup-id i3exit logout, mode "default"
+  bindsym h exec --no-startup-id i3exit hibernate, mode "default"
+  bindsym r exec --no-startup-id i3exit reboot, mode "default"
+  bindsym Shift+s exec --no-startup-id i3exit shutdown, mode "default"
+
+  bindsym Return mode "default"
+  bindsym Escape mode "default"
+}
+
+# resize window
+bindsym $mod+r mode "resize"
+mode "resize" {
+  bindsym h resize shrink width 5 px or 5 ppt
+  bindsym j resize grow height 5 px or 5 ppt
+  bindsym k resize shrink height 5 px or 5 ppt
+  bindsym l resize grow width 5 px or 5 ppt
+
+  bindsym Return mode "default"
+  bindsym Escape mode "default"
+}
+
+# start i3bar
+bar {
+	i3bar_command i3bar
+	status_command i3status
+	position bottom
+
+	bindsym button4 nop
+	bindsym button5 nop
+	strip_workspace_numbers yes
+
+  colors {
+    background $nord1
+    statusline $nord6
+    separator  $nord3
+
+    focused_workspace  $nord10 $nord1 $nord6
+    active_workspace   $nord1  $nord1 $nord6
+    inactive_workspace $nord1  $nord1 $nord6
+    urgent_workspace   $nord11 $nord1 $nord6
+    binding_mode       $nord12 $nord1 $nord6
+  }
+}
+
+# hide/show i3status bar
+bindsym $mod+m bar mode toggle
+
+# ------------------------------------------------------------------------------
+#  i3-gaps
+# ------------------------------------------------------------------------------
+
+# set inner/outer gaps
+gaps inner 14
+gaps outer -2
+
+# gaps used if only more than one container on the workspace
+smart_gaps on
+
+# borders shown if only more than one container on the workspace
+smart_borders on
+
+# ------------------------------------------------------------------------------
+#  user configuration
+# ------------------------------------------------------------------------------
+
+bindsym $mod+F1 exec telegram-desktop
+bindsym $mod+F2 exec chromium
+bindsym $mod+F3 exec pcmanfm
+bindsym $mod+F4 exec simplescreenrecorder
+
+for_window [title="pulsemixer"] floating enable
+bindsym $mod+Ctrl+m exec terminal -e 'pulsemixer'
