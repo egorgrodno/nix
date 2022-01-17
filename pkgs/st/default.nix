@@ -1,12 +1,7 @@
 { pkgs, ... }:
 
-{ environment.variables =
-    { TERMINAL = "st";
-    };
-
-  fonts.fonts =
-    [ (pkgs.nerdfonts.override { fonts = [ "LiberationMono" ]; })
-    ];
+{
+  environment.variables.TERMINAL = "st";
 
   environment.systemPackages =
     [ (pkgs.st.overrideAttrs (oldAttrs: rec {
