@@ -26,7 +26,7 @@
             username = "egor";
             homedir = "/home/egor";
             theme = {
-              fontFamily = "Inconsolata Nerd Font";
+              fontFamily = "Inconsolata Nerd Font Mono";
               background = {
                 main = "#282C34";
                 light = "#30343C";
