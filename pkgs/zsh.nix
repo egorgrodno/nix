@@ -1,4 +1,4 @@
-{ config, pkgs, username, ... }:
+{ config, pkgs, username, homedir, ... }:
 
 {
   environment = {
@@ -10,6 +10,7 @@
     programs.zsh =
       let
         options = [
+          "GLOBSTARSHORT"
           "HIST_IGNORE_ALL_DUPS"
           "HIST_REDUCE_BLANKS"
           "INC_APPEND_HISTORY"
@@ -26,8 +27,8 @@
         defaultKeymap = "viins";
 
         history = {
-          path = ".local/share/zsh/zsh_history";
-          ignorePatterns = [ "*rm *" "*kill *" "*pkill *" ];
+          path = "${homedir}/.local/share/zsh/zsh_history";
+          ignorePatterns = [ "*rm *" "*kill *" "*pkill *" "*shutdown*" "*reboot*" "*git *" "*vi*" "*cd *" ];
           ignoreDups = true;
           ignoreSpace = true;
         };
@@ -38,7 +39,7 @@
           in
           {
             inherit ls;
-            ll = "${ls} -alh";
+            ll = "${ls} -Alh";
             y = "xclip -selection c";
           };
 
@@ -82,13 +83,40 @@
             vcs_info
             print ""
           }
-          RPROMPT=' ''${vcs_info_msg_0_} %?'
+          RPROMPT=" ''${vcs_info_msg_0_} %?"
 
           ${builtins.concatStringsSep "\n" (map (x: "setopt " + x) options)}
 
           bindkey -s "^Z" "fg\n"
 
-          zstyle ':completion:*' matcher-list 'm:{a-z}={A-Za-z}'
+          ${if config.desktop.hallmack then ''
+            # swap h g
+            bindkey -M vicmd -r "^H"
+            bindkey -M vicmd -r "h"
+            bindkey -M vicmd "g" vi-backward-char
+            bindkey -M vicmd -r "G"
+
+            # swap j a
+            bindkey -M vicmd "a" down-line-or-history
+            bindkey -M vicmd "A" vi-join
+            bindkey -M vicmd "J" vi-open-line-above
+            bindkey -M vicmd "j" vi-open-line-below
+
+            # swap k e
+            bindkey -M vicmd "e" up-line-or-history
+            bindkey -M vicmd -r "E"
+            bindkey -M vicmd "k" vi-add-next
+            bindkey -M vicmd "K" vi-add-eol
+
+            # swap l o
+            bindkey -M vicmd "o" vi-forward-char
+            bindkey -M visual "o" vi-forward-char
+            bindkey -M vicmd -r "O"
+            bindkey -M vicmd "l" vi-forward-word-end
+            bindkey -M vicmd "L" vi-forward-blank-word-end
+          '' else ""}
+
+          zstyle ":completion:*" matcher-list "m:{a-z}={A-Za-z}"
         '';
       };
   };

@@ -1,8 +1,12 @@
-{ pkgs, ... }:
+{ pkgs, username, ... }:
 
 let
   btConnect = mac: "bluetoothctl -- connect ${mac}";
   shellScripts = [
+    {
+      name = "nxe";
+      script = "st -d /etc/nixos -e vim";
+    }
     {
       name = "nxu";
       script = "nix flake update --flake /etc/nixos";
@@ -50,9 +54,26 @@ let
       name = "bt-connect-jbl";
       script = btConnect "F8:5C:7D:94:22:E8";
     }
+    {
+      name = "chromium-without-cors";
+      script = "chromium --disable-web-security --user-data-dir=.config/chromium-without-cors";
+    }
+    {
+      name = "docker-clean";
+      script = "docker-clean-containers && docker-clean-images";
+    }
+    {
+      name = "docker-clean-containers";
+      script = "docker rmi -f $(docker images -aq)";
+    }
+    {
+      name = "docker-clean-images";
+      script = "docker rm -vf $(docker ps -aq)";
+    }
   ];
 in
 {
-  environment.systemPackages =
-    map ({ name, script }: pkgs.writeShellScriptBin name script) shellScripts;
+  home-manager.users.${username} = {
+    home.packages = map ({ name, script }: pkgs.writeShellScriptBin name script) shellScripts;
+  };
 }

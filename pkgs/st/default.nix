@@ -5,6 +5,10 @@
 
   environment.systemPackages =
     [ (pkgs.st.overrideAttrs (oldAttrs: rec {
+      src = fetchTarball {
+         url = "https://dl.suckless.org/st/st-0.8.4.tar.gz";
+         sha256 = "01z6i60fmdi5h6g80rgvqr6d00jxszphrldx07w4v6nq8cq2r4nr";
+      };
       patches =
         [ ./st-scrollback-0.8.4.diff
           ./st-scrollback-mouse-20191024-a2c479c.diff

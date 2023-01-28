@@ -11,53 +11,66 @@
   home-manager.users.${username} = {
     home.packages = with pkgs; [
       nodePackages.typescript-language-server
+      nodePackages.vscode-langservers-extracted
       rnix-lsp
+      rust-analyzer
+      cargo
+      rustc
     ];
+
+    xdg.configFile."nvim/snippets/all.lua".source = ./snippets.lua;
 
     xdg.configFile."nvim/lua/config.lua".text = ''
       require'packer'.startup(function(use)
+        use 'L3MON4D3/LuaSnip'
         use 'hrsh7th/cmp-buffer'
         use 'hrsh7th/cmp-cmdline'
         use 'hrsh7th/cmp-nvim-lsp'
         use 'hrsh7th/cmp-path'
-        use 'hrsh7th/cmp-vsnip'
         use 'hrsh7th/nvim-cmp'
-        use 'hrsh7th/vim-vsnip'
         use 'jiangmiao/auto-pairs'
         use 'junegunn/goyo.vim'
         use 'kyazdani42/nvim-tree.lua'
+        use 'lukas-reineke/indent-blankline.nvim'
         use 'neovim/nvim-lspconfig'
         use 'numToStr/Comment.nvim'
         use 'nvim-lua/plenary.nvim'
         use 'nvim-lualine/lualine.nvim'
         use 'nvim-telescope/telescope.nvim'
-        use { 'nvim-treesitter/nvim-treesitter', run = ':TSUpdate' }
         use 'rmehri01/onenord.nvim'
+        use 'saadparwaiz1/cmp_luasnip'
         use 'tpope/vim-eunuch'
         use 'tpope/vim-surround'
+        use {
+          'lewis6991/gitsigns.nvim',
+          tag = 'release'
+        }
+        use {
+          'nvim-telescope/telescope-fzf-native.nvim',
+          run = 'nix-shell -p cmake --command "cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release"'
+        }
+        use {
+          'nvim-treesitter/nvim-treesitter',
+          run = ':TSUpdate'
+        }
+        use {
+          'phaazon/hop.nvim',
+          branch = 'v1.3',
+          config = function()
+            -- see :h hop-config
+            require'hop'.setup { keys = 'etovxqpdygfblzhckisuran' }
+          end
+        }
       end)
 
       --------------------------------------------------------------------------------
       -- Common
       --------------------------------------------------------------------------------
 
-      function map_(mode, shortcut, command)
-        vim.api.nvim_set_keymap(mode, shortcut, command, { noremap = true, silent = true })
-      end
-
-      function map(shortcut, command)
-        map_(''', shortcut, command)
-      end
-
-      function nmap(shortcut, command)
-        map_('n', shortcut, command)
-      end
-
-      local HOME = os.getenv("HOME")
+      local HOME = os.getenv('HOME')
 
       vim.g.mapleader = ' '
 
-      vim.opt.autochdir = true
       vim.opt.colorcolumn = { '81' }
       vim.opt.compatible = false
       vim.opt.completeopt = { 'menuone', 'longest', 'preview', 'noselect' }
@@ -71,7 +84,6 @@
       vim.opt.ignorecase = true
       vim.opt.incsearch = true
       vim.opt.number = true
-      vim.opt.relativenumber = true
       vim.opt.scrolloff = 12
       vim.opt.shiftwidth = 2
       vim.opt.showcmd = true
@@ -84,110 +96,150 @@
       vim.opt.ttimeoutlen = 0
       vim.opt.wildignore = { '*/tmp/*', '*.so', '*.swp', '*.zip', '*.svg', '*.png', '*.jpg', '*.gif', 'node_modules', 'dist', 'build' }
 
-      nmap('<F3>', ':set hlsearch!<CR>')
+      local kmapopts = { noremap = true, silent = true }
 
-      nmap('<leader>w', ':w<CR>')
-      nmap('<leader><leader>w', ':w!<CR>')
-
-      nmap('<C-w>', ':bp|bd #<CR>')
       ${if config.desktop.hallmack then ''
-        nmap('<C-g>', ':bp<CR>')
-        nmap('<C-o>', ':bn<CR>')
+        vim.keymap.set('n', '<leader>sh', ':set hlsearch!<CR>', { noremap = true })
       '' else ''
-        nmap('<C-h>', ':bp<CR>')
-        nmap('<C-l>', ':bn<CR>')
+        vim.keymap.set('n', '<F3>', ':set hlsearch!<CR>', { noremap = true })
+      ''}
+
+      vim.keymap.set('n', '<leader>cd', ':cd %:h<CR>', { noremap = true })
+      vim.keymap.set('n', '<leader>w', ':w<CR>', { noremap = true })
+      vim.keymap.set('n', '<leader><leader>w', ':w!<CR>', { noremap = true })
+
+      vim.keymap.set('n', '<C-w>', ':bp|bd #<CR>', kmapopts)
+      ${if config.desktop.hallmack then ''
+        vim.keymap.set('n', '<C-g>', ':bp<CR>', kmapopts)
+        vim.keymap.set('n', '<C-o>', ':bn<CR>', kmapopts)
+      '' else ''
+        vim.keymap.set('n', '<C-h>', ':bp<CR>', kmapopts)
+        vim.keymap.set('n', '<C-l>', ':bn<CR>', kmapopts)
       ''}
 
       ${if config.desktop.hallmack then ''
-        nmap('<C-A-e>', ':wincmd k<CR>')
-        nmap('<C-A-a>', ':wincmd j<CR>')
-        nmap('<C-A-g>', ':wincmd h<CR>')
-        nmap('<C-A-o>', ':wincmd l<CR>')
+        vim.keymap.set('n', '<C-A-e>', ':wincmd k<CR>', kmapopts)
+        vim.keymap.set('n', '<C-A-a>', ':wincmd j<CR>', kmapopts)
+        vim.keymap.set('n', '<C-A-g>', ':wincmd h<CR>', kmapopts)
+        vim.keymap.set('n', '<C-A-o>', ':wincmd l<CR>', kmapopts)
       '' else ''
-        nmap('<C-A-k>', ':wincmd k<CR>')
-        nmap('<C-A-j>', ':wincmd j<CR>')
-        nmap('<C-A-h>', ':wincmd h<CR>')
-        nmap('<C-A-l>', ':wincmd l<CR>')
+        vim.keymap.set('n', '<C-A-k>', ':wincmd k<CR>', kmapopts)
+        vim.keymap.set('n', '<C-A-j>', ':wincmd j<CR>', kmapopts)
+        vim.keymap.set('n', '<C-A-h>', ':wincmd h<CR>', kmapopts)
+        vim.keymap.set('n', '<C-A-l>', ':wincmd l<CR>', kmapopts)
       ''}
 
       ${if config.desktop.hallmack then ''
         -- swap h g
-        map('g', 'h')
-        map('G', 'H')
-        map('h', 'g')
-        map('H', 'G')
-        map('hh', 'gg')
+        vim.keymap.set({ 'n', 'x', 'o' }, 'g', 'h', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'G', 'H', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'h', 'g', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'H', 'G', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'hh', 'gg', kmapopts)
 
         -- swap j a
-        map('a', 'j')
-        map('A', 'J')
-        map('j', 'o')
-        map('J', 'O')
+        vim.keymap.set({ 'n', 'x', 'o' }, 'a', 'j', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'A', 'J', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'j', 'o', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'J', 'O', kmapopts)
 
         -- swap k e
-        map('e', 'k')
-        map('E', 'K')
-        map('k', 'a')
-        map('K', 'A')
+        vim.keymap.set({ 'n', 'x', 'o' }, 'e', 'k', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'E', 'K', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'k', 'a', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'K', 'A', kmapopts)
 
         -- swap l o
-        map('o', 'l')
-        map('O', 'L')
-        map('l', 'e')
-        map('L', 'E')
+        vim.keymap.set({ 'n', 'x', 'o' }, 'o', 'l', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'O', 'L', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'l', 'e', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'L', 'E', kmapopts)
       '' else ""}
 
       --------------------------------------------------------------------------------
       -- Language Server protocol & completion
       --------------------------------------------------------------------------------
 
-      local on_attach = function(client, bufnr)
-        local function buf_set_option(name, value)
-          vim.api.nvim_buf_set_option(bufnr, name, value)
-        end
-        local function nmapb(shortcut, command)
-          vim.api.nvim_buf_set_keymap(bufnr, 'n', shortcut, command, { noremap = true, silent = true })
-        end
-
+      local lsp_on_attach = function(client, bufnr)
         -- enable completion triggered by <C-x><C-o>
-        buf_set_option('omnifunc', 'v:lua.vim.lsp.omnifunc')
+        vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
 
         -- see `:help vim.lsp.*` for documentation on any of the below functions
+        local bufopts = { noremap = true, silent = true, buffer = bufnr }
         ${if config.desktop.hallmack then ''
-          nmapb('<C-a>',     '<cmd>lua vim.diagnostic.goto_next()<cr>')
-          nmapb('<C-e>',     '<cmd>lua vim.diagnostic.goto_prev()<cr>')
-          nmapb('E',         '<cmd>lua vim.lsp.buf.hover()<cr>')
-          nmapb('hd',        '<cmd>lua vim.lsp.buf.definition()<cr>')
-          nmapb('hi',        '<cmd>lua vim.lsp.buf.implementation()<cr>')
-          nmapb('hr',        '<cmd>lua vim.lsp.buf.references()<cr>')
+          vim.keymap.set('n', '<C-a>', vim.diagnostic.goto_next,    bufopts)
+          vim.keymap.set('n', '<C-e>', vim.diagnostic.goto_prev,    bufopts)
+          vim.keymap.set('n', 'E',     vim.lsp.buf.hover,           bufopts)
+          vim.keymap.set('n', 'hd',    vim.lsp.buf.definition,      bufopts)
+          vim.keymap.set('n', 'htd',   vim.lsp.buf.type_definition, bufopts)
+          vim.keymap.set('n', 'hi',    vim.lsp.buf.implementation,  bufopts)
+          vim.keymap.set('n', 'hr',    vim.lsp.buf.references,      bufopts)
         '' else ''
-          nmapb('<C-j>',     '<cmd>lua vim.diagnostic.goto_next()<cr>')
-          nmapb('<C-k>',     '<cmd>lua vim.diagnostic.goto_prev()<cr>')
-          nmapb('K',         '<cmd>lua vim.lsp.buf.hover()<cr>')
-          nmapb('gd',        '<cmd>lua vim.lsp.buf.declaration()<cr>')
-          nmapb('gi',        '<cmd>lua vim.lsp.buf.implementation()<cr>')
-          nmapb('gr',        '<cmd>lua vim.lsp.buf.references()<cr>')
+          vim.keymap.set('n', '<C-j>', vim.diagnostic.goto_next,    bufopts)
+          vim.keymap.set('n', '<C-k>', vim.diagnostic.goto_prev,    bufopts)
+          vim.keymap.set('n', 'K',     vim.lsp.buf.hover,           bufopts)
+          vim.keymap.set('n', 'gd',    vim.lsp.buf.definition,      bufopts)
+          vim.keymap.set('n', 'gtd',   vim.lsp.buf.type_definition, bufopts)
+          vim.keymap.set('n', 'gi',    vim.lsp.buf.implementation,  bufopts)
+          vim.keymap.set('n', 'gr',    vim.lsp.buf.references,      bufopts)
         ''}
-        nmapb('<leader>d', '<cmd>lua vim.lsp.buf.type_definition()<cr>')
-        nmapb('<leader>r', '<cmd>lua vim.lsp.buf.rename()<cr>')
-        nmapb('<leader>a', '<cmd>lua vim.lsp.buf.code_action()<cr>')
-        nmapb('<leader>e', '<cmd>lua vim.diagnostic.open_float()<cr>')
-        nmapb('<leader>f', '<cmd>lua vim.lsp.buf.formatting()<cr>')
+        vim.keymap.set('n', '<leader>r', vim.lsp.buf.rename,          bufopts)
+        vim.keymap.set('n', '<leader>a', vim.lsp.buf.code_action,     bufopts)
+        vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float,   bufopts)
+        vim.keymap.set('n', '<leader>f', vim.lsp.buf.formatting,      bufopts)
       end
 
       local cmp = require'cmp'
+      local luasnip = require'luasnip'
+      local t = function(str)
+        return vim.api.nvim_replace_termcodes(str, true, true, true)
+      end
 
       cmp.setup {
         snippet = {
           expand = function(args)
-            vim.fn["vsnip#anonymous"](args.body)
+            require'luasnip'.lsp_expand(args.body)
           end,
         },
         mapping = {
           ['<C-space>'] = cmp.mapping(cmp.mapping.complete(), { 'i', 'c' }),
           ['<CR>'] = cmp.mapping.confirm({ select = true }),
-          ['<Tab>'] = cmp.mapping(cmp.mapping.select_next_item({ 'i', 'c' })),
-          ['<S-Tab>'] = cmp.mapping(cmp.mapping.select_prev_item({ 'i', 'c' })),
+          ['<Tab>'] = {
+            i = function()
+              if luasnip.expandable() then
+                luasnip.expand()
+              elseif cmp.visible() then
+                cmp.select_next_item()
+              elseif luasnip.jumpable(1) then
+                luasnip.jump(1)
+              else
+                vim.api.nvim_feedkeys(t('<Tab>'), 'n', true)
+              end
+            end,
+            c = function()
+              cmp.select_next_item()
+            end,
+            s = function()
+              luasnip.jump(1)
+            end
+          },
+          ['<S-Tab>'] = {
+            i = function()
+              if cmp.visible() then
+                cmp.select_prev_item()
+              elseif luasnip.jumpable(-1) then
+                luasnip.jump(-1)
+              else
+                vim.api.nvim_feedkeys(t('<C-d>'), 'n', true)
+              end
+            end,
+            c = function()
+              cmp.select_prev_item()
+            end,
+            s = function()
+              luasnip.jump(-1)
+            end
+          },
           ['<C-e>'] = cmp.mapping({
             i = cmp.mapping.abort(),
             c = cmp.mapping.close(),
@@ -195,9 +247,7 @@
         },
         sources = cmp.config.sources {
           { name = 'nvim_lsp' },
-          { name = 'vsnip' },
-        }, {
-          { name = 'buffer' },
+          { name = 'luasnip' }
         }
       }
 
@@ -216,17 +266,16 @@
       })
 
       local nvim_lsp = require'lspconfig'
-      local servers = { 'tsserver', 'rnix' }
-      local capabilities = vim.lsp.protocol.make_client_capabilities()
-      capabilities = require'cmp_nvim_lsp'.update_capabilities(capabilities)
+      local servers = { 'tsserver', 'eslint', 'rnix', 'rust_analyzer' }
+      local capabilities = require'cmp_nvim_lsp'.default_capabilities()
 
       for _, lsp in ipairs(servers) do
         nvim_lsp[lsp].setup {
-          on_attach = on_attach,
+          on_attach = lsp_on_attach,
           capabilities = capabilities,
           flags = { debounce_text_changes = 150 },
           handlers = {
-            ["textDocument/publishDiagnostics"] = vim.lsp.with(
+            ['textDocument/publishDiagnostics'] = vim.lsp.with(
               vim.lsp.diagnostic.on_publish_diagnostics,
               { virtual_text = false }
             ),
@@ -234,13 +283,16 @@
         }
       end
 
+      require'luasnip.loaders.from_lua'.load({ paths = '~/.config/nvim/snippets' })
+
       --------------------------------------------------------------------------------
       -- TreeSitter
       --------------------------------------------------------------------------------
 
       require'nvim-treesitter.configs'.setup {
-        ensure_installed = { "c", "cpp", "css", "go", "haskell", "html", "javascript", "json5", "lua", "nix", "rust", "scss", "tsx", "typescript", "vim", "yaml" },
+        ensure_installed = { 'c', 'cpp', 'css', 'go', 'haskell', 'html', 'javascript', 'jsonc', 'lua', 'nix', 'rust', 'scss', 'tsx', 'typescript', 'vim', 'yaml' },
         sync_install = false,
+        auto_install = true,
         highlight = {
           enable = true,
           additional_vim_regex_highlighting = false
@@ -260,6 +312,35 @@
       }
 
       --------------------------------------------------------------------------------
+      -- Hop
+      --------------------------------------------------------------------------------
+
+      local hop = require'hop'
+      local hop_after_cursor = require'hop.hint'.HintDirection.AFTER_CURSOR
+      local hop_before_cursor = require'hop.hint'.HintDirection.BEFORE_CURSOR
+
+      local hop_char = function(direction, inclusive_jump)
+        return function()
+          hop.hint_char1({ direction = direction, current_line_only = true, inclusive_jump = inclusive_jump })
+        end
+      end
+
+      local hop_word = function(inclusive_jump)
+        return function()
+          hop.hint_words({ inclusive_jump = inclusive_jump })
+        end
+      end
+
+      vim.keymap.set('n', 'f', hop_char(hop_after_cursor,  false), { noremap = true })
+      vim.keymap.set('n', 'F', hop_char(hop_before_cursor, false), { noremap = true })
+      vim.keymap.set('o', 'f', hop_char(hop_after_cursor,  true),  { noremap = true })
+      vim.keymap.set('o', 'F', hop_char(hop_before_cursor, true),  { noremap = true })
+      vim.keymap.set('o', 't', hop_char(hop_after_cursor,  false), { noremap = true })
+      vim.keymap.set('o', 'T', hop_char(hop_before_cursor, false), { noremap = true })
+      vim.keymap.set({ 'n', 'v' }, 'm', hop_word(false), { noremap = true })
+      vim.keymap.set('o',          'm', hop_word(true),  { noremap = true })
+
+      --------------------------------------------------------------------------------
       -- Theme & Status line
       --------------------------------------------------------------------------------
 
@@ -273,63 +354,147 @@
       }
 
       --------------------------------------------------------------------------------
+      -- GitSigns
+      --------------------------------------------------------------------------------
+
+      -- require('gitsigns').setup()
+
+      -- require('gitsigns').setup {
+      --   signs = {
+      --     add          = { hl = 'GitSignsAdd'   , text = '│', numhl='GitSignsAddNr'   , linehl='GitSignsAddLn' },
+      --     change       = { hl = 'GitSignsChange', text = '│', numhl='GitSignsChangeNr', linehl='GitSignsChangeLn' },
+      --     delete       = { hl = 'GitSignsDelete', text = '_', numhl='GitSignsDeleteNr', linehl='GitSignsDeleteLn' },
+      --     topdelete    = { hl = 'GitSignsDelete', text = '‾', numhl='GitSignsDeleteNr', linehl='GitSignsDeleteLn' },
+      --     changedelete = { hl = 'GitSignsChange', text = '~', numhl='GitSignsChangeNr', linehl='GitSignsChangeLn' }
+      --   },
+      --   signcolumn = true,           -- Toggle with `:Gitsigns toggle_signs`
+      --   numhl      = true,           -- Toggle with `:Gitsigns toggle_numhl`
+      --   linehl     = false,          -- Toggle with `:Gitsigns toggle_linehl`
+      --   word_diff  = false,          -- Toggle with `:Gitsigns toggle_word_diff`
+      --   current_line_blame = false,  -- Toggle with `:Gitsigns toggle_current_line_blame`
+      --   on_attach = function(bufnr)
+      --     local gs = package.loaded.gitsigns
+
+      --     local function mapb(mode, l, r, opts)
+      --       opts = opts or {}
+      --       opts.buffer = bufnr
+      --       vim.keymap.set(mode, l, r, opts)
+      --     end
+
+      --     ${if config.desktop.hallmack then ''
+      --       local hunk_mapping_next = ',a'
+      --       local hunk_mapping_prev = ',e'
+      --     '' else ''
+      --       local hunk_mapping_next = ',j'
+      --       local hunk_mapping_prev = ',k'
+      --     ''}
+
+      --     -- Navigation
+      --     mapb('n', hunk_mapping_next, function()
+      --       if vim.wo.diff then return hunk_mapping_next end
+      --       vim.schedule(function() gs.next_hunk() end)
+      --       return '<Ignore>'
+      --     end, { expr = true })
+
+      --     mapb('n', hunk_mapping_prev, function()
+      --       if vim.wo.diff then return hunk_mapping_prev end
+      --       vim.schedule(function() gs.prev_hunk() end)
+      --       return '<Ignore>'
+      --     end, { expr = true })
+
+      --     -- Actions
+      --     mapb({ 'n', 'v' }, '<leader>,s', ':Gitsigns stage_hunk<CR>')
+      --     mapb('n',          '<leader>,S', gs.stage_buffer)
+      --     mapb({ 'n', 'v' }, '<leader>,r', ':Gitsigns reset_hunk<CR>')
+      --     mapb('n',          '<leader>,R', gs.reset_buffer)
+      --     mapb('n', '<leader>,u', gs.undo_stage_hunk)
+      --     mapb('n', ',p', gs.preview_hunk)
+      --     mapb('n', ',b', function() gs.blame_line { full = true } end)
+      --     mapb('n', ',d', gs.diffthis)
+      --     mapb('n', ',D', function() gs.diffthis('~') end)
+
+      --     -- Text object
+      --     mapb({ 'o', 'x' }, 'in', ':<C-U>Gitsigns select_hunk<CR>')
+      --   end
+      -- }
+
+      --------------------------------------------------------------------------------
+      -- Indent Blankline
+      --------------------------------------------------------------------------------
+
+      vim.opt.termguicolors = true
+      vim.opt.list = true
+
+      require'indent_blankline'.setup {
+        char = '¦';
+        show_end_of_line = true,
+        show_trailing_blankline_indent = false,
+        space_char_blankline = ' ',
+        show_current_context = true,
+        show_current_context_start = true
+      }
+
+      --------------------------------------------------------------------------------
       -- NvimTree
       --------------------------------------------------------------------------------
 
       local tree_cb = require'nvim-tree.config'.nvim_tree_callback
       require'nvim-tree'.setup {
         view = {
+          adaptive_size = true,
           mappings = {
             custom_only = true,
             list = {
-              { key = "<CR>",  cb = tree_cb("edit") },
-              { key = "<C-]>", cb = tree_cb("cd") },
-              { key = "<C-v>", cb = tree_cb("vsplit") },
-              { key = "<C-x>", cb = tree_cb("split") },
-              { key = "<C-t>", cb = tree_cb("tabnew") },
-              { key = "P",     cb = tree_cb("parent_node") },
-              { key = "<BS>",  cb = tree_cb("close_node") },
-              { key = "<Tab>", cb = tree_cb("preview") },
+              { key = '<CR>',  cb = tree_cb('edit') },
+              { key = '<C-]>', cb = tree_cb('cd') },
+              { key = '<C-v>', cb = tree_cb('vsplit') },
+              { key = '<C-x>', cb = tree_cb('split') },
+              { key = '<C-t>', cb = tree_cb('tabnew') },
+              { key = 'P',     cb = tree_cb('parent_node') },
+              { key = '<BS>',  cb = tree_cb('close_node') },
+              { key = '<Tab>', cb = tree_cb('preview') },
               ${if config.desktop.hallmack then ''
-                { key = "E",     cb = tree_cb("first_sibling") },
-                { key = "A",     cb = tree_cb("last_sibling") },
+                { key = 'E',     cb = tree_cb('first_sibling') },
+                { key = 'A',     cb = tree_cb('last_sibling') },
               '' else ''
-                { key = "K",     cb = tree_cb("first_sibling") },
-                { key = "J",     cb = tree_cb("last_sibling") },
+                { key = 'K',     cb = tree_cb('first_sibling') },
+                { key = 'J',     cb = tree_cb('last_sibling') },
               ''}
-              { key = "I",     cb = tree_cb("toggle_ignored") },
-              { key = "H",     cb = tree_cb("toggle_dotfiles") },
-              { key = "R",     cb = tree_cb("refresh") },
+              { key = 'h',     cb = tree_cb('toggle_ignored') },
+              { key = 'H',     cb = tree_cb('toggle_dotfiles') },
+              { key = 'R',     cb = tree_cb('refresh') },
               ${if config.desktop.hallmack then ''
-                { key = "j",     cb = tree_cb("create") },
+                { key = 'j',     cb = tree_cb('create') },
               '' else ''
-                { key = "a",     cb = tree_cb("create") },
+                { key = 'a',     cb = tree_cb('create') },
               ''}
-              { key = "d",     cb = tree_cb("remove") },
-              { key = "D",     cb = tree_cb("trash") },
-              { key = "r",     cb = tree_cb("rename") },
-              { key = "<C-r>", cb = tree_cb("full_rename") },
-              { key = "x",     cb = tree_cb("cut") },
-              { key = "c",     cb = tree_cb("copy") },
-              { key = "p",     cb = tree_cb("paste") },
-              { key = "y",     cb = tree_cb("copy_name") },
-              { key = "Y",     cb = tree_cb("copy_path") },
+              { key = 'd',     cb = tree_cb('remove') },
+              { key = 'D',     cb = tree_cb('trash') },
+              { key = 'r',     cb = tree_cb('rename') },
+              { key = '<C-r>', cb = tree_cb('full_rename') },
+              { key = 'x',     cb = tree_cb('cut') },
+              { key = 'c',     cb = tree_cb('copy') },
+              { key = 'p',     cb = tree_cb('paste') },
+              { key = 'y',     cb = tree_cb('copy_name') },
+              { key = 'Y',     cb = tree_cb('copy_path') },
               ${if config.desktop.hallmack then ''
-                { key = "hy",    cb = tree_cb("copy_absolute_path") },
+                { key = 'hy',    cb = tree_cb('copy_absolute_path') },
               '' else ''
-                { key = "gy",    cb = tree_cb("copy_absolute_path") },
+                { key = 'gy',    cb = tree_cb('copy_absolute_path') },
               ''}
-              { key = "-",     cb = tree_cb("dir_up") },
-              { key = "s",     cb = tree_cb("system_open") },
-              { key = "q",     cb = tree_cb("close") },
-              { key = "?",     cb = tree_cb("toggle_help") }
+              { key = '-',     cb = tree_cb('dir_up') },
+              { key = 's',     cb = tree_cb('system_open') },
+              { key = 'q',     cb = tree_cb('close') },
+              { key = '?',     cb = tree_cb('toggle_help') }
             }
           }
-        }
+        },
+        filters = { dotfiles = false },
+        git = { ignore = false }
       }
 
-      nmap('<C-n>', ':NvimTreeToggle<CR>')
-      nmap('<leader>j', ':NvimTreeFindFile<CR>')
+      vim.keymap.set('n', '<C-n>', ':NvimTreeToggle<CR>', kmapopts)
+      vim.keymap.set('n', '<leader>j', ':NvimTreeFindFile<CR>', kmapopts)
 
       --------------------------------------------------------------------------------
       -- Telescope
@@ -337,12 +502,40 @@
 
       require'telescope'.setup {
         defaults = {
-          file_ignore_patterns = { "node_modules" },
-          borderchars = { "─", "│", "─", "│", "┌", "┐", "┘", "└" }
+          file_ignore_patterns = { 'node_modules' },
+          borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },
+          mappings = {
+            ${if config.desktop.hallmack then ''
+              n = {
+                ['j'] = false,
+                ['k'] = false,
+                ['gg'] = false,
+                ['G'] = false,
+                ['a'] = 'move_selection_next',
+                ['e'] = 'move_selection_previous',
+                ['hh'] = 'move_to_top',
+                ['H'] = 'move_to_bottom'
+              }
+            '' else ""}
+          }
+        },
+        extensions = {
+          fzf = {
+            fuzzy = true,                    -- false will only do exact matching
+            override_generic_sorter = true,  -- override the generic sorter
+            override_file_sorter = true,     -- override the file sorter
+            case_mode = "smart_case"         -- or "ignore_case" or "respect_case"
+          }
         }
       }
 
-      nmap('<leader>t', ':Telescope find_files<cr>')
+      require'telescope'.load_extension'fzf'
+
+      vim.keymap.set('n', 'tf', ':Telescope find_files<cr>', kmapopts)
+      vim.keymap.set('n', 'tb', ':Telescope buffers<cr>', kmapopts)
+      vim.keymap.set('n', 'tt', ':Telescope git_files<cr>', kmapopts)
+      vim.keymap.set('n', 'tg', ':Telescope live_grep<cr>', kmapopts)
+      vim.keymap.set('n', 'ts', ':Telescope grep_string<cr>', kmapopts)
 
       --------------------------------------------------------------------------------
       -- Comment
@@ -387,20 +580,20 @@
       --------------------------------------------------------------------------------
 
       vim.api.nvim_set_var('surround_no_mappings', true)
-
-      nmap('cs', '<Plug>Csurround')
+      vim.keymap.set('n', 'cs', '<Plug>Csurround', kmapopts)
 
       --------------------------------------------------------------------------------
       -- VimEunuch
       --------------------------------------------------------------------------------
 
-      nmap('<leader>z', ':SudoEdit<CR>')
+      vim.keymap.set('n', '<leader>z', ':SudoEdit %<CR>', { noremap = true })
 
       --------------------------------------------------------------------------------
-      -- Matchit.vim
+      -- Disable default plugins to avoid keymap conflicts
       --------------------------------------------------------------------------------
 
       vim.api.nvim_set_var('loaded_matchit', true)
+      vim.api.nvim_set_var('loaded_netrwPlugin', true)
     '';
 
     programs.neovim = {
@@ -412,7 +605,7 @@
         plugin = pkgs.vimPlugins.packer-nvim;
         config = ''
           packadd! packer.nvim
-          lua require('config')
+          lua require'config'
         '';
       }];
     };

@@ -22,7 +22,27 @@
         thinkpad = lib.nixosSystem {
           inherit system pkgs;
 
-          specialArgs.username = "egor";
+          specialArgs = {
+            username = "egor";
+            homedir = "/home/egor";
+            theme = {
+              fontFamily = "Inconsolata Nerd Font";
+              background = {
+                main = "#282C34";
+                light = "#30343C";
+              };
+              foreground = {
+                main = "#DCDFE4";
+                dark = "#434956";
+              };
+              red = "#E06C75";
+              green = "#98C379";
+              yellow = "#E5C07B";
+              blue = "#61AFEF";
+              magenta = "#C678DD";
+              cyan = "#56B6C2";
+            };
+          };
 
           modules = [
             home-manager.nixosModules.home-manager
