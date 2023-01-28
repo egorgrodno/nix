@@ -41,10 +41,7 @@
         use 'saadparwaiz1/cmp_luasnip'
         use 'tpope/vim-eunuch'
         use 'tpope/vim-surround'
-        use {
-          'lewis6991/gitsigns.nvim',
-          tag = 'release'
-        }
+        use 'lewis6991/gitsigns.nvim'
         use {
           'nvim-telescope/telescope-fzf-native.nvim',
           run = 'nix-shell -p cmake --command "cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release"'
@@ -357,66 +354,64 @@
       -- GitSigns
       --------------------------------------------------------------------------------
 
-      -- require('gitsigns').setup()
+      require('gitsigns').setup {
+        signs = {
+          add          = { hl = 'GitSignsAdd'   , text = '│', numhl='GitSignsAddNr'   , linehl='GitSignsAddLn' },
+          change       = { hl = 'GitSignsChange', text = '│', numhl='GitSignsChangeNr', linehl='GitSignsChangeLn' },
+          delete       = { hl = 'GitSignsDelete', text = '_', numhl='GitSignsDeleteNr', linehl='GitSignsDeleteLn' },
+          topdelete    = { hl = 'GitSignsDelete', text = '‾', numhl='GitSignsDeleteNr', linehl='GitSignsDeleteLn' },
+          changedelete = { hl = 'GitSignsChange', text = '~', numhl='GitSignsChangeNr', linehl='GitSignsChangeLn' }
+        },
+        signcolumn = true,           -- Toggle with `:Gitsigns toggle_signs`
+        numhl      = true,           -- Toggle with `:Gitsigns toggle_numhl`
+        linehl     = false,          -- Toggle with `:Gitsigns toggle_linehl`
+        word_diff  = false,          -- Toggle with `:Gitsigns toggle_word_diff`
+        current_line_blame = false,  -- Toggle with `:Gitsigns toggle_current_line_blame`
+        on_attach = function(bufnr)
+          local gs = package.loaded.gitsigns
 
-      -- require('gitsigns').setup {
-      --   signs = {
-      --     add          = { hl = 'GitSignsAdd'   , text = '│', numhl='GitSignsAddNr'   , linehl='GitSignsAddLn' },
-      --     change       = { hl = 'GitSignsChange', text = '│', numhl='GitSignsChangeNr', linehl='GitSignsChangeLn' },
-      --     delete       = { hl = 'GitSignsDelete', text = '_', numhl='GitSignsDeleteNr', linehl='GitSignsDeleteLn' },
-      --     topdelete    = { hl = 'GitSignsDelete', text = '‾', numhl='GitSignsDeleteNr', linehl='GitSignsDeleteLn' },
-      --     changedelete = { hl = 'GitSignsChange', text = '~', numhl='GitSignsChangeNr', linehl='GitSignsChangeLn' }
-      --   },
-      --   signcolumn = true,           -- Toggle with `:Gitsigns toggle_signs`
-      --   numhl      = true,           -- Toggle with `:Gitsigns toggle_numhl`
-      --   linehl     = false,          -- Toggle with `:Gitsigns toggle_linehl`
-      --   word_diff  = false,          -- Toggle with `:Gitsigns toggle_word_diff`
-      --   current_line_blame = false,  -- Toggle with `:Gitsigns toggle_current_line_blame`
-      --   on_attach = function(bufnr)
-      --     local gs = package.loaded.gitsigns
+          local function mapb(mode, l, r, opts)
+            opts = opts or {}
+            opts.buffer = bufnr
+            vim.keymap.set(mode, l, r, opts)
+          end
 
-      --     local function mapb(mode, l, r, opts)
-      --       opts = opts or {}
-      --       opts.buffer = bufnr
-      --       vim.keymap.set(mode, l, r, opts)
-      --     end
+          ${if config.desktop.hallmack then ''
+            local hunk_mapping_next = ',a'
+            local hunk_mapping_prev = ',e'
+          '' else ''
+            local hunk_mapping_next = ',j'
+            local hunk_mapping_prev = ',k'
+          ''}
 
-      --     ${if config.desktop.hallmack then ''
-      --       local hunk_mapping_next = ',a'
-      --       local hunk_mapping_prev = ',e'
-      --     '' else ''
-      --       local hunk_mapping_next = ',j'
-      --       local hunk_mapping_prev = ',k'
-      --     ''}
+          -- Navigation
+          mapb('n', hunk_mapping_next, function()
+            if vim.wo.diff then return hunk_mapping_next end
+            vim.schedule(function() gs.next_hunk() end)
+            return '<Ignore>'
+          end, { expr = true })
 
-      --     -- Navigation
-      --     mapb('n', hunk_mapping_next, function()
-      --       if vim.wo.diff then return hunk_mapping_next end
-      --       vim.schedule(function() gs.next_hunk() end)
-      --       return '<Ignore>'
-      --     end, { expr = true })
+          mapb('n', hunk_mapping_prev, function()
+            if vim.wo.diff then return hunk_mapping_prev end
+            vim.schedule(function() gs.prev_hunk() end)
+            return '<Ignore>'
+          end, { expr = true })
 
-      --     mapb('n', hunk_mapping_prev, function()
-      --       if vim.wo.diff then return hunk_mapping_prev end
-      --       vim.schedule(function() gs.prev_hunk() end)
-      --       return '<Ignore>'
-      --     end, { expr = true })
+          -- Actions
+          mapb({ 'n', 'v' }, '<leader>,s', ':Gitsigns stage_hunk<CR>')
+          mapb('n',          '<leader>,S', gs.stage_buffer)
+          mapb({ 'n', 'v' }, '<leader>,r', ':Gitsigns reset_hunk<CR>')
+          mapb('n',          '<leader>,R', gs.reset_buffer)
+          mapb('n', '<leader>,u', gs.undo_stage_hunk)
+          mapb('n', ',p', gs.preview_hunk)
+          mapb('n', ',b', function() gs.blame_line { full = true } end)
+          mapb('n', ',d', gs.diffthis)
+          mapb('n', ',D', function() gs.diffthis('~') end)
 
-      --     -- Actions
-      --     mapb({ 'n', 'v' }, '<leader>,s', ':Gitsigns stage_hunk<CR>')
-      --     mapb('n',          '<leader>,S', gs.stage_buffer)
-      --     mapb({ 'n', 'v' }, '<leader>,r', ':Gitsigns reset_hunk<CR>')
-      --     mapb('n',          '<leader>,R', gs.reset_buffer)
-      --     mapb('n', '<leader>,u', gs.undo_stage_hunk)
-      --     mapb('n', ',p', gs.preview_hunk)
-      --     mapb('n', ',b', function() gs.blame_line { full = true } end)
-      --     mapb('n', ',d', gs.diffthis)
-      --     mapb('n', ',D', function() gs.diffthis('~') end)
-
-      --     -- Text object
-      --     mapb({ 'o', 'x' }, 'in', ':<C-U>Gitsigns select_hunk<CR>')
-      --   end
-      -- }
+          -- Text object
+          mapb({ 'o', 'x' }, 'in', ':<C-U>Gitsigns select_hunk<CR>')
+        end
+      }
 
       --------------------------------------------------------------------------------
       -- Indent Blankline
