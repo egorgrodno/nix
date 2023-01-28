@@ -79,33 +79,33 @@ in
 
     home-manager.users.${username} = {
       home.packages = with pkgs; [
-        shutter
         bluez
         bluez-tools
         chromium
         evince
+        firefox
         galculator
+        gimp
+        glances
+        inkscape
+        libheif
         libnotify
+        networkmanagerapplet
+        ntfs3g
         pasystray
         pavucontrol
         pcmanfm
         picom
         postman
+        shutter
         simplescreenrecorder
         slack
         tdesktop
         transmission-gtk
         viewnior
-        libheif
         vlc
         xorg.xkill
         zoom-us
-        networkmanagerapplet
-        inkscape
-        firefox
-        glances
-        ntfs3g
-        gimp
       ];
 
       home.file.".xinitrc".text = ''

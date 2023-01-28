@@ -6,11 +6,12 @@ with builtins;
   imports = [
     ./modules/desktop.nix
     ./pkgs/git.nix
-    ./pkgs/shell-scripts.nix
+    ./pkgs/less.nix
     ./pkgs/neovim
+    ./pkgs/ripgrep.nix
+    ./pkgs/shell-scripts.nix
     ./pkgs/st
     ./pkgs/zsh.nix
-    ./pkgs/ripgrep.nix
   ];
 
   time.timeZone = "Europe/Amsterdam";
@@ -46,15 +47,15 @@ with builtins;
 
   environment.systemPackages = with pkgs; [
     dconf
-    git
+    fd
     gcc
+    git
     htop
+    postgresql
     unzip
     wget
     xclip
     zip
-    fd
-    postgresql
   ];
 
   virtualisation.virtualbox.host.enable = true;
