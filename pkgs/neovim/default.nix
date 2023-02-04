@@ -42,6 +42,7 @@
         use 'tpope/vim-eunuch'
         use 'tpope/vim-surround'
         use 'lewis6991/gitsigns.nvim'
+        use { 'TimUntersberger/neogit', requires = 'nvim-lua/plenary.nvim' }
         use {
           'nvim-telescope/telescope-fzf-native.nvim',
           run = 'nix-shell -p cmake --command "cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release"'
@@ -309,46 +310,10 @@
       }
 
       --------------------------------------------------------------------------------
-      -- Hop
+      -- Neogit
       --------------------------------------------------------------------------------
 
-      local hop = require'hop'
-      local hop_after_cursor = require'hop.hint'.HintDirection.AFTER_CURSOR
-      local hop_before_cursor = require'hop.hint'.HintDirection.BEFORE_CURSOR
-
-      local hop_char = function(direction, inclusive_jump)
-        return function()
-          hop.hint_char1({ direction = direction, current_line_only = true, inclusive_jump = inclusive_jump })
-        end
-      end
-
-      local hop_word = function(inclusive_jump)
-        return function()
-          hop.hint_words({ inclusive_jump = inclusive_jump })
-        end
-      end
-
-      vim.keymap.set('n', 'f', hop_char(hop_after_cursor,  false), { noremap = true })
-      vim.keymap.set('n', 'F', hop_char(hop_before_cursor, false), { noremap = true })
-      vim.keymap.set('o', 'f', hop_char(hop_after_cursor,  true),  { noremap = true })
-      vim.keymap.set('o', 'F', hop_char(hop_before_cursor, true),  { noremap = true })
-      vim.keymap.set('o', 't', hop_char(hop_after_cursor,  false), { noremap = true })
-      vim.keymap.set('o', 'T', hop_char(hop_before_cursor, false), { noremap = true })
-      vim.keymap.set({ 'n', 'v' }, 'm', hop_word(false), { noremap = true })
-      vim.keymap.set('o',          'm', hop_word(true),  { noremap = true })
-
-      --------------------------------------------------------------------------------
-      -- Theme & Status line
-      --------------------------------------------------------------------------------
-
-      require'onenord'.setup {
-        theme = 'dark'
-      }
-
-      require'lualine'.setup {
-        options = { theme = 'onenord' },
-        tabline = { lualine_a = { 'buffers' } }
-      }
+      vim.keymap.set('n', '<leader>g', ':Neogit<CR>', { noremap = true })
 
       --------------------------------------------------------------------------------
       -- GitSigns
@@ -411,6 +376,48 @@
           -- Text object
           mapb({ 'o', 'x' }, 'in', ':<C-U>Gitsigns select_hunk<CR>')
         end
+      }
+
+      --------------------------------------------------------------------------------
+      -- Hop
+      --------------------------------------------------------------------------------
+
+      local hop = require'hop'
+      local hop_after_cursor = require'hop.hint'.HintDirection.AFTER_CURSOR
+      local hop_before_cursor = require'hop.hint'.HintDirection.BEFORE_CURSOR
+
+      local hop_char = function(direction, inclusive_jump)
+        return function()
+          hop.hint_char1({ direction = direction, current_line_only = true, inclusive_jump = inclusive_jump })
+        end
+      end
+
+      local hop_word = function(inclusive_jump)
+        return function()
+          hop.hint_words({ inclusive_jump = inclusive_jump })
+        end
+      end
+
+      vim.keymap.set('n', 'f', hop_char(hop_after_cursor,  false), { noremap = true })
+      vim.keymap.set('n', 'F', hop_char(hop_before_cursor, false), { noremap = true })
+      vim.keymap.set('o', 'f', hop_char(hop_after_cursor,  true),  { noremap = true })
+      vim.keymap.set('o', 'F', hop_char(hop_before_cursor, true),  { noremap = true })
+      vim.keymap.set('o', 't', hop_char(hop_after_cursor,  false), { noremap = true })
+      vim.keymap.set('o', 'T', hop_char(hop_before_cursor, false), { noremap = true })
+      vim.keymap.set({ 'n', 'v' }, 'm', hop_word(false), { noremap = true })
+      vim.keymap.set('o',          'm', hop_word(true),  { noremap = true })
+
+      --------------------------------------------------------------------------------
+      -- Theme & Status line
+      --------------------------------------------------------------------------------
+
+      require'onenord'.setup {
+        theme = 'dark'
+      }
+
+      require'lualine'.setup {
+        options = { theme = 'onenord' },
+        tabline = { lualine_a = { 'buffers' } }
       }
 
       --------------------------------------------------------------------------------
