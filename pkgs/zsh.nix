@@ -5,7 +5,7 @@
     variables.KEYTIMEOUT = "1";
     pathsToLink = [ "/share/zsh" ];
   };
-
+programs.zsh.enable = true;
   home-manager.users.${username} = {
     programs.zsh =
       let
@@ -17,12 +17,11 @@
           "PROMPT_SUBST"
         ];
 
-      in
-      {
+      in {
         enable = true;
         enableCompletion = true;
         enableAutosuggestions = true;
-        enableSyntaxHighlighting = true;
+        syntaxHighlighting.enable = true;
         dotDir = ".config/zsh";
         defaultKeymap = "viins";
 
@@ -81,13 +80,14 @@
           zstyle ":vcs_info:git*" formats "%F{5}%s%f:%F{2}%b%f"
           precmd() {
             vcs_info
-            print ""
+            echo -n -e "\033]0;$USER@$HOST: ''${PWD/$HOME/~}\007"
           }
           RPROMPT=" ''${vcs_info_msg_0_} %?"
 
           ${builtins.concatStringsSep "\n" (map (x: "setopt " + x) options)}
 
           bindkey -s "^Z" "fg\n"
+          bindkey -s "^N" "cps\n"
 
           ${if config.desktop.hallmack then ''
             # swap h g

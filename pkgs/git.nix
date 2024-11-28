@@ -23,7 +23,7 @@
         dc = "diff --cached";
         dcs = "diff --cached --stat";
         wip = "commit -m \"WIP\" --no-verify";
-        afp = "!git commit --amend --no-edit && git push -f";
+        afp = "!git commit --amend --no-edit && git push --force-with-lease";
         ls-conflicts = "diff --name-only --diff-filter=U --relative";
       };
       extraConfig = {

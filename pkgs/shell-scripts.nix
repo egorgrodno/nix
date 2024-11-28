@@ -1,11 +1,16 @@
-{ pkgs, username, ... }:
+{ pkgs, username, homedir, ... }:
 
 let
   btConnect = mac: "bluetoothctl -- connect ${mac}";
+  nodeScript = binjs: "${pkgs.nodejs}/bin/node ${binjs}";
   shellScripts = [
     {
+      name = "cps";
+      script = "2>/dev/null 1>/dev/null st -d $PWD & disown";
+    }
+    {
       name = "nxe";
-      script = "st -d /etc/nixos -e vim";
+      script = "st -d /etc/nixos -e vim home.nix";
     }
     {
       name = "nxu";
@@ -22,18 +27,6 @@ let
     {
       name = "nxt";
       script = "nixos-rebuild test --flake /etc/nixos";
-    }
-    {
-      name = "dp";
-      script = "xrandr --output DP-1 --primary --auto --output HDMI-1 --off --output eDP-1 --off && wallpaper-reset";
-    }
-    {
-      name = "edp";
-      script = "xrandr --output eDP-1 --primary --auto --output HDMI-1 --off --output DP-1 --off && wallpaper-reset";
-    }
-    {
-      name = "hdmi";
-      script = "xrandr --output HDMI-1 --primary --auto --output eDP-1 --off --output DP-1 --off && wallpaper-reset";
     }
     {
       name = "bt-on";
@@ -60,15 +53,23 @@ let
     }
     {
       name = "docker-clean";
-      script = "docker-clean-containers && docker-clean-images";
+      script = "docker-clean-containers; docker-clean-images";
     }
     {
       name = "docker-clean-containers";
-      script = "docker rmi -f $(docker images -aq)";
+      script = "docker rm -vf $(docker ps -aq)";
     }
     {
       name = "docker-clean-images";
-      script = "docker rm -vf $(docker ps -aq)";
+      script = "docker rmi -f $(docker images -aq)";
+    }
+    {
+      name = "pp";
+      script = nodeScript "${homedir}/Projects/code-vault/packages/package-json-manager/build-current/bin.js";
+    }
+    {
+      name = "pt";
+      script = nodeScript "${homedir}/Projects/code-vault/packages/sprint-board/build-current/bin.js";
     }
   ];
 in

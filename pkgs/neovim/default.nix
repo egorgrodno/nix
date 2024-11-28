@@ -1,13 +1,6 @@
 { pkgs, config, username, ... }:
 
 {
-  environment = {
-    variables = {
-      EDITOR = "nvim";
-      VISUAL = "nvim";
-    };
-  };
-
   home-manager.users.${username} = {
     home.packages = with pkgs; [
       nodePackages.typescript-language-server
@@ -16,6 +9,8 @@
       rust-analyzer
       cargo
       rustc
+      haskell.compiler.ghc946
+      haskellPackages.haskell-language-server
     ];
 
     xdg.configFile."nvim/snippets/all.lua".source = ./snippets.lua;
@@ -42,6 +37,7 @@
         use 'tpope/vim-eunuch'
         use 'tpope/vim-surround'
         use 'lewis6991/gitsigns.nvim'
+        use {'kevinhwang91/nvim-ufo', requires = 'kevinhwang91/promise-async'}
         use { 'TimUntersberger/neogit', requires = 'nvim-lua/plenary.nvim' }
         use {
           'nvim-telescope/telescope-fzf-native.nvim',
@@ -82,8 +78,9 @@
       vim.opt.ignorecase = true
       vim.opt.incsearch = true
       vim.opt.number = true
+
       vim.opt.scrolloff = 12
-      vim.opt.shiftwidth = 2
+
       vim.opt.showcmd = true
       vim.opt.showmode = false
       vim.opt.showtabline = 2
@@ -91,13 +88,14 @@
       vim.opt.smartcase = true
       vim.opt.swapfile = true
       vim.opt.tabstop = 2
+      vim.opt.shiftwidth = 2
       vim.opt.ttimeoutlen = 0
       vim.opt.wildignore = { '*/tmp/*', '*.so', '*.swp', '*.zip', '*.svg', '*.png', '*.jpg', '*.gif', 'node_modules', 'dist', 'build' }
 
-      local kmapopts = { noremap = true, silent = true }
+      local kmapopts = { silent = true }
 
       ${if config.desktop.hallmack then ''
-        vim.keymap.set('n', '<leader>sh', ':set hlsearch!<CR>', { noremap = true })
+        vim.keymap.set('n', '<leader>h', ':set hlsearch!<CR>', { noremap = true })
       '' else ''
         vim.keymap.set('n', '<F3>', ':set hlsearch!<CR>', { noremap = true })
       ''}
@@ -137,7 +135,7 @@
 
         -- swap j a
         vim.keymap.set({ 'n', 'x', 'o' }, 'a', 'j', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'A', 'J', kmapopts)
+        vim.keymap.set({ 'n', 'x', 'o' }, 'A', 'mzJ`z', kmapopts)
         vim.keymap.set({ 'n', 'x', 'o' }, 'j', 'o', kmapopts)
         vim.keymap.set({ 'n', 'x', 'o' }, 'J', 'O', kmapopts)
 
@@ -152,7 +150,15 @@
         vim.keymap.set({ 'n', 'x', 'o' }, 'O', 'L', kmapopts)
         vim.keymap.set({ 'n', 'x', 'o' }, 'l', 'e', kmapopts)
         vim.keymap.set({ 'n', 'x', 'o' }, 'L', 'E', kmapopts)
+        vim.keymap.set('v', '<leader>s', 'o', kmapopts)
+        vim.keymap.set('v', '<leader>S', 'O', kmapopts)
       '' else ""}
+
+      vim.keymap.set('v', 'A', ":m '>+1<CR>gv=gv")
+      vim.keymap.set('v', 'E', ":m '<-2<CR>gv=gv")
+      vim.keymap.set('n', '<C-d>', '<C-d>zz')
+      vim.keymap.set('n', '<C-u>', '<C-u>zz')
+      vim.keymap.set('x', '<leader>p', '"_dP')
 
       --------------------------------------------------------------------------------
       -- Language Server protocol & completion
@@ -185,6 +191,7 @@
         vim.keymap.set('n', '<leader>a', vim.lsp.buf.code_action,     bufopts)
         vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float,   bufopts)
         vim.keymap.set('n', '<leader>f', vim.lsp.buf.formatting,      bufopts)
+        vim.keymap.set('n', '<leader>l', vim.diagnostic.setloclist,   bufopts)
       end
 
       local cmp = require'cmp'
@@ -263,8 +270,8 @@
         })
       })
 
-      local nvim_lsp = require'lspconfig'
-      local servers = { 'tsserver', 'eslint', 'rnix', 'rust_analyzer' }
+      local nvim_lsp = require('lspconfig')
+      local servers = { 'eslint', 'hls', 'rnix', 'rust_analyzer', 'tsserver' }
       local capabilities = require'cmp_nvim_lsp'.default_capabilities()
 
       for _, lsp in ipairs(servers) do
@@ -288,7 +295,7 @@
       --------------------------------------------------------------------------------
 
       require'nvim-treesitter.configs'.setup {
-        ensure_installed = { 'c', 'cpp', 'css', 'go', 'haskell', 'html', 'javascript', 'jsonc', 'lua', 'nix', 'rust', 'scss', 'tsx', 'typescript', 'vim', 'yaml' },
+        ensure_installed = { 'c', 'cpp', 'css', 'dockerfile', 'go', 'haskell', 'help', 'html', 'javascript', 'jsonc', 'lua', 'nix', 'rust', 'scss', 'tsx', 'typescript', 'vim', 'yaml' },
         sync_install = false,
         auto_install = true,
         highlight = {
@@ -310,9 +317,56 @@
       }
 
       --------------------------------------------------------------------------------
+      -- UFO
+      --------------------------------------------------------------------------------
+
+      local handler = function(virtText, lnum, endLnum, width, truncate)
+          local newVirtText = {}
+          local suffix = (' 󰁂 %d '):format(endLnum - lnum)
+          local sufWidth = vim.fn.strdisplaywidth(suffix)
+          local targetWidth = width - sufWidth
+          local curWidth = 0
+          for _, chunk in ipairs(virtText) do
+              local chunkText = chunk[1]
+              local chunkWidth = vim.fn.strdisplaywidth(chunkText)
+              if targetWidth > curWidth + chunkWidth then
+                  table.insert(newVirtText, chunk)
+              else
+                  chunkText = truncate(chunkText, targetWidth - curWidth)
+                  local hlGroup = chunk[2]
+                  table.insert(newVirtText, {chunkText, hlGroup})
+                  chunkWidth = vim.fn.strdisplaywidth(chunkText)
+                  -- str width returned from truncate() may less than 2nd argument, need padding
+                  if curWidth + chunkWidth < targetWidth then
+                      suffix = suffix .. (' '):rep(targetWidth - curWidth - chunkWidth)
+                  end
+                  break
+              end
+              curWidth = curWidth + chunkWidth
+          end
+          table.insert(newVirtText, {suffix, 'MoreMsg'})
+          return newVirtText
+      end
+      vim.o.foldcolumn = '1' -- or '0'
+      vim.o.foldlevel = 99 -- configurable
+      vim.o.foldlevelstart = 99
+      vim.o.foldenable = true
+      vim.keymap.set('n', 'zR', require('ufo').openAllFolds)
+      vim.keymap.set('n', 'zM', require('ufo').closeAllFolds)
+
+      require('ufo').setup({
+        fold_virt_text_handler = handler,
+        provider_selector = function(bufnr, filetype, buftype)
+          return {'treesitter', 'indent'}
+        end
+      })
+
+      --------------------------------------------------------------------------------
       -- Neogit
       --------------------------------------------------------------------------------
 
+      local neogit = require('neogit')
+      neogit.setup()
       vim.keymap.set('n', '<leader>g', ':Neogit<CR>', { noremap = true })
 
       --------------------------------------------------------------------------------
@@ -419,6 +473,8 @@
         options = { theme = 'onenord' },
         tabline = { lualine_a = { 'buffers' } }
       }
+      vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
+      vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none' })
 
       --------------------------------------------------------------------------------
       -- Indent Blankline
@@ -427,76 +483,111 @@
       vim.opt.termguicolors = true
       vim.opt.list = true
 
-      require'indent_blankline'.setup {
-        char = '¦';
-        show_end_of_line = true,
-        show_trailing_blankline_indent = false,
-        space_char_blankline = ' ',
-        show_current_context = true,
-        show_current_context_start = true
+      local highlight = {
+          'Whitespace',
+          'CursorColumn',
+      }
+      require('ibl').setup {
+          indent = { highlight = highlight, char = "" },
+          whitespace = {
+              highlight = highlight,
+              remove_blankline_trail = false,
+          },
+          scope = { enabled = false },
       }
 
       --------------------------------------------------------------------------------
       -- NvimTree
       --------------------------------------------------------------------------------
 
-      local tree_cb = require'nvim-tree.config'.nvim_tree_callback
-      require'nvim-tree'.setup {
-        view = {
-          adaptive_size = true,
-          mappings = {
-            custom_only = true,
-            list = {
-              { key = '<CR>',  cb = tree_cb('edit') },
-              { key = '<C-]>', cb = tree_cb('cd') },
-              { key = '<C-v>', cb = tree_cb('vsplit') },
-              { key = '<C-x>', cb = tree_cb('split') },
-              { key = '<C-t>', cb = tree_cb('tabnew') },
-              { key = 'P',     cb = tree_cb('parent_node') },
-              { key = '<BS>',  cb = tree_cb('close_node') },
-              { key = '<Tab>', cb = tree_cb('preview') },
-              ${if config.desktop.hallmack then ''
-                { key = 'E',     cb = tree_cb('first_sibling') },
-                { key = 'A',     cb = tree_cb('last_sibling') },
-              '' else ''
-                { key = 'K',     cb = tree_cb('first_sibling') },
-                { key = 'J',     cb = tree_cb('last_sibling') },
-              ''}
-              { key = 'h',     cb = tree_cb('toggle_ignored') },
-              { key = 'H',     cb = tree_cb('toggle_dotfiles') },
-              { key = 'R',     cb = tree_cb('refresh') },
-              ${if config.desktop.hallmack then ''
-                { key = 'j',     cb = tree_cb('create') },
-              '' else ''
-                { key = 'a',     cb = tree_cb('create') },
-              ''}
-              { key = 'd',     cb = tree_cb('remove') },
-              { key = 'D',     cb = tree_cb('trash') },
-              { key = 'r',     cb = tree_cb('rename') },
-              { key = '<C-r>', cb = tree_cb('full_rename') },
-              { key = 'x',     cb = tree_cb('cut') },
-              { key = 'c',     cb = tree_cb('copy') },
-              { key = 'p',     cb = tree_cb('paste') },
-              { key = 'y',     cb = tree_cb('copy_name') },
-              { key = 'Y',     cb = tree_cb('copy_path') },
-              ${if config.desktop.hallmack then ''
-                { key = 'hy',    cb = tree_cb('copy_absolute_path') },
-              '' else ''
-                { key = 'gy',    cb = tree_cb('copy_absolute_path') },
-              ''}
-              { key = '-',     cb = tree_cb('dir_up') },
-              { key = 's',     cb = tree_cb('system_open') },
-              { key = 'q',     cb = tree_cb('close') },
-              { key = '?',     cb = tree_cb('toggle_help') }
-            }
+      local api = require 'nvim-tree.api'
+      local function nvimtree_on_attach(bufnr)
+        local function opts(desc)
+          return {
+            desc = 'nvim-tree: ' .. desc,
+            buffer = bufnr,
+            noremap = true,
+            silent = true,
+            nowait = true
           }
-        },
-        filters = { dotfiles = false },
-        git = { ignore = false }
-      }
+        end
 
-      vim.keymap.set('n', '<C-n>', ':NvimTreeToggle<CR>', kmapopts)
-      vim.keymap.set('n', '<leader>j', ':NvimTreeFindFile<CR>', kmapopts)
+        vim.keymap.set('n', '<C-]>', api.tree.change_root_to_node, opts('CD'))
+        vim.keymap.set('n', '<C-e>', api.node.show_info_popup, opts('Info'))
+        vim.keymap.set('n', '<C-r>', api.fs.rename_sub, opts('Rename: Omit Filename'))
+        vim.keymap.set('n', '<C-t>', api.node.open.tab, opts('Open: New Tab'))
+        vim.keymap.set('n', '<C-v>', api.node.open.vertical, opts('Open: Vertical Split'))
+        vim.keymap.set('n', '<C-x>', api.node.open.horizontal, opts('Open: Horizontal Split'))
+        vim.keymap.set('n', '<BS>', api.node.navigate.parent_close, opts('Close Directory'))
+        vim.keymap.set('n', '<CR>', api.node.open.edit, opts('Open'))
+        vim.keymap.set('n', '<Tab>', api.node.open.preview, opts('Open Preview'))
+        vim.keymap.set('n', '>', api.node.navigate.sibling.next, opts('Next Sibling'))
+        vim.keymap.set('n', '<', api.node.navigate.sibling.prev, opts('Previous Sibling'))
+        vim.keymap.set('n', '.', api.node.run.cmd, opts('Run Command'))
+        vim.keymap.set('n', '-', api.tree.change_root_to_parent, opts('Up'))
+        vim.keymap.set('n', 'j', api.fs.create, opts('Create'))
+        -- vim.keymap.set('n', 'bd', api.marks.bulk.delete, opts('Delete Bookmarked'))
+        -- vim.keymap.set('n', 'bt', api.marks.bulk.trash, opts('Trash Bookmarked'))
+        -- vim.keymap.set('n', 'bmv', api.marks.bulk.move, opts('Move Bookmarked'))
+        vim.keymap.set('n', 'B', api.tree.toggle_no_buffer_filter, opts('Toggle Filter: No Buffer'))
+        vim.keymap.set('n', 'c', api.fs.copy.node, opts('Copy'))
+        vim.keymap.set('n', 'C', api.tree.toggle_git_clean_filter, opts('Toggle Filter: Git Clean'))
+        vim.keymap.set('n', '[c', api.node.navigate.git.prev, opts('Prev Git'))
+        vim.keymap.set('n', ']c', api.node.navigate.git.next, opts('Next Git'))
+        vim.keymap.set('n', 'd', api.fs.remove, opts('Delete'))
+        vim.keymap.set('n', 'D', api.fs.trash, opts('Trash'))
+        vim.keymap.set('n', 'L', api.tree.expand_all, opts('Expand All'))
+        -- vim.keymap.set('n', '<e', api.fs.rename_basename, opts('Rename: Basename'))
+        -- vim.keymap.set('n', ']e', api.node.navigate.diagnostics.next, opts('Next Diagnostic'))
+        -- vim.keymap.set('n', '[e', api.node.navigate.diagnostics.prev, opts('Prev Diagnostic'))
+        vim.keymap.set('n', 'F', api.live_filter.clear, opts('Clean Filter'))
+        vim.keymap.set('n', 'f', api.live_filter.start, opts('Filter'))
+        vim.keymap.set('n', '?', api.tree.toggle_help, opts('Help'))
+        -- vim.keymap.set('n', 'gy', api.fs.copy.absolute_path, opts('Copy Absolute Path'))
+        -- vim.keymap.set('n', 'H', api.tree.toggle_hidden_filter, opts('Toggle Filter: Dotfiles'))
+        vim.keymap.set('n', 'I', api.tree.toggle_gitignore_filter, opts('Toggle Filter: Git Ignore'))
+        vim.keymap.set('n', 'A', api.node.navigate.sibling.last, opts('Last Sibling'))
+        vim.keymap.set('n', 'E', api.node.navigate.sibling.first, opts('First Sibling'))
+        vim.keymap.set('n', 'm', api.marks.toggle, opts('Toggle Bookmark'))
+        -- vim.keymap.set('n', 'o', api.node.open.edit, opts('Open'))
+        -- vim.keymap.set('n', 'O', api.node.open.no_window_picker, opts('Open: No Window Picker'))
+        vim.keymap.set('n', 'p', api.fs.paste, opts('Paste'))
+        vim.keymap.set('n', 'P', api.node.navigate.parent, opts('Parent Directory'))
+        vim.keymap.set('n', 'q', api.tree.close, opts('Close'))
+        vim.keymap.set('n', 'r', api.fs.rename, opts('Rename'))
+        vim.keymap.set('n', 'R', api.tree.reload, opts('Refresh'))
+        vim.keymap.set('n', 's', api.node.run.system, opts('Run System'))
+        vim.keymap.set('n', 'S', api.tree.search_node, opts('Search'))
+        vim.keymap.set('n', 'U', api.tree.toggle_custom_filter, opts('Toggle Filter: Hidden'))
+        vim.keymap.set('n', 'W', api.tree.collapse_all, opts('Collapse'))
+        vim.keymap.set('n', 'x', api.fs.cut, opts('Cut'))
+        vim.keymap.set('n', 'y', api.fs.copy.filename, opts('Copy Name'))
+        vim.keymap.set('n', 'Y', api.fs.copy.relative_path, opts('Copy Relative Path'))
+        vim.keymap.set('n', '<2-LeftMouse>', api.node.open.edit, opts('Open'))
+        vim.keymap.set('n', '<2-RightMouse>', api.tree.change_root_to_node, opts('CD'))
+      end
+
+      -- local tree_cb = require'nvim-tree.config'.nvim_tree_callback
+      require'nvim-tree'.setup {
+        sort_by = "case_sensitive",
+        view = { adaptive_size = true },
+        filters = { dotfiles = false },
+        renderer = { group_empty = true },
+        git = { ignore = false },
+        on_attach = nvimtree_on_attach
+      }
+      vim.keymap.set('n', '<C-n>', api.tree.toggle, {
+        desc = "nvim-tree: Toggle Tree",
+        noremap = true,
+        silent = true,
+        nowait = true
+      })
+      vim.keymap.set('n', '<leader>j', ':NvimTreeFindFile<CR>', {
+        desc = "nvim-tree: Find File",
+        noremap = true,
+        silent = true,
+        nowait = true
+      })
 
       --------------------------------------------------------------------------------
       -- Telescope
@@ -603,11 +694,12 @@
       viAlias = true;
       vimAlias = true;
       vimdiffAlias = true;
+      defaultEditor = true;
       plugins = [{
         plugin = pkgs.vimPlugins.packer-nvim;
         config = ''
           packadd! packer.nvim
-          lua require'config'
+          lua require('config')
         '';
       }];
     };

@@ -23,6 +23,10 @@ with builtins;
   networking = {
     firewall.enable = true;
     networkmanager.enable = true;
+    extraHosts = "
+      127.0.0.1 remarq
+      87.213.229.227 gigaio2
+    ";
   };
 
   sound.enable = true;
@@ -41,7 +45,7 @@ with builtins;
 
   desktop = {
     enable = true;
-    wallpaper = ./assets/wallpaper.png;
+    wallpaper = ./assets/orcas-2560-1440.jpg;
     hallmack = true;
   };
 
@@ -52,10 +56,12 @@ with builtins;
     git
     htop
     postgresql
+    ripgrep
     unzip
     wget
     xclip
     zip
+    file
   ];
 
   virtualisation.virtualbox.host.enable = true;

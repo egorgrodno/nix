@@ -10,9 +10,10 @@
     efi.canTouchEfiVariables = false;
     grub = {
       enable = true;
+      device = "nodev";
+      useOSProber = true;
       efiSupport = true;
       efiInstallAsRemovable = true;
-      device = "nodev";
     };
   };
 

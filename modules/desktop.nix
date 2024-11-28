@@ -1,10 +1,71 @@
-{ config, lib, pkgs, username, theme, ... }:
+{ config, lib, pkgs, username, homedir, theme, ... }:
 
 with lib;
 
 let
   cfg = config.desktop;
   resetWallpaper = "${pkgs.feh}/bin/feh --no-fehbg --bg-scale ${cfg.wallpaper}";
+  dp = ''
+    xrandr --output DP-1 --primary --auto --output HDMI-1 --off --output eDP-1 --off
+    ${resetWallpaper}
+  '';
+  edp = ''
+    xrandr --output eDP-1 --primary --auto --output HDMI-1 --off --output DP-1 --off
+    ${resetWallpaper}
+  '';
+  hdmi = ''
+    xrandr --output HDMI-1 --primary --auto --output eDP-1 --off --output DP-1 --off
+    ${resetWallpaper}
+  '';
+  autoScreen = ''
+    if [ -n "$(xrandr | rg '^HDMI-1 connected')" ]; then
+      ${hdmi}
+    else
+      ${edp}
+    fi
+  '';
+  i3Restore = "${pkgs.nodejs}/bin/node ${homedir}/Projects/code-vault/packages/restore-i3-workspace/build-current/bin.js";
+  i3Kill = ''
+    DMENU_OUT=$(dmenu -p "Kill:" < /dev/null)
+
+    if [[ -z "$DMENU_OUT" ]]; then
+      notify-send -u low "Nothing to kill"
+      exit 1
+    fi
+
+    PKILL_OUT=$(pkill -e "$DMENU_OUT")
+
+    if [ $? -eq 0 ]; then
+      notify-send -u normal "$PKILL_OUT"
+      exit $?
+    else
+      notify-send -u critical "Kill $DMENU_OUT failed with code $?"
+    fi
+  '';
+  i3Exit = ''
+    USAGE="Usage: i3exit (hibernate|lock|reboot|shutdown)"
+    case "$1" in
+      "hibernate")
+        systemctl hibernate
+        ;;
+      "lock")
+        i3lock
+        ;;
+      "reboot")
+        reboot
+        ;;
+      "suspend")
+        systemctl suspend
+        ;;
+      "shutdown")
+        shutdown now
+        ;;
+      *)
+        echo $USAGE
+        exit 1
+        ;;
+    esac
+  '';
 
 in
 {
@@ -33,7 +94,15 @@ in
 
   config = mkIf cfg.enable {
     environment.systemPackages = with pkgs; [
+      obsidian
       feh
+      (writeShellScriptBin "auto-screen" autoScreen)
+      (writeShellScriptBin "dp" dp)
+      (writeShellScriptBin "edp" edp)
+      (writeShellScriptBin "hdmi" hdmi)
+      (writeShellScriptBin "i3exit" i3Exit)
+      (writeShellScriptBin "i3restore" i3Restore)
+      (writeShellScriptBin "i3kill" i3Kill)
       (writeShellScriptBin "wallpaper-reset" resetWallpaper)
     ];
 
@@ -50,7 +119,10 @@ in
 
       libinput = {
         enable = true;
-        mouse.disableWhileTyping = true;
+        mouse = {
+          accelProfile = "flat";
+          disableWhileTyping = true;
+        };
         touchpad = {
           tapping = false;
           middleEmulation = false;
@@ -73,7 +145,7 @@ in
       };
     };
 
-    fonts.fonts = [
+    fonts.packages = [
       (pkgs.nerdfonts.override { fonts = [ "Inconsolata" ]; })
     ];
 
@@ -96,7 +168,6 @@ in
         pavucontrol
         pcmanfm
         picom
-        postman
         shutter
         simplescreenrecorder
         slack
@@ -106,6 +177,7 @@ in
         vlc
         xorg.xkill
         zoom-us
+        roboto
       ];
 
       home.file.".xinitrc".text = ''
@@ -129,7 +201,7 @@ in
         exec --no-startup-id ${pkgs.picom}/bin/picom -b
         exec --no-startup-id ${pkgs.pasystray}/bin/pasystray
         exec --no-startup-id ${pkgs.networkmanagerapplet}/bin/nm-applet
-        exec --no-startup-id /home/egor/Projects/remarq/serve.sh
+        exec --no-startup-id ${homedir}/Projects/code-vault/packages/remarq-frontend/serve.sh
 
         for_window [title="File Transfer*"] floating enable
         for_window [class="Galculator"] floating enable sticky enable
@@ -141,6 +213,8 @@ in
         for_window [class="Transmission-gtk"] floating enable
         for_window [class="Evince"] floating enable
         for_window [class=".shutter-wrapped"] floating enable sticky enable
+        # Emoji Keyboard chrome extension
+        for_window [class="crx_ipdjnhgkpapgippgcgkfcbpdpcgifncb"] floating enable
 
         set $mod Mod1
 
@@ -213,11 +287,13 @@ in
 
         ${if config.desktop.hallmack then ''
           bindsym $mod+h split h;exec notify-send -u low 'tile horizontally'
+          bindsym $mod+z exec i3restore
         '' else ''
           bindsym $mod+z split h;exec notify-send -u low 'tile horizontally'
+          bindsym $mod+t exec i3restore
         ''}
         bindsym $mod+v split v;exec notify-send -u low 'tile vertically'
-        bindsym $mod+q split toggle
+        bindsym $mod+q exec i3kill
 
         bindsym $mod+f fullscreen toggle
 
@@ -309,16 +385,14 @@ in
           bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
         ''}
 
-        # Set shut down, restart and locking features TODO fix, doesn't work
+        # Set shut down, restart and locking features
         bindsym $mod+0 mode "$mode_system"
-        set $mode_system (l)ock, (e)xit, switch_(u)ser, (s)uspend, (h)ibernate, (r)eboot, (Shift+s)hutdown
+        set $mode_system (l)ock, (h)ibernate, (r)eboot, (s)uspend, (Shift+s)hutdown
         mode "$mode_system" {
-          bindsym l exec --no-startup-id i3exit lock, mode "default"
-          bindsym s exec --no-startup-id i3exit suspend, mode "default"
-          bindsym u exec --no-startup-id i3exit switch_user, mode "default"
-          bindsym e exec --no-startup-id i3exit logout, mode "default"
           bindsym h exec --no-startup-id i3exit hibernate, mode "default"
           bindsym r exec --no-startup-id i3exit reboot, mode "default"
+          bindsym l exec --no-startup-id i3exit lock, mode "default"
+          bindsym s exec --no-startup-id i3exit suspend, mode "default"
           bindsym Shift+s exec --no-startup-id i3exit shutdown, mode "default"
 
           bindsym Return mode "default"
@@ -373,7 +447,7 @@ in
           }
         }
 
-        # hide/unhide i3status bar
+        # Hide/show i3status bar
         bindsym $mod+m bar mode toggle
 
         #                       border                   background               foreground               indicator                child_border
@@ -389,10 +463,10 @@ in
         gaps inner 12
         gaps outer 0
 
-        # Smart gaps (gaps used if only more than one container on the workspace)
+        # Draw gaps if not the only container
         smart_gaps on
 
-        # Smart borders (draw borders around container only if it is not the only container on this workspace)
+        # Draw borders if not the only container
         smart_borders on
       '';
 
