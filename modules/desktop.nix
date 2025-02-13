@@ -24,7 +24,6 @@ let
       ${edp}
     fi
   '';
-  i3Restore = "${pkgs.nodejs}/bin/node ${homedir}/Projects/code-vault/packages/restore-i3-workspace/build-current/bin.js";
   i3Kill = ''
     DMENU_OUT=$(dmenu -p "Kill:" < /dev/null)
 
@@ -67,13 +66,70 @@ let
     esac
   '';
 
+  # i3status configuration file content
+  i3statusConfig = ''
+    general {
+      colors = true
+      color_good = "${theme.green}"
+      color_degraded = "${theme.yellow}"
+      color_bad = "${theme.red}"
+      interval = 5
+    }
+
+    order += "wireless _first_"
+    order += "ethernet _first_"
+    order += "battery all"
+    order += "disk /"
+    order += "load"
+    order += "memory"
+    order += "tztime local"
+
+    wireless _first_ {
+      format_up = " W: %ip (%essid) "
+      format_down = " W: down "
+    }
+
+    ethernet _first_ {
+      format_up = " E: %ip (%speed) "
+      format_down = " E: down "
+    }
+
+    battery all {
+      format = " %status %percentage %remaining "
+      format_down = " No battery "
+    }
+
+    disk "/" {
+      format = " DISK %used / %total "
+    }
+
+    load {
+      format = " CPU %1min "
+    }
+
+    memory {
+      format = " RAM %used / %total "
+      threshold_degraded = "2G"
+      format_degraded = " RAM LEFT < %available "
+    }
+
+    tztime local {
+      format = " %d.%m.%Y %H:%M "
+    }
+  '';
+  notifyVolumeContent = ''
+    VOLUME_RAW=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{ print $2 }')
+    VOLUME=$(echo "$VOLUME_RAW * 100" | ${pkgs.bc}/bin/bc)
+
+    if wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -q "\[MUTED\]"; then
+      notify-send "Volume" "Muted" --urgency low --hint "int:value:$VOLUME" --hint string:synchronous:my_volume
+    else
+      notify-send "Volume" "$VOLUME%" --urgency normal --hint "int:value:$VOLUME" --hint string:synchronous:my_volume
+    fi
+  '';
+
 in
 {
-  imports = [
-    ../pkgs/dmenu.nix
-    ../pkgs/dmenu-history.nix
-  ];
-
   options.desktop = {
     enable = mkOption {
       type = types.bool;
@@ -92,7 +148,14 @@ in
     };
   };
 
+  imports = [
+    ./dmenu.nix
+    ./dmenu-history.nix
+    ./bluetooth.nix
+  ];
+
   config = mkIf cfg.enable {
+
     environment.systemPackages = with pkgs; [
       obsidian
       feh
@@ -101,38 +164,27 @@ in
       (writeShellScriptBin "edp" edp)
       (writeShellScriptBin "hdmi" hdmi)
       (writeShellScriptBin "i3exit" i3Exit)
-      (writeShellScriptBin "i3restore" i3Restore)
       (writeShellScriptBin "i3kill" i3Kill)
       (writeShellScriptBin "wallpaper-reset" resetWallpaper)
+      (writeShellScriptBin "notify-volume" notifyVolumeContent)
     ];
+
+    hardware.graphics.enable = true;
 
     services.xserver = {
       enable = true;
+      videoDrivers = [ "nvidia" ];
+      displayManager.startx.enable = true;
       desktopManager.xterm.enable = false;
       autoRepeatDelay = 200;
       autoRepeatInterval = 30;
-      layout = "us,ru";
-      xkbOptions =
-        if cfg.hallmack
-        then "grp:win_space_toggle"
-        else "grp:win_space_toggle,caps:swapescape";
 
-      libinput = {
-        enable = true;
-        mouse = {
-          accelProfile = "flat";
-          disableWhileTyping = true;
-        };
-        touchpad = {
-          tapping = false;
-          middleEmulation = false;
-          disableWhileTyping = true;
-        };
-      };
-
-      displayManager = {
-        startx.enable = true;
-        defaultSession = "none+i3";
+      xkb = {
+        layout = "us,ru";
+        options =
+          if cfg.hallmack
+          then "grp:win_space_toggle"
+          else "grp:win_space_toggle,caps:swapescape";
       };
 
       windowManager.i3 = {
@@ -145,14 +197,38 @@ in
       };
     };
 
+    services.displayManager.defaultSession = "none+i3";
+
+    services.libinput = {
+      enable = true;
+      mouse = {
+        accelProfile = "flat";
+        disableWhileTyping = true;
+      };
+      touchpad = {
+        tapping = false;
+        middleEmulation = false;
+        disableWhileTyping = true;
+      };
+    };
+
+    security.rtkit.enable = true;
+    services.pipewire = {
+      enable = true;
+      alsa.enable = true;
+      alsa.support32Bit = true;
+      jack.enable = true;
+    };
+
+    services.udisks2.enable = true;
+    services.udisks2.mountOnMedia = true;
+
     fonts.packages = [
-      (pkgs.nerdfonts.override { fonts = [ "Inconsolata" ]; })
+      pkgs.nerd-fonts.inconsolata
     ];
 
     home-manager.users.${username} = {
       home.packages = with pkgs; [
-        bluez
-        bluez-tools
         chromium
         evince
         firefox
@@ -172,13 +248,31 @@ in
         simplescreenrecorder
         slack
         tdesktop
-        transmission-gtk
+        transmission_4-gtk
         viewnior
         vlc
         xorg.xkill
         zoom-us
         roboto
+        discord
       ];
+
+     programs.vifm = {
+        enable = true;
+
+        extraConfig = ''
+          filetype *.pdf,*.jpg,*.jpeg,*.png,*.gif xdg-open %f &
+
+          ${if config.desktop.hallmack then ''
+          nnoremap H L
+          nnoremap L H
+          nnoremap j <nop>
+          nnoremap k <nop>
+          '' else ""}
+        '';
+      };
+
+      home.file.".config/i3status/config".text = i3statusConfig;
 
       home.file.".xinitrc".text = ''
         if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
@@ -196,30 +290,26 @@ in
       '';
 
       xdg.configFile."i3/config".text = ''
+        # Window rules
+        for_window [class=".*"] floating enable
+
+        # To check the class `xprop | grep WM_CLASS`
+        for_window [class="st*"] floating disable
+        for_window [class="chromium*"] floating disable
+        for_window [class="obsidian*"] floating disable
+
+        for_window [class="Galculator"] floating enable sticky enable
+        # for_window [class="^Pcmanfm$"] floating enable resize set 1300 1100
+
         # Autostart applications
-        # exec --no-startup-id ${pkgs.dunst}/bin/dunst
         exec --no-startup-id ${pkgs.picom}/bin/picom -b
         exec --no-startup-id ${pkgs.pasystray}/bin/pasystray
         exec --no-startup-id ${pkgs.networkmanagerapplet}/bin/nm-applet
-        exec --no-startup-id ${homedir}/Projects/code-vault/packages/remarq-frontend/serve.sh
-
-        for_window [title="File Transfer*"] floating enable
-        for_window [class="Galculator"] floating enable sticky enable
-        for_window [class="Pavucontrol"] floating enable
-        for_window [class="Viewnior"] floating enable
-        for_window [class="vlc*"] floating enable
-        for_window [class="^Pcmanfm$"] floating enable resize set 1300 1100
-        for_window [class="SimpleScreenRecorder"] floating enable sticky enable
-        for_window [class="Transmission-gtk"] floating enable
-        for_window [class="Evince"] floating enable
-        for_window [class=".shutter-wrapped"] floating enable sticky enable
-        # Emoji Keyboard chrome extension
-        for_window [class="crx_ipdjnhgkpapgippgcgkfcbpdpcgifncb"] floating enable
 
         set $mod Mod1
 
-        default_border pixel 1
-        default_floating_border pixel 1
+        default_border pixel 3
+        default_floating_border pixel 2
 
         hide_edge_borders none
 
@@ -233,20 +323,20 @@ in
 
         bindsym $mod+d exec "dmenu-history -p ' λ '"
 
-        ${if config.hardware.pulseaudio.enable then ''
-          bindsym XF86AudioMute exec "pactl -- set-sink-mute @DEFAULT_SINK@ toggle && notify-send -u low 'Volume mute toggle'"
-          bindsym XF86AudioLowerVolume exec "pactl -- set-sink-volume @DEFAULT_SINK@ -5% && notify-send -u low 'Volume down'"
-          bindsym XF86AudioRaiseVolume exec "pactl -- set-sink-volume @DEFAULT_SINK@ +5% && notify-send -u low 'Volume up'"
+        ${if config.services.pipewire.enable then ''
+        bindsym XF86AudioMute exec --no-startup-id "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && notify-volume"
+        bindsym XF86AudioLowerVolume exec --no-startup-id "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && notify-volume"
+        bindsym XF86AudioRaiseVolume exec --no-startup-id "wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && notify-volumn"
         '' else ""}
 
         bindsym $mod+F2 exec ${pkgs.galculator}/bin/galculator
         bindsym $mod+F3 exec ${pkgs.pcmanfm}/bin/pcmanfm
-        bindsym $mod+F4 exec ${pkgs.transmission-gtk}/bin/transmission-gtk
+        bindsym $mod+F4 exec ${pkgs.transmission_4-gtk}/bin/transmission-gtk
         bindsym $mod+F5 exec ${pkgs.simplescreenrecorder}/bin/simplescreenrecorder
         bindsym $mod+F6 exec ${pkgs.glances}/bin/glances
         bindsym Print exec --no-startup-id ${pkgs.shutter}/bin/shutter
         bindsym $mod+Ctrl+x --release exec --no-startup-id ${pkgs.xorg.xkill}/bin/xkill
-        bindsym $mod+Ctrl+m exec ${pkgs.pavucontrol}/bin/pavucontrol
+        bindsym $mod+Ctrl+m exec --no-startup-id ${pkgs.pavucontrol}/bin/pavucontrol
 
         ${if config.desktop.hallmack then ''
           bindsym $mod+g focus left
@@ -286,11 +376,9 @@ in
         bindsym $mod+Shift+b move container to workspace back_and_forth; workspace back_and_forth
 
         ${if config.desktop.hallmack then ''
-          bindsym $mod+h split h;exec notify-send -u low 'tile horizontally'
-          bindsym $mod+z exec i3restore
+        bindsym $mod+h split h;exec notify-send -u low 'tile horizontally'
         '' else ''
-          bindsym $mod+z split h;exec notify-send -u low 'tile horizontally'
-          bindsym $mod+t exec i3restore
+        bindsym $mod+z split h;exec notify-send -u low 'tile horizontally'
         ''}
         bindsym $mod+v split v;exec notify-send -u low 'tile vertically'
         bindsym $mod+q exec i3kill
@@ -468,6 +556,8 @@ in
 
         # Draw borders if not the only container
         smart_borders on
+
+        include $XDG_CONFIG_HOME/i3/user-configuration.conf
       '';
 
       xdg = {
@@ -518,7 +608,7 @@ in
         settings = {
           global = {
             notification_limit = 5;
-            font = "${theme.fontFamily} 11";
+            font = "${theme.fontFamily} 12";
             background = theme.background.light;
             foreground = theme.foreground.main;
             width = "(200, 500)";
@@ -530,16 +620,19 @@ in
 
           urgency_low = {
             frame_color = theme.foreground.dark;
+            highlight = theme.blue;
             timeout = 5;
           };
 
           urgency_normal = {
             frame_color = theme.blue;
+            highlight = theme.blue;
             timeout = 15;
           };
 
           urgency_critical = {
             frame_color = theme.red;
+            highlight = theme.red;
             timeout = 0;
           };
         };

@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ config, pkgs, lib, username, ... }:
 
 {
   environment.variables.TERMINAL = "st";
@@ -25,4 +25,10 @@
         ];
       }))
     ];
+
+  home-manager.users.${username} = lib.mkIf config.desktop.enable {
+    home.packages = [
+      (pkgs.writeShellScriptBin "cps" "2>/dev/null 1>/dev/null st -d $PWD & disown")
+    ];
+  };
 }

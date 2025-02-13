@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ pkgs, lib, ... }:
 
 {
   imports = [
@@ -17,11 +17,17 @@
     };
   };
 
+  environment.systemPackages = [ pkgs.postgresql ];
+  services.postgresql = {
+    enable = true;
+    package = pkgs.postgresql_14;
+    dataDir = "/data/postgresql";
+  };
+
   powerManagement.cpuFreqGovernor = "ondemand";
 
   networking.hostName = "thinkpad";
-  networking.interfaces.enp4s0.useDHCP = true;
-  networking.interfaces.wlp5s0.useDHCP = true;
+  networking.useDHCP = lib.mkDefault true;
 
   system.stateVersion = "21.11";
 }

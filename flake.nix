@@ -16,46 +16,54 @@
         inherit system;
         config.allowUnfree = true;
       };
-    in
-    {
-      nixosConfigurations = {
-        thinkpad = lib.nixosSystem {
-          inherit system pkgs;
-
-          specialArgs = {
-            username = "egor";
-            homedir = "/home/egor";
-            theme = {
-              fontFamily = "Inconsolata Nerd Font Mono";
-              background = {
-                main = "#282C34";
-                light = "#30343C";
-              };
-              foreground = {
-                main = "#DCDFE4";
-                dark = "#434956";
-              };
-              red = "#E06C75";
-              green = "#98C379";
-              yellow = "#E5C07B";
-              blue = "#61AFEF";
-              magenta = "#C678DD";
-              cyan = "#56B6C2";
-            };
+      specialArgs = {
+        username = "egor";
+        homedir = "/home/egor";
+        theme = {
+          fontFamily = "Inconsolata Nerd Font Mono";
+          background = {
+            main = "#282C34";
+            light = "#30343C";
           };
+          foreground = {
+            main = "#DCDFE4";
+            dark = "#434956";
+          };
+          red = "#E06C75";
+          green = "#98C379";
+          yellow = "#E5C07B";
+          blue = "#61AFEF";
+          magenta = "#C678DD";
+          cyan = "#56B6C2";
+        };
+      };
+      commonModules = [
+        home-manager.nixosModules.home-manager
 
-          modules = [
-            home-manager.nixosModules.home-manager
+        ({ pkgs, ... }: {
+          nix.package = pkgs.nixVersions.stable;
+          nix.registry.nixpkgs.flake = nixpkgs;
+          nix.extraOptions = "experimental-features = nix-command flakes";
 
-            ({ pkgs, ... }: {
-              nix.package = pkgs.nixFlakes;
-              nix.registry.nixpkgs.flake = nixpkgs;
-              nix.extraOptions = "experimental-features = nix-command flakes";
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+        })
 
-              home-manager.useGlobalPkgs = true;
-              home-manager.useUserPackages = true;
-            })
+      ];
+    in {
+      nixosConfigurations = {
+        fractal = lib.nixosSystem {
+          inherit system pkgs specialArgs;
 
+          modules = commonModules ++ [
+            ./hosts/fractal/configuration.nix
+          ];
+        };
+
+        thinkpad = lib.nixosSystem {
+          inherit system pkgs specialArgs;
+
+          modules = commonModules ++ [
             ./hosts/thinkpad/configuration.nix
           ];
         };

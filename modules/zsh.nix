@@ -5,8 +5,12 @@
     variables.KEYTIMEOUT = "1";
     pathsToLink = [ "/share/zsh" ];
   };
-programs.zsh.enable = true;
+
+  programs.zsh.enable = true;
+  programs.zsh.autosuggestions.enable = true;
+
   home-manager.users.${username} = {
+
     programs.zsh =
       let
         options = [
@@ -20,7 +24,6 @@ programs.zsh.enable = true;
       in {
         enable = true;
         enableCompletion = true;
-        enableAutosuggestions = true;
         syntaxHighlighting.enable = true;
         dotDir = ".config/zsh";
         defaultKeymap = "viins";

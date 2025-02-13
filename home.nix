@@ -4,14 +4,17 @@ with builtins;
 
 {
   imports = [
+    ./modules/git.nix
+    ./modules/zsh.nix
+    ./modules/less.nix
+    ./modules/nixtools.nix
+    ./modules/ripgrep.nix
+    ./modules/devtools.nix
+    ./modules/extools.nix
+    ./modules/neovim
+
     ./modules/desktop.nix
-    ./pkgs/git.nix
-    ./pkgs/less.nix
-    ./pkgs/neovim
-    ./pkgs/ripgrep.nix
-    ./pkgs/shell-scripts.nix
-    ./pkgs/st
-    ./pkgs/zsh.nix
+    ./modules/st
   ];
 
   time.timeZone = "Europe/Amsterdam";
@@ -23,24 +26,15 @@ with builtins;
   networking = {
     firewall.enable = true;
     networkmanager.enable = true;
-    extraHosts = "
-      127.0.0.1 remarq
-      87.213.229.227 gigaio2
-    ";
-  };
-
-  sound.enable = true;
-  hardware.bluetooth.enable = true;
-  hardware.pulseaudio = {
-    enable = true;
-    package = pkgs.pulseaudioFull;
+    # extraHosts = ''
+    # '';
   };
 
   users.users.${username} = {
     isNormalUser = true;
     home = homedir;
     shell = pkgs.zsh;
-    extraGroups = [ "wheel" "networkmanager" "audio" "sound" "pulse" ];
+    extraGroups = [ "wheel" "networkmanager" "audio" "sound" "lp" ];
   };
 
   desktop = {
@@ -48,6 +42,7 @@ with builtins;
     wallpaper = ./assets/orcas-2560-1440.jpg;
     hallmack = true;
   };
+  my.bluetooth.enable = true;
 
   environment.systemPackages = with pkgs; [
     dconf
@@ -55,7 +50,6 @@ with builtins;
     gcc
     git
     htop
-    postgresql
     ripgrep
     unzip
     wget
@@ -66,12 +60,6 @@ with builtins;
 
   virtualisation.virtualbox.host.enable = true;
   users.extraGroups.vboxusers.members = [ username ];
-
-  services.postgresql = {
-    enable = true;
-    package = pkgs.postgresql_14;
-    dataDir = "/data/postgresql";
-  };
 
   services.dbus.packages = [ pkgs.dconf ];
 
