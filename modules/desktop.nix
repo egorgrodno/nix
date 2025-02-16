@@ -1,4 +1,4 @@
-{ config, lib, pkgs, username, homedir, theme, ... }:
+{ config, lib, pkgs, username, theme, ... }:
 
 with lib;
 
@@ -228,6 +228,39 @@ in
     services.udisks2.enable = true;
     services.udisks2.mountOnMedia = true;
 
+    xdg.mime.enable = true;
+    xdg.mime.defaultApplications = {
+      "application/pdf" = "org.gnome.Evince.desktop";
+      "video/x-matroska" = "vlc.desktop";
+      "video/mp4" = "vlc.desktop";
+      "video/webm" = "vlc.desktop";
+      "video/ogg" = "vlc.desktop";
+      "video/quicktime" = "vlc.desktop";
+      "video/x-msvideo" = "vlc.desktop";
+      "image/png" = "viewnior.desktop";
+      "image/gif" = "viewnior.desktop";
+      "image/heic" = "viewnior.desktop";
+      "image/jpeg" = "viewnior.desktop";
+      "image/svg+xml" = "viewnior.desktop";
+      "image/webp" = "viewnior.desktop";
+      "x-scheme-handler/magnet" = "userapp-transmission-gtk-ULULF1.desktop";
+      "x-scheme-handler/postman" = "Postman.desktop";
+    };
+    xdg.mime.addedAssociations = {
+      "video/x-matroska" = "handbrake.desktop";
+      "video/mp4" = "handbrake.desktop";
+      "video/webm" = "handbrake.desktop";
+      "video/ogg" = "handbrake.desktop";
+      "video/quicktime" = "handbrake.desktop";
+      "video/x-msvideo" = "handbrake.desktop";
+      "image/png" = "gimp.desktop";
+      "image/gif" = "gimp.desktop";
+      "image/heic" = "gimp.desktop";
+      "image/jpeg" = "gimp.desktop";
+      "image/svg+xml" = "gimp.desktop";
+      "image/webp" = "gimp.desktop";
+    };
+
     fonts.packages = [
       pkgs.nerd-fonts.inconsolata
     ];
@@ -298,14 +331,6 @@ in
       '';
 
       xdg.configFile."i3/config".text = ''
-        # To check the class `xprop | grep WM_CLASS`
-        for_window [class="*"] floating enable
-        for_window [class=".*"] floating enable
-        for_window [class="^st-*"] floating disable
-        for_window [class="Chromium-browser"] floating disable
-        for_window [class="Galculator"] sticky enable
-        for_window [class="Pcmanfm"] resize set 1300 1100
-
         # Autostart applications
         exec --no-startup-id ${pkgs.picom}/bin/picom -b
         exec --no-startup-id ${pkgs.pasystray}/bin/pasystray
@@ -430,6 +455,17 @@ in
         set $ws8 8
         set $ws9 9
 
+        # check the class `xprop | grep WM_CLASS`
+        for_window [class="*"] floating enable
+        for_window [class=".*"] floating enable
+        for_window [class="^st-*"] floating disable
+        for_window [class="^Chromium-browser$"] floating disable
+        for_window [class="^Chromium-browser$"] floating disable
+        for_window [class="^Galculator$"] sticky enable
+        for_window [class="^Pcmanfm$"] resize set 1300 1100
+        for_window [class="^Slack$"] floating disable
+        assign [class="^Slack$"] $ws3
+
         # switch to workspace
         bindsym $mod+1 workspace $ws1
         bindsym $mod+2 workspace $ws2
@@ -462,8 +498,6 @@ in
         bindsym $mod+Shift+7 move container to workspace $ws7; workspace $ws7
         bindsym $mod+Shift+8 move container to workspace $ws8; workspace $ws8
         bindsym $mod+Shift+9 move container to workspace $ws9; workspace $ws9
-
-        assign [class="Slack"] $ws3
 
         # reload the configuration file
         bindsym $mod+Shift+c reload
@@ -565,25 +599,6 @@ in
 
         include $XDG_CONFIG_HOME/i3/user-configuration.conf
       '';
-
-      xdg = {
-        enable = true;
-
-        mimeApps =
-          let
-            mkAssociation = app: mimeTypes:
-              listToAttrs (map (mimeType: { name = mimeType; value = app; }) mimeTypes);
-            magnetLink = mkAssociation "userapp-transmission-gtk-ULULF1.desktop" [ "x-scheme-handler/magnet" ];
-            postmanLink = mkAssociation "Postman.desktop" [ "x-scheme-handler/postman" ];
-            pdf = mkAssociation "org.gnome.Evince.desktop" [ "application/pdf" ];
-            image = mkAssociation "viewnior.desktop" [ "image/gif" "image/jpeg" "image/png" "image/webp" "image/heic" ];
-          in
-          {
-            enable = true;
-            defaultApplications = image // pdf // magnetLink // postmanLink;
-            associations.added = magnetLink;
-          };
-      };
 
       dconf = {
         enable = true;
