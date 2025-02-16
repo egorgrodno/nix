@@ -136,6 +136,11 @@ in
       default = false;
     };
 
+    primaryScreen = mkOption {
+      type = types.str;
+      default = "HDMI-0";
+    };
+
     wallpaper = mkOption {
       type = types.path;
       description = "wallpaper path";
@@ -255,6 +260,9 @@ in
         zoom-us
         roboto
         discord
+        handbrake
+        upscayl
+        libreoffice
       ];
 
      programs.vifm = {
@@ -290,16 +298,13 @@ in
       '';
 
       xdg.configFile."i3/config".text = ''
-        # Window rules
-        for_window [class=".*"] floating enable
-
         # To check the class `xprop | grep WM_CLASS`
-        for_window [class="st*"] floating disable
-        for_window [class="chromium*"] floating disable
-        for_window [class="obsidian*"] floating disable
-
-        for_window [class="Galculator"] floating enable sticky enable
-        # for_window [class="^Pcmanfm$"] floating enable resize set 1300 1100
+        for_window [class="*"] floating enable
+        for_window [class=".*"] floating enable
+        for_window [class="^st-*"] floating disable
+        for_window [class="Chromium-browser"] floating disable
+        for_window [class="Galculator"] sticky enable
+        for_window [class="Pcmanfm"] resize set 1300 1100
 
         # Autostart applications
         exec --no-startup-id ${pkgs.picom}/bin/picom -b
@@ -515,6 +520,7 @@ in
         bar {
           i3bar_command i3bar
           status_command i3status
+          tray_output ${cfg.primaryScreen}
           position bottom
 
           bindsym button4 nop

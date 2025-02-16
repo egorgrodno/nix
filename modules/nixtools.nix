@@ -1,6 +1,8 @@
 { pkgs, username, ... }:
 
 {
+  environment.systemPackages = [ pkgs.pciutils ];
+
   home-manager.users.${username} = {
     home.packages = [
       (pkgs.writeShellScriptBin "nxe" "st -d /etc/nixos -e vim home.nix")
