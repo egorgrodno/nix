@@ -57,6 +57,7 @@ with builtins;
     xclip
     zip
     file
+    usbutils
   ];
 
   virtualisation.virtualbox.host.enable = true;
