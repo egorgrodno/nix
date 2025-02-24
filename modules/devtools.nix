@@ -3,6 +3,7 @@
 {
   home-manager.users.${username} = {
     home.packages = [
+      pkgs.jq
       pkgs.nodejs
 
       (pkgs.writeShellScriptBin "chromium-without-cors" ''

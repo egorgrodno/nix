@@ -40,7 +40,7 @@ with builtins;
   desktop = {
     enable = true;
     wallpaper = ./assets/orcas-2560-1440.jpg;
-    primaryScreen = "DP-0";
+    primaryScreen = "HDMI-0";
     hallmack = true;
   };
   my.bluetooth.enable = true;
@@ -58,6 +58,7 @@ with builtins;
     zip
     file
     usbutils
+    netdiscover
   ];
 
   virtualisation.virtualbox.host.enable = true;
