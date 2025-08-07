@@ -66,6 +66,16 @@ with builtins;
 
   services.dbus.packages = [ pkgs.dconf ];
 
+  services.printing.enable = true;
+  services.printing.drivers = [
+    pkgs.brlaser
+  ];
+  services.avahi = {
+    enable = true;
+    nssmdns = true;
+    openFirewall = true;
+  };
+
   home-manager.users.${username} = {
     programs.home-manager.enable = true;
 
