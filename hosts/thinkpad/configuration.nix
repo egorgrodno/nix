@@ -3,7 +3,6 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../../home.nix
   ];
 
   boot.loader = {
@@ -18,6 +17,7 @@
   };
 
   environment.systemPackages = [ pkgs.postgresql ];
+
   services.postgresql = {
     enable = true;
     package = pkgs.postgresql_14;

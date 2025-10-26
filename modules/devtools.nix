@@ -1,27 +1,51 @@
-{ pkgs, username, ... }:
+{ config, pkgs, username, ... }:
 
-{
+with pkgs;
+
+let
+  desktopPackages = [
+    (writeShellScriptBin "chromium-without-cors" ''
+      chromium --disable-web-security --user-data-dir=.config/chromium-without-cors
+    '')
+  ];
+  systemPackages = [
+    wget
+    htop
+    zip
+    unzip
+    file
+  ];
+
+in {
+  environment.systemPackages = if config.base.isNixosSystem
+    then systemPackages
+    else [];
+
   home-manager.users.${username} = {
-    home.packages = [
-      pkgs.jq
-      pkgs.nodejs
+    home.packages =
+      [
+        fd
+        jq
+        nodejs
+        gcc
+        openssh
+        xclip
 
-      (pkgs.writeShellScriptBin "chromium-without-cors" ''
-        chromium --disable-web-security --user-data-dir=.config/chromium-without-cors
-      '')
+        (writeShellScriptBin "showsource" "cat $(which $1)")
 
-      (pkgs.writeShellScriptBin "docker-clean" ''
-        docker-clean-containers; docker-clean-images
-      '')
+        (writeShellScriptBin "docker-clean" ''
+          docker-clean-containers; docker-clean-images
+        '')
 
-      (pkgs.writeShellScriptBin "docker-clean-containers" ''
-        docker rm -vf $(docker ps -aq)
-      '')
+        (writeShellScriptBin "docker-clean-containers" ''
+          docker rm -vf $(docker ps -aq)
+        '')
 
-      (pkgs.writeShellScriptBin "docker-clean-images" ''
-        docker rmi -f $(docker images -aq)
-      '')
-    ];
-
+        (writeShellScriptBin "docker-clean-images" ''
+          docker rmi -f $(docker images -aq)
+        '')
+      ]
+      ++ (if config.base.isDesktop then desktopPackages else [])
+      ++ (if !config.base.isNixosSystem then systemPackages else []);
   };
 }

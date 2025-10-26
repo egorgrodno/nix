@@ -78,7 +78,7 @@ vim.opt.wildignore = { '*/tmp/*', '*.so', '*.swp', '*.zip', '*.svg', '*.png', '*
 
 local kmapopts = { silent = true }
 
-${if config.desktop.hallmack then ''
+${if config.base.keyboard.layout == "hallmack" then ''
 vim.keymap.set('n', '<leader>h', ':set hlsearch!<CR>', { noremap = true })
 '' else ''
 vim.keymap.set('n', '<F3>', ':set hlsearch!<CR>', { noremap = true })
@@ -92,7 +92,7 @@ vim.keymap.set('n', '<C-w>', ':bp|bd #<CR>', kmapopts)
 vim.keymap.del('n', '<C-w><C-D>')
 vim.keymap.del('n', '<C-w>d')
 
-${if config.desktop.hallmack then ''
+${if config.base.keyboard.layout == "hallmack" then ''
 vim.keymap.set('n', '<C-g>', ':bp<CR>', kmapopts)
 vim.keymap.set('n', '<C-o>', ':bn<CR>', kmapopts)
 '' else ''
@@ -100,7 +100,7 @@ vim.keymap.set('n', '<C-h>', ':bp<CR>', kmapopts)
 vim.keymap.set('n', '<C-l>', ':bn<CR>', kmapopts)
 ''}
 
-${if config.desktop.hallmack then ''
+${if config.base.keyboard.layout == "hallmack" then ''
 vim.keymap.set('n', '<C-A-e>', ':wincmd k<CR>', kmapopts)
 vim.keymap.set('n', '<C-A-a>', ':wincmd j<CR>', kmapopts)
 vim.keymap.set('n', '<C-A-g>', ':wincmd h<CR>', kmapopts)
@@ -112,7 +112,7 @@ vim.keymap.set('n', '<C-A-h>', ':wincmd h<CR>', kmapopts)
 vim.keymap.set('n', '<C-A-l>', ':wincmd l<CR>', kmapopts)
 ''}
 
-${if config.desktop.hallmack then ''
+${if config.base.keyboard.layout == "hallmack" then ''
 -- swap h g
 vim.keymap.set({ 'n', 'x', 'o' }, 'g', 'h', kmapopts)
 vim.keymap.set({ 'n', 'x', 'o' }, 'G', 'H', kmapopts)
@@ -141,8 +141,13 @@ vim.keymap.set('v', '<leader>s', 'o', kmapopts)
 vim.keymap.set('v', '<leader>S', 'O', kmapopts)
 '' else ""}
 
+${if config.base.keyboard.layout == "hallmack" then ''
 vim.keymap.set('v', 'A', ":m '>+1<CR>gv=gv")
 vim.keymap.set('v', 'E', ":m '<-2<CR>gv=gv")
+'' else ''
+vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv")
+vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv")
+''}
 vim.keymap.set('n', '<C-d>', '<C-d>zz')
 vim.keymap.set('n', '<C-u>', '<C-u>zz')
 vim.keymap.set('x', '<leader>p', '"_dP')
@@ -158,7 +163,7 @@ local lsp_on_attach = function(client, bufnr)
   -- see `:help vim.lsp.*` for documentation on any of the below functions
   local bufopts = { noremap = true, silent = true, buffer = bufnr }
 
-  ${if config.desktop.hallmack then ''
+  ${if config.base.keyboard.layout == "hallmack" then ''
   vim.keymap.set('n', '<C-a>', vim.diagnostic.goto_next,    bufopts)
   vim.keymap.set('n', '<C-e>', vim.diagnostic.goto_prev,    bufopts)
   vim.keymap.set('n', 'E',     vim.lsp.buf.hover,           bufopts)
@@ -178,7 +183,7 @@ local lsp_on_attach = function(client, bufnr)
   vim.keymap.set('n', '<leader>r', vim.lsp.buf.rename,          bufopts)
   vim.keymap.set('n', '<leader>a', vim.lsp.buf.code_action,     bufopts)
   vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float,   bufopts)
-  vim.keymap.set('n', '<leader>f', vim.lsp.buf.format,      bufopts)
+  vim.keymap.set('n', '<leader>f', vim.lsp.buf.format,          bufopts)
   vim.keymap.set('n', '<leader>l', vim.diagnostic.setloclist,   bufopts)
 end
 
@@ -258,8 +263,9 @@ cmp.setup.cmdline(':', {
   })
 })
 
+-- https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md
 local nvim_lsp = require('lspconfig')
-local lsp_servers = { 'bashls', 'eslint', 'hls', 'nil_ls', 'rust_analyzer' }
+local lsp_servers = { 'bashls', 'eslint', 'hls', 'nil_ls', 'rust_analyzer', 'arduino_language_server' }
 local lsp_capabilities = require'cmp_nvim_lsp'.default_capabilities()
 local lsp_flags = {
   debounce_text_changes = 15
@@ -349,19 +355,25 @@ require'nvim-treesitter.configs'.setup {
 -- Folding (uses TreeSitter)
 --------------------------------------------------------------------------------
 
-vim.opt.foldmethod = "expr"
-vim.opt.foldexpr = "nvim_treesitter#foldexpr()"
+vim.opt.foldmethod = 'expr'
+vim.opt.foldexpr = 'nvim_treesitter#foldexpr()'
 vim.opt.foldlevel = 99         -- Start with folds open but manageable
 vim.opt.foldlevelstart = 99    -- Prevents mass collapsing on first fold
 
-vim.api.nvim_create_autocmd("BufWinLeave", {
-  pattern = "*",
-  command = "silent! mkview"
+--------------------------------------------------------------------------------
+-- View peristance
+--------------------------------------------------------------------------------
+
+vim.opt.viewoptions:remove('curdir') -- Omit current working directory
+
+vim.api.nvim_create_autocmd('BufWinLeave', {
+  pattern = '*',
+  command = 'silent! mkview'
 })
 
-vim.api.nvim_create_autocmd("BufWinEnter", {
-  pattern = "*",
-  command = "silent! loadview"
+vim.api.nvim_create_autocmd('BufWinEnter', {
+  pattern = '*',
+  command = 'silent! loadview'
 })
 
 --------------------------------------------------------------------------------
@@ -407,7 +419,7 @@ require('gitsigns').setup {
       vim.keymap.set(mode, l, r, opts)
     end
 
-    ${if config.desktop.hallmack then ''
+    ${if config.base.keyboard.layout == "hallmack" then ''
       local hunk_mapping_next = ',a'
       local hunk_mapping_prev = ',e'
     '' else ''
@@ -537,7 +549,11 @@ local function nvimtree_on_attach(bufnr)
   vim.keymap.set('n', '<', api.node.navigate.sibling.prev, opts('Previous Sibling'))
   vim.keymap.set('n', '.', api.node.run.cmd, opts('Run Command'))
   vim.keymap.set('n', '-', api.tree.change_root_to_parent, opts('Up'))
+  ${if config.base.keyboard.layout == "hallmack" then ''
   vim.keymap.set('n', 'j', api.fs.create, opts('Create'))
+  '' else ''
+  vim.keymap.set('n', 'o', api.fs.create, opts('Create'))
+  ''}
   -- vim.keymap.set('n', 'bd', api.marks.bulk.delete, opts('Delete Bookmarked'))
   -- vim.keymap.set('n', 'bt', api.marks.bulk.trash, opts('Trash Bookmarked'))
   -- vim.keymap.set('n', 'bmv', api.marks.bulk.move, opts('Move Bookmarked'))
@@ -604,12 +620,12 @@ vim.keymap.set('n', '<leader>j', ':NvimTreeFindFile<CR>', {
 -- Telescope
 --------------------------------------------------------------------------------
 
-require'telescope'.setup {
+require('telescope').setup {
   defaults = {
-    file_ignore_patterns = { 'node_modules' },
+    file_ignore_patterns = { 'node_modules', 'build', 'dist' },
     borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },
     mappings = {
-      ${if config.desktop.hallmack then ''
+      ${if config.base.keyboard.layout == "hallmack" then ''
         n = {
           ['j'] = false,
           ['k'] = false,
@@ -633,13 +649,16 @@ require'telescope'.setup {
   }
 }
 
-require'telescope'.load_extension'fzf'
+require('telescope').load_extension('fzf')
 
-vim.keymap.set('n', 'tf', ':Telescope find_files<cr>', kmapopts)
-vim.keymap.set('n', 'tb', ':Telescope buffers<cr>', kmapopts)
-vim.keymap.set('n', 'tt', ':Telescope git_files<cr>', kmapopts)
-vim.keymap.set('n', 'tg', ':Telescope live_grep<cr>', kmapopts)
-vim.keymap.set('n', 'ts', ':Telescope grep_string<cr>', kmapopts)
+local tls_builtin = require('telescope.builtin')
+
+vim.keymap.set('n', 'tf', tls_builtin.find_files, { desc = 'Telescope find files' })
+vim.keymap.set('n', 'tt', tls_builtin.git_files, { desc = 'Telescope find git files' })
+vim.keymap.set('n', 'tg', tls_builtin.live_grep, { desc = 'Telescope live grep' })
+vim.keymap.set('n', 'ts', tls_builtin.grep_string, { desc = 'Telescope grep string under cursor' })
+vim.keymap.set('n', 'tb', tls_builtin.buffers, { desc = 'Telescope buffers' })
+vim.keymap.set('n', 'th', tls_builtin.help_tags, { desc = 'Telescope help tags' })
 
 --------------------------------------------------------------------------------
 -- Comment
@@ -652,7 +671,7 @@ vim.keymap.del('n', 'gc')
 vim.keymap.del('n', 'gcc')
 vim.keymap.del('n', 'gx')
 
-${if config.desktop.hallmack then ''
+${if config.base.keyboard.layout == "hallmack" then ''
 require'Comment'.setup {
   toggler = {
     line = 'hcc',

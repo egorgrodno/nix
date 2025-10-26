@@ -12,6 +12,7 @@
       rustc
       haskell.compiler.ghc96
       haskellPackages.haskell-language-server
+      arduino-language-server
     ];
 
     xdg.configFile."nvim/snippets/all.lua".source = ./snippets.lua;

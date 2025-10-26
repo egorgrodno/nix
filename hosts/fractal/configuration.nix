@@ -3,7 +3,6 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../../home.nix
   ];
 
   # Use the systemd-boot EFI boot loader.
@@ -14,7 +13,7 @@
   };
   boot.loader.grub = {
     enable = true;
-    devices = [ "nodev" ];
+    device = "nodev";
     efiSupport = true;
     useOSProber = true;
   };
@@ -25,7 +24,7 @@
   # Enables DHCP on each ethernet and wireless interface
   networking.useDHCP = lib.mkDefault true;
 
-  networking.firewall.enable = true;
+  # SSH server
   services.openssh.enable = true;
   services.openssh.settings.PasswordAuthentication = false;
 

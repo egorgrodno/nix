@@ -37,35 +37,59 @@
           cyan = "#56B6C2";
         };
       };
-      commonModules = [
-        home-manager.nixosModules.home-manager
-
+      nixosConfigurationModules = [
         ({ pkgs, ... }: {
           nix.package = pkgs.nixVersions.stable;
           nix.registry.nixpkgs.flake = nixpkgs;
           nix.extraOptions = "experimental-features = nix-command flakes";
+        })
+      ];
+      homeConfigurationModules = [
+        home-manager.nixosModules.home-manager
 
+        ({ pkgs, ... }: {
           home-manager.useGlobalPkgs = true;
           home-manager.useUserPackages = true;
         })
 
+        ./home.nix
       ];
+
     in {
+      homeConfigurations = {
+        devtools = home-manager.lib.homeManagerConfiguration {
+          modules =
+            homeConfigurationModules
+            ++ [
+              ./roles/role-headless-config.nix
+              ./roles/role-devtools.nix
+            ];
+        };
+      };
+
       nixosConfigurations = {
         fractal = lib.nixosSystem {
           inherit system pkgs specialArgs;
 
-          modules = commonModules ++ [
-            ./hosts/fractal/configuration.nix
-          ];
+          modules =
+            nixosConfigurationModules
+            ++ homeConfigurationModules
+            ++ [
+              ./hosts/fractal/configuration.nix
+              ./roles/role-desktop-config.nix
+            ];
         };
 
         thinkpad = lib.nixosSystem {
           inherit system pkgs specialArgs;
 
-          modules = commonModules ++ [
-            ./hosts/thinkpad/configuration.nix
-          ];
+          modules =
+            nixosConfigurationModules
+            ++ homeConfigurationModules
+            ++ [
+              ./hosts/thinkpad/configuration.nix
+              ./roles/role-desktop-config.nix
+            ];
         };
       };
     };

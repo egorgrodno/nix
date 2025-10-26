@@ -1,10 +1,10 @@
-{ config, pkgs, username, theme, ... }:
+{ config, username, ... }:
 
 {
   home-manager.users.${username} = {
     programs.less = {
       enable = true;
-      keys = if config.desktop.hallmack then ''
+      keys = if config.base.keyboard.layout == "hallmack" then ''
         e back-line
         E back-line-force
         a forw-line

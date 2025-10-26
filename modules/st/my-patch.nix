@@ -1,3 +1,6 @@
+{ fontFamily, fontSize, ... }:
+
+''
 diff --git a/config.def.h b/config.def.h
 index b983345..ecf1b76 100644
 --- a/config.def.h
@@ -7,7 +10,7 @@ index b983345..ecf1b76 100644
   * font: see http://freedesktop.org/software/fontconfig/fontconfig-user.html
   */
 -static char *font = "Liberation Mono:pixelsize=12:antialias=true:autohint=true";
-+static char *font = "Inconsolata Nerd Font Mono:pixelsize=18:antialias=true:autohint=true";
++static char *font = "${fontFamily}:pixelsize=${toString(fontSize)}:antialias=true:autohint=true";
  static int borderpx = 2;
  
  /*
@@ -95,3 +98,4 @@ index b983345..ecf1b76 100644
  };
  
  /*
+''
