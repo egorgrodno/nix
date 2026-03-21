@@ -1,4 +1,4 @@
-{ username, ... }:
+{ users, ... }:
 
 {
   # Leave the hardware virtualization extensions free for VirtualBox to use
@@ -6,5 +6,5 @@
 
   virtualisation.virtualbox.host.enable = true;
 
-  users.extraGroups.vboxusers.members = [ username ];
+  users.extraGroups.vboxusers.members = map (u: u.name) users;
 }

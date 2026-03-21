@@ -1,4 +1,4 @@
-{ pkgs, username, homedir, ... }:
+{ pkgs, users, ... }:
 
 {
   imports = [
@@ -9,28 +9,32 @@
     ./role-nextcloud-client.nix
     ./role-print.nix
     ./role-vm-host.nix
-    ../modules/desktop
+    ../modules/desktop-x11
   ];
 
-  base.isNixosSystem = true;
-  base.isDesktop = true;
-  base.keyboard.layout = "qwerty";
-  base.keyboard.swapCapsEscape = true;
+  base = {
+    isNixosSystem = true;
+    isDesktop = true;
+    keyboard.layout = "hallmack";
+  };
 
   desktop = {
     enable = true;
+    primaryScreen = "DP-0";
     wallpaper = ../assets/orcas-2560-1440.jpg;
-    primaryScreen = "HDMI-0";
   };
 
   security.sudo.wheelNeedsPassword = false;
 
-  users.users.${username} = {
-    isNormalUser = true;
-    home = homedir;
-    shell = pkgs.zsh;
-    extraGroups = [ "wheel" "networkmanager" "audio" "sound" "lp" ];
-  };
+  users.users = builtins.listToAttrs (map (u: {
+    name = u.name;
+    value = {
+      isNormalUser = true;
+      home = u.homedir;
+      shell = pkgs.zsh;
+      extraGroups = [ "wheel" "networkmanager" "audio" "sound" "lp" ];
+    };
+  }) users);
 
   environment.systemPackages = with pkgs; [
     netdiscover

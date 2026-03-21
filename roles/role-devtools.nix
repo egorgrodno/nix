@@ -2,12 +2,12 @@
 
 {
   imports = [
-    ../modules/git.nix
-    ../modules/less.nix
+    ../modules/git
+    ../modules/less
     ../modules/neovim
-    ../modules/devtools.nix
-    ../modules/ripgrep.nix
-    ../modules/nixtools.nix
-    ../modules/extools.nix
+    ../modules/devtools
+    ../modules/ripgrep
+    ../modules/nixtools
+    ../modules/extools
   ];
 }

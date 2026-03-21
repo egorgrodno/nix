@@ -1,4 +1,4 @@
-{ config, lib, pkgs, username, theme, ... }:
+{ config, lib, pkgs, users, theme, ... }:
 
 with lib;
 
@@ -80,12 +80,14 @@ let
     fi
   '';
 
-in
-{
+in {
   options.desktop = {
-    enable = mkOption {
+    enable = mkEnableOption "X11 i3 desktop environment";
+
+    i3.importUserConfiguration = mkOption {
       type = types.bool;
       default = false;
+      description = "Whether to import user configuration file 'user-configuration.conf'";
     };
 
     primaryScreen = mkOption {
@@ -101,7 +103,7 @@ in
 
   imports = [
     ../dmenu.nix
-    ../bluetooth.nix
+    ../bluetooth
     ../st
     ../zsh
   ];
@@ -110,8 +112,8 @@ in
     my.bluetooth.enable = true;
     dmenu.enable = true;
     st.enable = true;
-    st.fontFamily = theme.fontFamily;
-    st.fontSize = 32;
+    st.fontFamily = theme.fontMono;
+    st.fontSize = 20;
     zsh.enable = true;
 
     environment.systemPackages = with pkgs; [
@@ -181,6 +183,7 @@ in
 
     services.udisks2.enable = true;
     services.udisks2.mountOnMedia = true;
+    services.gvfs.enable = true;
 
     xdg.mime.enable = true;
     xdg.mime.defaultApplications = {
@@ -223,7 +226,9 @@ in
     services.gnome.gnome-keyring.enable = true;
     security.pam.services.login.enableGnomeKeyring = true;
 
-    home-manager.users.${username} = {
+    home-manager.users = builtins.listToAttrs (map (u: {
+      name = u.name;
+      value = {
       home.packages = with pkgs; [
         chromium
         evince
@@ -242,7 +247,6 @@ in
         picom
         shutter
         simplescreenrecorder
-        slack
         tdesktop
         transmission_4-gtk
         viewnior
@@ -293,6 +297,7 @@ in
 
       xdg.configFile."i3/config".text = import ./i3-config.nix {
         inherit config pkgs theme;
+        homedir = u.homedir;
         primaryScreen = cfg.primaryScreen;
       };
 
@@ -314,6 +319,8 @@ in
       };
 
       home.pointerCursor = {
+        # gtk.enable = true;
+        # x11.enable = true;
         x11.enable = true;
         name = "Numix-Cursor";
         package = pkgs.numix-cursor-theme;
@@ -325,7 +332,7 @@ in
         settings = {
           global = {
             notification_limit = 5;
-            font = "${theme.fontFamily} 12";
+            font = "${theme.fontMono} 12";
             background = theme.background.light;
             foreground = theme.foreground.main;
             width = "(200, 500)";
@@ -354,6 +361,7 @@ in
           };
         };
       };
-    };
+      };
+    }) users);
   };
 }

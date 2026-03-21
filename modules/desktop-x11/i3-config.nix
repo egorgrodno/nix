@@ -1,4 +1,4 @@
-{ config, pkgs, theme, primaryScreen }:
+{ config, pkgs, theme, homedir, primaryScreen }:
 
 ''
 # Autostart applications
@@ -13,7 +13,7 @@ default_floating_border pixel 2
 
 hide_edge_borders none
 
-font xft:${theme.fontFamily} 13
+font xft:${theme.fontMono} 13
 
 # Disable for blender
 floating_modifier $mod
@@ -268,5 +268,7 @@ smart_gaps on
 # Draw borders if not the only container
 smart_borders on
 
-include $XDG_CONFIG_HOME/i3/user-configuration.conf
+${if config.desktop.i3.importUserConfiguration then ''
+include ${homedir}/.config/i3/user-configuration.conf
+'' else ""}
 ''

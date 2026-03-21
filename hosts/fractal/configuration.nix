@@ -18,6 +18,9 @@
     useOSProber = true;
   };
 
+  # Suppress kernel info/debug messages from printing to TTY (avoids corrupting TUI greeters)
+  boot.kernelParams = [ "loglevel=3" ];
+
   time.hardwareClockInLocalTime = true;
 
   networking.hostName = "fractal";

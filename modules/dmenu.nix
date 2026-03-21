@@ -1,4 +1,4 @@
-{ config, lib, pkgs, username, theme, ... }:
+{ config, lib, pkgs, users, theme, ... }:
 
 with lib;
 
@@ -13,21 +13,24 @@ in {
   options.dmenu.enable = mkEnableOption "dmenu";
 
   config = mkIf cfg.enable {
-    home-manager.users.${username} = {
-      home.packages = [
-        (pkgs.writeScriptBin "dmenu" ''
-          ${pkgs.dmenu}/bin/dmenu -nf '${theme.foreground.main}' -nb '${theme.background.light}' -sb '${theme.yellow}' -sf '${theme.background.main}' -fn '${theme.fontFamily}-13' "$@"
-        '')
+    home-manager.users = builtins.listToAttrs (map (u: {
+      name = u.name;
+      value = {
+        home.packages = [
+          (pkgs.writeScriptBin "dmenu" ''
+            ${pkgs.dmenu}/bin/dmenu -nf '${theme.foreground.main}' -nb '${theme.background.light}' -sb '${theme.yellow}' -sf '${theme.background.main}' -fn '${theme.fontMono}-13' "$@"
+          '')
 
-        (pkgs.writeScriptBin "dmenu-history" (readFile dmenuHistory))
+          (pkgs.writeScriptBin "dmenu-history" (readFile dmenuHistory))
 
-        (pkgs.writeScriptBin "dmenu-path" ''
-          cachedir="''${XDG_CACHE_HOME:-"$HOME/.cache"}"
-          cache="$cachedir/dmenu_run"
+          (pkgs.writeScriptBin "dmenu-path" ''
+            cachedir="''${XDG_CACHE_HOME:-"$HOME/.cache"}"
+            cache="$cachedir/dmenu_run"
 
-          ls -lL $(echo "$PATH" | tr : ' ') 2> /dev/null | awk '$1 ~ /^[^d].*x/ && $NF != "[" { print $NF }' | sort -u > "$cache"
-        '')
-      ];
-    };
+            ls -lL $(echo "$PATH" | tr : ' ') 2> /dev/null | awk '$1 ~ /^[^d].*x/ && $NF != "[" { print $NF }' | sort -u > "$cache"
+          '')
+        ];
+      };
+    }) users);
   };
 }

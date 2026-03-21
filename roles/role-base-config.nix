@@ -46,5 +46,10 @@ in {
         message = "Either 'isDesktop' or 'isHeadless' must be enabled";
       }
     ];
+
+    home-manager.extraSpecialArgs = {
+      keyboardLayout = cfg.keyboard.layout;
+      isDesktop = cfg.isDesktop;
+    };
   };
 }

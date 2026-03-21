@@ -1,13 +1,20 @@
-{ username, homedir, ... }:
+{ users, ... }:
 
-{
-  home-manager.users.${username} = {
-    programs.home-manager.enable = true;
+let
+  mkUserHome = u: {
+    name = u.name;
+    value = {
+      imports = u.homeModules or [];
+      programs.home-manager.enable = true;
 
-    home = {
-      inherit username;
-      homeDirectory = homedir;
-      stateVersion = "22.05";
+      home = {
+        username = u.name;
+        homeDirectory = u.homedir;
+        stateVersion = u.stateVersion;
+      };
     };
   };
+in
+{
+  home-manager.users = builtins.listToAttrs (map mkUserHome users);
 }

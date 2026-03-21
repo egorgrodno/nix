@@ -1,20 +1,13 @@
-{ config, pkgs, username, ... }:
+{ pkgs, config, ... }:
 
 {
-  environment.systemPackages =
-    if config.base.isNixosSystem
-      then [ pkgs.git ]
-      else [];
-
-  home-manager.users.${username} = {
-    programs.git = {
-      enable = true;
-      package = pkgs.gitSVN;
-      diff-so-fancy.enable = true;
-      userName = "Egor Zhyh";
-      userEmail = "egor990095@gmail.com";
-      ignores = [ "*.swp" "*node_modules*" "build" "dist" ];
-      aliases = {
+  programs.git = {
+    enable = true;
+    package = pkgs.gitSVN;
+    includes = [{ path = "${config.xdg.configHome}/git/config.local"; }];
+    ignores = [ "*.swp" "*node_modules*" "build" "dist" ];
+    settings = {
+      alias = {
         co = "checkout";
         cm = "commit";
         cma = "commit --amend --no-edit";
@@ -32,9 +25,12 @@
         pf = "push --force-with-lease";
         ls-conflicts = "diff --name-only --diff-filter=U --relative";
       };
-      extraConfig = {
-        core.autocrlf = false;
-      };
+      core.autocrlf = false;
     };
+  };
+
+  programs.diff-so-fancy = {
+    enable = true;
+    enableGitIntegration = true;
   };
 }

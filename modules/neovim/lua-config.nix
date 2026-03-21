@@ -28,14 +28,8 @@ require'packer'.startup(function(use)
     run = 'nix-shell -p cmake --command "cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release"'
   }
   use {
-    'nvim-treesitter/nvim-treesitter',
-    run = ':TSUpdate'
-  }
-  use {
-    'phaazon/hop.nvim',
-    branch = 'v1.3',
+    'smoka7/hop.nvim',
     config = function()
-      -- see :h hop-config
       require'hop'.setup { keys = 'etovxqpdygfblzhckisuran' }
     end
   }
@@ -88,9 +82,18 @@ vim.keymap.set('n', '<leader>cd', ':cd %:h<CR>', { noremap = true })
 vim.keymap.set('n', '<leader>w', ':w<CR>', { noremap = true })
 vim.keymap.set('n', '<leader><leader>w', ':w!<CR>', { noremap = true })
 
-vim.keymap.set('n', '<C-w>', ':bp|bd #<CR>', kmapopts)
+vim.keymap.set('n', '<C-w>', function()
+  local bufs = vim.fn.getbufinfo({buflisted = 1})
+  if #bufs > 1 then
+    vim.cmd('bp|bd #')
+  else
+    vim.cmd('bd')
+  end
+end, kmapopts)
 vim.keymap.del('n', '<C-w><C-D>')
 vim.keymap.del('n', '<C-w>d')
+vim.keymap.del('x', 'an')
+vim.keymap.del('o', 'an')
 
 ${if config.base.keyboard.layout == "hallmack" then ''
 vim.keymap.set('n', '<C-g>', ':bp<CR>', kmapopts)
@@ -119,6 +122,14 @@ vim.keymap.set({ 'n', 'x', 'o' }, 'G', 'H', kmapopts)
 vim.keymap.set({ 'n', 'x', 'o' }, 'h', 'g', kmapopts)
 vim.keymap.set({ 'n', 'x', 'o' }, 'H', 'G', kmapopts)
 vim.keymap.set({ 'n', 'x', 'o' }, 'hh', 'gg', kmapopts)
+
+-- ftplugins (e.g. markdown) re-add gO after startup; delete it so g (left) has no ambiguity
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = '*',
+  callback = function(ev)
+    pcall(vim.keymap.del, 'n', 'gO', { buffer = ev.buf })
+  end
+})
 
 -- swap j a
 vim.keymap.set({ 'n', 'x', 'o' }, 'a', 'j', kmapopts)
@@ -263,13 +274,15 @@ cmp.setup.cmdline(':', {
   })
 })
 
--- https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md
-local nvim_lsp = require('lspconfig')
-local lsp_servers = { 'bashls', 'eslint', 'hls', 'nil_ls', 'rust_analyzer', 'arduino_language_server' }
-local lsp_capabilities = require'cmp_nvim_lsp'.default_capabilities()
+-- ttps://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md
+local lsp_servers = { 'bashls', 'eslint', 'hls', 'nil_ls', 'rust_analyzer', 'arduino_language_server', 'cssls' }
+
+local lsp_capabilities = require('cmp_nvim_lsp').default_capabilities()
+
 local lsp_flags = {
   debounce_text_changes = 15
 }
+
 local lsp_handlers = {
   ['textDocument/publishDiagnostics'] = vim.lsp.with(
     vim.lsp.diagnostic.on_publish_diagnostics,
@@ -278,17 +291,18 @@ local lsp_handlers = {
 }
 
 for _, lsp in ipairs(lsp_servers) do
-  nvim_lsp[lsp].setup {
+  vim.lsp.config(lsp, {
     on_attach = lsp_on_attach,
     capabilities = lsp_capabilities,
     flags = lsp_flags,
     handlers = lsp_handlers,
-  }
+  })
+  vim.lsp.enable(lsp)
 end
 
 vim.keymap.set('n', '<leader>b', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end)
 
-nvim_lsp.ts_ls.setup {
+vim.lsp.config('ts_ls', {
   on_attach = lsp_on_attach,
   capabilities = lsp_capabilities,
   flags = lsp_flags,
@@ -309,7 +323,7 @@ nvim_lsp.ts_ls.setup {
     },
     javascript = {
       inlayHints = {
-        -- You can set this to 'all' or 'literals' to enable more hints
+        -- Set this to 'all' or 'literals' to enable more hints
         includeInlayParameterNameHints = "none", -- 'none' | 'literals' | 'all'
         includeInlayParameterNameHintsWhenArgumentMatchesName = false,
         includeInlayVariableTypeHints = false,
@@ -321,7 +335,20 @@ nvim_lsp.ts_ls.setup {
       },
     },
   },
-}
+})
+
+vim.lsp.enable('ts_ls')
+
+-- Remove built-in LSP keybindings that conflict with custom ones in lsp_on_attach
+-- Alternatives: gr=references, gi=implementation, gtd=type_def, <leader>r=rename, <leader>a=code_action
+vim.keymap.del('n', 'gO')
+vim.keymap.del('n', 'gra')
+vim.keymap.del('x', 'gra')
+vim.keymap.del('n', 'gri')
+vim.keymap.del('n', 'grn')
+vim.keymap.del('n', 'grr')
+vim.keymap.del('n', 'grt')
+vim.keymap.del('n', 'grx')
 
 require'luasnip.loaders.from_lua'.load({ paths = '~/.config/nvim/snippets' })
 
@@ -329,34 +356,14 @@ require'luasnip.loaders.from_lua'.load({ paths = '~/.config/nvim/snippets' })
 -- TreeSitter
 --------------------------------------------------------------------------------
 
-require'nvim-treesitter.configs'.setup {
-  ensure_installed = { 'c', 'cpp', 'css', 'dockerfile', 'go', 'haskell', 'html', 'javascript', 'jsonc', 'lua', 'nix', 'rust', 'scss', 'tsx', 'typescript', 'vim', 'yaml' },
-  sync_install = false,
-  auto_install = true,
-  highlight = {
-    enable = true,
-    additional_vim_regex_highlighting = false
-  },
-  indent = {
-    enable = true
-  },
-  incremental_selection = {
-    enable = true,
-    keymaps = {
-      init_selection = '<CR>',
-      scope_incremental = '<CR>',
-      node_incremental = '<TAB>',
-      node_decremental = '<S-TAB>'
-    }
-  }
-}
+vim.opt.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
 
 --------------------------------------------------------------------------------
 -- Folding (uses TreeSitter)
 --------------------------------------------------------------------------------
 
 vim.opt.foldmethod = 'expr'
-vim.opt.foldexpr = 'nvim_treesitter#foldexpr()'
+vim.opt.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
 vim.opt.foldlevel = 99         -- Start with folds open but manageable
 vim.opt.foldlevelstart = 99    -- Prevents mass collapsing on first fold
 

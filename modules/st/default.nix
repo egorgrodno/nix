@@ -1,4 +1,4 @@
-{ config, lib, pkgs, username, ... }:
+{ config, lib, pkgs, users, ... }:
 
 with lib;
 
@@ -57,10 +57,13 @@ in {
         (pkgs.st.overrideAttrs (oldAttrs: rec { inherit src patches; }))
       ];
 
-    home-manager.users.${username} = {
-      home.packages = [
-        (pkgs.writeShellScriptBin "cps" "2>/dev/null 1>/dev/null st -d $PWD & disown")
-      ];
-    };
+    home-manager.users = builtins.listToAttrs (map (u: {
+      name = u.name;
+      value = {
+        home.packages = [
+          (pkgs.writeShellScriptBin "cps" "2>/dev/null 1>/dev/null st -d $PWD & disown")
+        ];
+      };
+    }) users);
   };
 }
