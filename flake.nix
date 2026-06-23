@@ -42,7 +42,15 @@
       # Standalone home-manager profile that installs the neovim editor + git for
       # a given keyboard layout. The neovim module carries its own runtime deps
       # so this profile is self-contained.
-      mkNeovimHome = { layout, username ? "egor", homeDirectory ? "/home/egor" }:
+      #
+      # username/homeDirectory default to the invoking user's $USER/$HOME so the
+      # profile works on any account; this requires evaluating with `--impure`.
+      # Under pure evaluation (getEnv returns "") they fall back to egor.
+      mkNeovimHome =
+        { layout
+        , username ? (let u = builtins.getEnv "USER"; in if u != "" then u else "egor")
+        , homeDirectory ? (let h = builtins.getEnv "HOME"; in if h != "" then h else "/home/${username}")
+        }:
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           extraSpecialArgs = { keyboardLayout = layout; isDesktop = false; };
