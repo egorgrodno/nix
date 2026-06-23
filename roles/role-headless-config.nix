@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ ... }:
 
 {
   imports = [
@@ -7,6 +7,4 @@
 
   base.isHeadless = true;
   base.keyboard.layout = "qwerty";
-
-  environment.systemPackages = [ pkgs.kitty.terminfo ];
 }

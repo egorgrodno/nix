@@ -1,8 +1,5 @@
-{ users, ... }:
+{ forAllUsers, ... }:
 
 {
-  home-manager.users = builtins.listToAttrs (map (u: {
-    name = u.name;
-    value = { imports = [ ./hm.nix ]; };
-  }) users);
+  home-manager.users = forAllUsers { imports = [ ./hm.nix ]; };
 }

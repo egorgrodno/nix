@@ -1,9 +1,9 @@
-{ config, lib, pkgs, users, theme, ... }:
+{ config, lib, pkgs, forAllUsers, theme, ... }:
 
 with lib;
 
 let
-  cfg = config.desktop;
+  cfg = config.my.desktop;
   resetWallpaper = "${pkgs.feh}/bin/feh --no-fehbg --bg-scale ${cfg.wallpaper}";
   dp = ''
     xrandr --output DP-1 --primary --auto --output HDMI-1 --off --output eDP-1 --off
@@ -81,7 +81,7 @@ let
   '';
 
 in {
-  options.desktop = {
+  options.my.desktop = {
     enable = mkEnableOption "X11 i3 desktop environment";
 
     i3.importUserConfiguration = mkOption {
@@ -110,11 +110,11 @@ in {
 
   config = mkIf cfg.enable {
     my.bluetooth.enable = true;
-    dmenu.enable = true;
-    st.enable = true;
-    st.fontFamily = theme.fontMono;
-    st.fontSize = 20;
-    zsh.enable = true;
+    my.dmenu.enable = true;
+    my.st.enable = true;
+    my.st.fontFamily = theme.fontMono;
+    my.st.fontSize = 20;
+    my.zsh.enable = true;
 
     environment.systemPackages = with pkgs; [
       obsidian
@@ -226,142 +226,139 @@ in {
     services.gnome.gnome-keyring.enable = true;
     security.pam.services.login.enableGnomeKeyring = true;
 
-    home-manager.users = builtins.listToAttrs (map (u: {
-      name = u.name;
-      value = {
-      home.packages = with pkgs; [
-        chromium
-        evince
-        firefox
-        galculator
-        gimp
-        glances
-        inkscape
-        libheif
-        libnotify
-        networkmanagerapplet
-        ntfs3g
-        pasystray
-        pavucontrol
-        pcmanfm
-        picom
-        shutter
-        simplescreenrecorder
-        tdesktop
-        transmission_4-gtk
-        viewnior
-        vlc
-        xorg.xkill
-        zoom-us
-        roboto
-        discord
-        handbrake
-        upscayl
-        libreoffice
-        blender
-        arduino
-        freecad
-      ];
+    home-manager.users = forAllUsers (u: {
+    home.packages = with pkgs; [
+      chromium
+      evince
+      firefox
+      galculator
+      gimp
+      glances
+      inkscape
+      libheif
+      libnotify
+      networkmanagerapplet
+      ntfs3g
+      pasystray
+      pavucontrol
+      pcmanfm
+      picom
+      shutter
+      simplescreenrecorder
+      tdesktop
+      transmission_4-gtk
+      viewnior
+      vlc
+      xorg.xkill
+      zoom-us
+      roboto
+      discord
+      handbrake
+      upscayl
+      libreoffice
+      blender
+      arduino
+      freecad
+    ];
 
-      programs.vifm = {
-        enable = true;
+    programs.vifm = {
+      enable = true;
 
-        extraConfig = ''
-          filetype *.pdf,*.jpg,*.jpeg,*.png,*.gif xdg-open %f &
+      extraConfig = ''
+        filetype *.pdf,*.jpg,*.jpeg,*.png,*.gif xdg-open %f &
 
-          ${if config.base.keyboard.layout == "hallmack" then ''
-          nnoremap H L
-          nnoremap L H
-          nnoremap j <nop>
-          nnoremap k <nop>
-          '' else ""}
-        '';
-      };
-
-      home.file.".config/i3status/config".text = i3statusConfig;
-
-      home.file.".xinitrc".text = ''
-        if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
-          eval $(dbus-launch --exit-with-session --sh-syntax)
-        fi
-        systemctl --user import-environment DISPLAY XAUTHORITY
-
-        if command -v dbus-update-activation-environment >/dev/null 2>&1; then
-          dbus-update-activation-environment DISPLAY XAUTHORITY
-        fi
-
-        ${resetWallpaper}
-
-        exec i3 --shmlog-size 0
+        ${if config.base.keyboard.layout == "hallmack" then ''
+        nnoremap H L
+        nnoremap L H
+        nnoremap j <nop>
+        nnoremap k <nop>
+        '' else ""}
       '';
+    };
 
-      xdg.configFile."i3/config".text = import ./i3-config.nix {
-        inherit config pkgs theme;
-        homedir = u.homedir;
-        primaryScreen = cfg.primaryScreen;
+    home.file.".config/i3status/config".text = i3statusConfig;
+
+    home.file.".xinitrc".text = ''
+      if test -z "$DBUS_SESSION_BUS_ADDRESS"; then
+        eval $(dbus-launch --exit-with-session --sh-syntax)
+      fi
+      systemctl --user import-environment DISPLAY XAUTHORITY
+
+      if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+        dbus-update-activation-environment DISPLAY XAUTHORITY
+      fi
+
+      ${resetWallpaper}
+
+      exec i3 --shmlog-size 0
+    '';
+
+    xdg.configFile."i3/config".text = import ./i3-config.nix {
+      inherit config pkgs theme;
+      homedir = u.homedir;
+      primaryScreen = cfg.primaryScreen;
+    };
+
+    dconf = {
+      enable = true;
+      settings."org.gnome.desktop.wm.preferences".button-layout = "appmenu:close";
+    };
+
+    gtk = {
+      enable = true;
+      theme = {
+        name = "Materia-light-compact";
+        package = pkgs.materia-theme;
       };
-
-      dconf = {
-        enable = true;
-        settings."org.gnome.desktop.wm.preferences".button-layout = "appmenu:close";
+      iconTheme = {
+        name = "Papirus-Light";
+        package = pkgs.papirus-icon-theme;
       };
+    };
 
-      gtk = {
-        enable = true;
-        theme = {
-          name = "Materia-light-compact";
-          package = pkgs.materia-theme;
+    home.pointerCursor = {
+      # gtk.enable = true;
+      # x11.enable = true;
+      x11.enable = true;
+      name = "Numix-Cursor";
+      package = pkgs.numix-cursor-theme;
+    };
+
+    services.dunst = {
+      enable = true;
+
+      settings = {
+        global = {
+          notification_limit = 5;
+          font = "${theme.fontMono} 12";
+          background = theme.background.light;
+          foreground = theme.foreground.main;
+          width = "(200, 500)";
+          offset = "30x30";
+          padding = 12;
+          horizontal_padding = 14;
+          frame_width = 2;
         };
-        iconTheme = {
-          name = "Papirus-Light";
-          package = pkgs.papirus-icon-theme;
+
+        urgency_low = {
+          frame_color = theme.foreground.dark;
+          highlight = theme.blue;
+          timeout = 5;
+        };
+
+        urgency_normal = {
+          frame_color = theme.blue;
+          highlight = theme.blue;
+          timeout = 15;
+        };
+
+        urgency_critical = {
+          frame_color = theme.red;
+          highlight = theme.red;
+          timeout = 0;
         };
       };
-
-      home.pointerCursor = {
-        # gtk.enable = true;
-        # x11.enable = true;
-        x11.enable = true;
-        name = "Numix-Cursor";
-        package = pkgs.numix-cursor-theme;
-      };
-
-      services.dunst = {
-        enable = true;
-
-        settings = {
-          global = {
-            notification_limit = 5;
-            font = "${theme.fontMono} 12";
-            background = theme.background.light;
-            foreground = theme.foreground.main;
-            width = "(200, 500)";
-            offset = "30x30";
-            padding = 12;
-            horizontal_padding = 14;
-            frame_width = 2;
-          };
-
-          urgency_low = {
-            frame_color = theme.foreground.dark;
-            highlight = theme.blue;
-            timeout = 5;
-          };
-
-          urgency_normal = {
-            frame_color = theme.blue;
-            highlight = theme.blue;
-            timeout = 15;
-          };
-
-          urgency_critical = {
-            frame_color = theme.red;
-            highlight = theme.red;
-            timeout = 0;
-          };
-        };
-      };
-      };
-    }) users);
+    };
+    });
   };
 }

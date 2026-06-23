@@ -30,9 +30,5 @@ in {
     (writeShellScriptBin "docker-clean-images" ''
       docker rmi -f $(docker images -aq)
     '')
-
-    (writeShellScriptBin "claude" ''
-      nix run github:sadjow/claude-code-nix -- "$@"
-    '')
   ] ++ (if isDesktop then desktopPackages else []);
 }

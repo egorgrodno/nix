@@ -6,7 +6,7 @@
     ../../roles/role-x11-desktop-config.nix
   ];
 
-  desktop.i3.importUserConfiguration = true;
+  my.desktop.i3.importUserConfiguration = true;
 
   boot.loader = {
     efi.canTouchEfiVariables = false;

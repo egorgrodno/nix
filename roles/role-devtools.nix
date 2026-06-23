@@ -9,5 +9,6 @@
     ../modules/ripgrep
     ../modules/nixtools
     ../modules/extools
+    ../modules/claude
   ];
 }

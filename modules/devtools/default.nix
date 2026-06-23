@@ -1,4 +1,4 @@
-{ config, pkgs, users, ... }:
+{ config, pkgs, forAllUsers, ... }:
 
 with pkgs;
 
@@ -15,8 +15,5 @@ in {
     then systemPackages
     else [];
 
-  home-manager.users = builtins.listToAttrs (map (u: {
-    name = u.name;
-    value = { imports = [ ./hm.nix ]; };
-  }) users);
+  home-manager.users = forAllUsers { imports = [ ./hm.nix ]; };
 }

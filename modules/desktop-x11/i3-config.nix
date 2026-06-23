@@ -268,7 +268,7 @@ smart_gaps on
 # Draw borders if not the only container
 smart_borders on
 
-${if config.desktop.i3.importUserConfiguration then ''
+${if config.my.desktop.i3.importUserConfiguration then ''
 include ${homedir}/.config/i3/user-configuration.conf
 '' else ""}
 ''

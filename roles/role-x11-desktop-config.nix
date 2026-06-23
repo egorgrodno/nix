@@ -1,4 +1,4 @@
-{ pkgs, users, ... }:
+{ pkgs, forAllUsers, ... }:
 
 {
   imports = [
@@ -18,7 +18,7 @@
     keyboard.layout = "hallmack";
   };
 
-  desktop = {
+  my.desktop = {
     enable = true;
     primaryScreen = "DP-0";
     wallpaper = ../assets/orcas-2560-1440.jpg;
@@ -26,15 +26,12 @@
 
   security.sudo.wheelNeedsPassword = false;
 
-  users.users = builtins.listToAttrs (map (u: {
-    name = u.name;
-    value = {
-      isNormalUser = true;
-      home = u.homedir;
-      shell = pkgs.zsh;
-      extraGroups = [ "wheel" "networkmanager" "audio" "sound" "lp" ];
-    };
-  }) users);
+  users.users = forAllUsers (u: {
+    isNormalUser = true;
+    home = u.homedir;
+    shell = pkgs.zsh;
+    extraGroups = [ "wheel" "networkmanager" "audio" "sound" "lp" ];
+  });
 
   environment.systemPackages = with pkgs; [
     netdiscover

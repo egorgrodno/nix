@@ -3,6 +3,7 @@
 {
   imports = [
     ./hardware-configuration.nix
+    ../../roles/role-wayland-desktop-config.nix
   ];
 
   # Use the systemd-boot EFI boot loader.

@@ -1,12 +1,12 @@
-{ config, lib, users, ... }:
+{ config, lib, forAllUsers, ... }:
 
 with lib;
 
 let
-  cfg = config.zsh;
+  cfg = config.my.zsh;
 
 in {
-  options.zsh.enable = mkEnableOption "zsh shell";
+  options.my.zsh.enable = mkEnableOption "zsh shell";
 
   config = mkIf cfg.enable {
     environment = {
@@ -17,9 +17,6 @@ in {
     programs.zsh.enable = true;
     programs.zsh.autosuggestions.enable = true;
 
-    home-manager.users = builtins.listToAttrs (map (u: {
-      name = u.name;
-      value = { imports = [ ./hm.nix ]; };
-    }) users);
+    home-manager.users = forAllUsers { imports = [ ./hm.nix ]; };
   };
 }

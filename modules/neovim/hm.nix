@@ -2,6 +2,12 @@
 
 {
   home.packages = with pkgs; [
+    # Runtime tools the editor shells out to.
+    ripgrep   # telescope live_grep / grep_string
+    fd        # telescope find_files (falls back to `find` if absent)
+    nodejs    # runtime for the node-based language servers below
+
+    # Language servers.
     bash-language-server
     typescript-language-server
     vscode-langservers-extracted

@@ -1,24 +1,22 @@
-{ config, lib, pkgs, users, ... }:
+{ config, lib, pkgs, forAllUsers, ... }:
 
 with lib;
 
 let
-  cfg = config.st;
+  cfg = config.my.st;
 
 in {
-  options = {
-    st = {
-      enable = mkEnableOption "st terminal emulator";
+  options.my.st = {
+    enable = mkEnableOption "st terminal emulator";
 
-      fontFamily = mkOption {
-        type = types.str;
-        default = "Liberation Mono";
-      };
+    fontFamily = mkOption {
+      type = types.str;
+      default = "Liberation Mono";
+    };
 
-      fontSize = mkOption {
-        type = types.int;
-        default = 18;
-      };
+    fontSize = mkOption {
+      type = types.int;
+      default = 18;
     };
   };
 
@@ -57,13 +55,10 @@ in {
         (pkgs.st.overrideAttrs (oldAttrs: rec { inherit src patches; }))
       ];
 
-    home-manager.users = builtins.listToAttrs (map (u: {
-      name = u.name;
-      value = {
-        home.packages = [
-          (pkgs.writeShellScriptBin "cps" "2>/dev/null 1>/dev/null st -d $PWD & disown")
-        ];
-      };
-    }) users);
+    home-manager.users = forAllUsers {
+      home.packages = [
+        (pkgs.writeShellScriptBin "cps" "2>/dev/null 1>/dev/null st -d $PWD & disown")
+      ];
+    };
   };
 }

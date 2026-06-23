@@ -1,4 +1,4 @@
-{ config, pkgs, users, ... }:
+{ config, pkgs, forAllUsers, ... }:
 
 {
   environment.systemPackages =
@@ -6,8 +6,5 @@
       then with pkgs; [ git gh glab ]
       else [];
 
-  home-manager.users = builtins.listToAttrs (map (u: {
-    name = u.name;
-    value = { imports = [ ./hm.nix ]; };
-  }) users);
+  home-manager.users = forAllUsers { imports = [ ./hm.nix ]; };
 }

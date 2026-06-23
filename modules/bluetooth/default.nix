@@ -1,4 +1,4 @@
-{ config, lib, users, ... }:
+{ config, lib, forAllUsers, ... }:
 
 let cfg = config.my.bluetooth;
 
@@ -9,9 +9,6 @@ in {
     hardware.bluetooth.enable = true;
     services.blueman.enable = true;
 
-    home-manager.users = builtins.listToAttrs (map (u: {
-      name = u.name;
-      value = { imports = [ ./hm.nix ]; };
-    }) users);
+    home-manager.users = forAllUsers { imports = [ ./hm.nix ]; };
   };
 }

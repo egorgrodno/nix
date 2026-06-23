@@ -1,36 +1,33 @@
-{ config, lib, pkgs, users, theme, ... }:
+{ config, lib, pkgs, forAllUsers, theme, ... }:
 
 with lib;
 
 let
-  cfg = config.dmenu;
+  cfg = config.my.dmenu;
   dmenuHistory = builtins.fetchurl {
     url = "https://tools.suckless.org/dmenu/scripts/dmenu_run_with_command_history/dmenu_run_history";
     sha256 = "02fz6i391f6c1f39p0r8p37rbfqfsj3m0w0ylzv857w0w4ibhsp4";
   };
 
 in {
-  options.dmenu.enable = mkEnableOption "dmenu";
+  options.my.dmenu.enable = mkEnableOption "dmenu";
 
   config = mkIf cfg.enable {
-    home-manager.users = builtins.listToAttrs (map (u: {
-      name = u.name;
-      value = {
-        home.packages = [
-          (pkgs.writeScriptBin "dmenu" ''
-            ${pkgs.dmenu}/bin/dmenu -nf '${theme.foreground.main}' -nb '${theme.background.light}' -sb '${theme.yellow}' -sf '${theme.background.main}' -fn '${theme.fontMono}-13' "$@"
-          '')
+    home-manager.users = forAllUsers {
+      home.packages = [
+        (pkgs.writeScriptBin "dmenu" ''
+          ${pkgs.dmenu}/bin/dmenu -nf '${theme.foreground.main}' -nb '${theme.background.light}' -sb '${theme.yellow}' -sf '${theme.background.main}' -fn '${theme.fontMono}-13' "$@"
+        '')
 
-          (pkgs.writeScriptBin "dmenu-history" (readFile dmenuHistory))
+        (pkgs.writeScriptBin "dmenu-history" (readFile dmenuHistory))
 
-          (pkgs.writeScriptBin "dmenu-path" ''
-            cachedir="''${XDG_CACHE_HOME:-"$HOME/.cache"}"
-            cache="$cachedir/dmenu_run"
+        (pkgs.writeScriptBin "dmenu-path" ''
+          cachedir="''${XDG_CACHE_HOME:-"$HOME/.cache"}"
+          cache="$cachedir/dmenu_run"
 
-            ls -lL $(echo "$PATH" | tr : ' ') 2> /dev/null | awk '$1 ~ /^[^d].*x/ && $NF != "[" { print $NF }' | sort -u > "$cache"
-          '')
-        ];
-      };
-    }) users);
+          ls -lL $(echo "$PATH" | tr : ' ') 2> /dev/null | awk '$1 ~ /^[^d].*x/ && $NF != "[" { print $NF }' | sort -u > "$cache"
+        '')
+      ];
+    };
   };
 }

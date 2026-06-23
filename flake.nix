@@ -39,27 +39,31 @@
         magenta = "#C678DD";
         cyan = "#56B6C2";
       };
-      mkNeovim = { keyboardLayout ? "qwerty" }:
-        let
-          runtimeDir = pkgs.runCommand "nvim-runtime" {} ''
-            mkdir -p $out/lua $out/snippets
-            cp ${pkgs.writeText "config.lua" (import ./modules/neovim/lua-config.nix {
-              config = { base.keyboard.layout = keyboardLayout; };
-            })} $out/lua/config.lua
-            cp ${./modules/neovim/snippets.lua} $out/snippets/all.lua
-          '';
-        in pkgs.neovim.override {
-          configure = {
-            packages.bundled = {
-              opt = [ pkgs.vimPlugins.packer-nvim ];
-            };
-            customRC = ''
-              set runtimepath^=${runtimeDir}
-              packadd packer.nvim
-              lua require('config')
-            '';
-          };
+      # Standalone home-manager profile that installs the neovim editor + git for
+      # a given keyboard layout. The neovim module carries its own runtime deps
+      # so this profile is self-contained.
+      mkNeovimHome = { layout, username ? "egor", homeDirectory ? "/home/egor" }:
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          extraSpecialArgs = { keyboardLayout = layout; isDesktop = false; };
+          modules = [
+            ./modules/neovim/hm.nix
+            ./modules/git/hm.nix
+            {
+              home = { inherit username homeDirectory; stateVersion = "24.05"; };
+              programs.home-manager.enable = true;
+            }
+          ];
         };
+
+      # Apply a home-manager module (or per-user module function) to every user.
+      # `f` may be a plain attrset, or a function `u: attrset` when it needs
+      # per-user values like u.homedir.
+      mkForAllUsers = users: f:
+        builtins.listToAttrs (map (u: {
+          name = u.name;
+          value = if builtins.isFunction f then f u else f;
+        }) users);
 
       nixosConfigurationModules = [
         ({ pkgs, ... }: {
@@ -68,8 +72,6 @@
           nix.extraOptions = "experimental-features = nix-command flakes";
         })
       ];
-      neovimPkg         = mkNeovim {};
-      neovimHallmackPkg = mkNeovim { keyboardLayout = "hallmack"; };
 
       homeConfigurationModules = [
         home-manager.nixosModules.home-manager
@@ -83,44 +85,24 @@
       ];
 
     in {
-      packages.${system} = {
-        neovim          = neovimPkg;
-        neovim-hallmack = neovimHallmackPkg;
-      };
-
-      apps.${system} = {
-        neovim = {
-          type = "app";
-          program = "${neovimPkg}/bin/nvim";
-        };
-        neovim-hallmack = {
-          type = "app";
-          program = "${neovimHallmackPkg}/bin/nvim";
-        };
-      };
-
+      # Portable editor profiles for non-NixOS machines
       homeConfigurations = {
-        devtools = home-manager.lib.homeManagerConfiguration {
-          modules =
-            homeConfigurationModules
-            ++ [
-              ./roles/role-headless-config.nix
-              ./roles/role-devtools.nix
-            ];
-        };
+        neovim-qwerty   = mkNeovimHome { layout = "qwerty"; };
+        neovim-hallmack = mkNeovimHome { layout = "hallmack"; };
       };
 
       nixosConfigurations = {
-        fractal-wayland = lib.nixosSystem {
+        fractal = let
+          users = [
+            (import ./users/egor.nix)
+            (import ./users/forge.nix)
+          ];
+        in lib.nixosSystem {
           inherit system pkgs;
 
           specialArgs = {
-            inherit inputs theme pkgs-unstable;
-            users = [
-              (import ./users/hy.nix)
-              (import ./users/egor.nix)
-              (import ./users/forge.nix)
-            ];
+            inherit inputs theme pkgs-unstable users;
+            forAllUsers = mkForAllUsers users;
           };
 
           modules =
@@ -128,33 +110,17 @@
             ++ homeConfigurationModules
             ++ [
               ./hosts/fractal/configuration.nix
-              ./roles/role-wayland-desktop-config.nix
             ];
         };
 
-        fractal = lib.nixosSystem {
+        thinkpad = let
+          users = [ (import ./users/egor.nix) ];
+        in lib.nixosSystem {
           inherit system pkgs;
 
           specialArgs = {
-            inherit theme;
-            users = [ (import ./users/egor.nix) ];
-          };
-
-          modules =
-            nixosConfigurationModules
-            ++ homeConfigurationModules
-            ++ [
-              ./hosts/fractal/configuration.nix
-              ./roles/role-x11-desktop-config.nix
-            ];
-        };
-
-        thinkpad = lib.nixosSystem {
-          inherit system pkgs;
-
-          specialArgs = {
-            inherit theme;
-            users = [ (import ./users/egor.nix) ];
+            inherit theme users;
+            forAllUsers = mkForAllUsers users;
           };
 
           modules =
