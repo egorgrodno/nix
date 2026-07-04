@@ -43,8 +43,6 @@ in {
             ./st-xclearwin-20200419-6ee7143.diff
             (pkgs.writeText "my-st-config-patch"
               (import ./my-patch.nix {
-                # fontFamily="Inconsolata Nerd Font Mono";
-                # fontSize=32;
                 fontFamily = cfg.fontFamily;
                 fontSize = cfg.fontSize;
               })
