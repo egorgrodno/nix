@@ -249,6 +249,7 @@ in {
         hyprpicker
         grim
         slurp
+        wlsunset
         xdg-desktop-portal-hyprland
 
         vivaldi
@@ -886,22 +887,25 @@ in {
         size = 17;
       };
 
-      services.hyprsunset = {
-        enable = true;
-        settings = {
-          profile = [
-            {
-              transition_duration = 1800;
-              time = "07:00";
-              temperature = 6500;
-            }
-            {
-              transition_duration = 7200;
-              time = "18:30";
-              temperature = 3500;
-            }
-          ];
+      # Day/night colour-temperature via wlsunset. hyprsunset (0.3.3) has no
+      # transition support: it snaps to a profile's temperature at its `time`
+      # and rejects `transition_duration` (that option does not exist upstream).
+      # wlsunset instead ramps gradually over `-d` seconds in manual mode:
+      #   morning: night -> day over (sunrise - d) .. sunrise
+      #   evening: day -> night over sunset .. (sunset + d)
+      # A single `-d` applies to both edges, so the 30 min / 2 h split is folded
+      # into one 2 h transition: warm-up finishes at 07:00, dimming runs 18:30 ..
+      # 20:30. The service binds to graphical-session.target, as hyprsunset did.
+      systemd.user.services.wlsunset = {
+        Unit = {
+          Description = "Day/night colour temperature (wlsunset)";
+          After = [ "graphical-session.target" ];
+          PartOf = [ "graphical-session.target" ];
+          ConditionEnvironment = "WAYLAND_DISPLAY";
         };
+        Service.ExecStart =
+          "${pkgs.wlsunset}/bin/wlsunset -S 07:00 -s 18:30 -T 6500 -t 3500 -d 7200";
+        Install.WantedBy = [ "graphical-session.target" ];
       };
 
       services.dunst = {
