@@ -22,7 +22,7 @@
         config.allowUnfree = true;
       };
       theme = {
-        fontMono = "Inconsolata Nerd Font Mono";
+        fontMono = "Inconsolata LGC Nerd Font Mono";
         fontUI   = "Overpass Nerd Font";
         background = {
           main = "#282C34";
@@ -39,6 +39,11 @@
         magenta = "#C678DD";
         cyan = "#56B6C2";
       };
+      # Packages that provide the font families.
+      fontPackages = [
+        pkgs.nerd-fonts.inconsolata-lgc
+        pkgs.nerd-fonts.overpass
+      ];
       # Standalone home-manager profile that installs the neovim editor + git for
       # a given keyboard layout. The neovim module carries its own runtime deps
       # so this profile is self-contained.
@@ -109,7 +114,7 @@
           inherit system pkgs;
 
           specialArgs = {
-            inherit inputs theme pkgs-unstable users;
+            inherit inputs theme fontPackages pkgs-unstable users;
             forAllUsers = mkForAllUsers users;
           };
 
@@ -127,7 +132,7 @@
           inherit system pkgs;
 
           specialArgs = {
-            inherit theme users;
+            inherit theme fontPackages users;
             forAllUsers = mkForAllUsers users;
           };
 

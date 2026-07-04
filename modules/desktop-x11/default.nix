@@ -1,4 +1,4 @@
-{ config, lib, pkgs, forAllUsers, theme, ... }:
+{ config, lib, pkgs, forAllUsers, theme, fontPackages, ... }:
 
 with lib;
 
@@ -218,9 +218,7 @@ in {
       "image/webp" = "gimp.desktop";
     };
 
-    fonts.packages = [
-      pkgs.nerd-fonts.inconsolata
-    ];
+    fonts.packages = fontPackages;
 
     services.dbus.packages = [ pkgs.dconf ];
     services.gnome.gnome-keyring.enable = true;

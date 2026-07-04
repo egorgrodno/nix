@@ -1,4 +1,4 @@
-{ config, lib, pkgs, forAllUsers, inputs, theme, ... }:
+{ config, lib, pkgs, forAllUsers, inputs, theme, fontPackages, ... }:
 
 with lib;
 
@@ -142,9 +142,7 @@ in {
     };
 
     fonts.fontDir.enable = true;
-    fonts.packages = [
-      pkgs.nerd-fonts.inconsolata
-      pkgs.nerd-fonts.overpass
+    fonts.packages = fontPackages ++ [
       pkgs.nerd-fonts.noto
       pkgs.nerd-fonts.blex-mono
       pkgs.inter
