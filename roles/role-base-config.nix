@@ -40,6 +40,8 @@ in {
   };
 
   config = {
+    boot.tmp.cleanOnBoot = true;
+
     assertions = [
       {
         assertion = cfg.isDesktop != cfg.isHeadless;
