@@ -592,34 +592,23 @@ in {
           windowrule = [
             { name = "firefox-workspace"; "match:class" = "^(firefox)$"; workspace = "1 silent"; }
             { name = "slack-workspace"; "match:class" = "^(slack)$"; workspace = "3 silent"; }
-            { name = "nm-float-pin"; "match:class" = "^(nm-connection-editor)$"; float = "yes"; pin = "yes"; }
-            { name = "pavucontrol-float-pin"; "match:class" = "^(org\\.pulseaudio\\.pavucontrol)$"; float = "yes"; pin = "yes"; }
+            # Tray applets dock below the bar in the top-right corner of
+            # whichever monitor they open on: 100%-w anchors the window to the
+            # right edge, so no per-monitor geometry is hardcoded.
             {
-              name = "nm-size-primary";
+              name = "nm-float-pin";
               "match:class" = "^(nm-connection-editor)$";
-              "match:workspace" = "m[${cfg.primaryScreen}]";
-              move = "2003 40";
+              float = "yes";
+              pin = "yes";
+              move = "100%-w-160 40";
               size = "400 400";
             }
             {
-              name = "nm-size-hdmi";
-              "match:class" = "^(nm-connection-editor)$";
-              "match:workspace" = "m[HDMI-A-2]";
-              move = "525 40";
-              size = "400 400";
-            }
-            {
-              name = "pavucontrol-size-primary";
+              name = "pavucontrol-float-pin";
               "match:class" = "^(org\\.pulseaudio\\.pavucontrol)$";
-              "match:workspace" = "m[${cfg.primaryScreen}]";
-              move = "1757 40";
-              size = "800 500";
-            }
-            {
-              name = "pavucontrol-size-hdmi";
-              "match:class" = "^(org\\.pulseaudio\\.pavucontrol)$";
-              "match:workspace" = "m[HDMI-A-2]";
-              move = "277 40";
+              float = "yes";
+              pin = "yes";
+              move = "100%-w-10 40";
               size = "800 500";
             }
             { name = "suppress-maximize"; "match:class" = ".*"; suppress_event = "maximize"; }
