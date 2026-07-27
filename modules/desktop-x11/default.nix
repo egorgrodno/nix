@@ -4,18 +4,14 @@ with lib;
 
 let
   cfg = config.my.desktop;
-  resetWallpaper = "${pkgs.feh}/bin/feh --no-fehbg --bg-scale ${cfg.wallpaper}";
   dp = ''
     xrandr --output DP-1 --primary --auto --output HDMI-1 --off --output eDP-1 --off
-    ${resetWallpaper}
   '';
   edp = ''
     xrandr --output eDP-1 --primary --auto --output HDMI-1 --off --output DP-1 --off
-    ${resetWallpaper}
   '';
   hdmi = ''
     xrandr --output HDMI-1 --primary --auto --output eDP-1 --off --output DP-1 --off
-    ${resetWallpaper}
   '';
   autoScreen = ''
     if [ -n "$(xrandr | rg '^HDMI-1 connected')" ]; then
@@ -94,11 +90,6 @@ in {
       type = types.str;
       default = "HDMI-0";
     };
-
-    wallpaper = mkOption {
-      type = types.path;
-      description = "wallpaper path";
-    };
   };
 
   imports = [
@@ -126,7 +117,6 @@ in {
       (writeShellScriptBin "hdmi" hdmi)
       (writeShellScriptBin "i3exit" i3Exit)
       (writeShellScriptBin "i3kill" i3Kill)
-      (writeShellScriptBin "wallpaper-reset" resetWallpaper)
       (writeShellScriptBin "notify-volume" notifyVolumeContent)
     ];
 
@@ -285,8 +275,6 @@ in {
       if command -v dbus-update-activation-environment >/dev/null 2>&1; then
         dbus-update-activation-environment DISPLAY XAUTHORITY
       fi
-
-      ${resetWallpaper}
 
       exec i3 --shmlog-size 0
     '';

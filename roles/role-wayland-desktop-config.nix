@@ -20,11 +20,8 @@
 
   my.desktop = {
     enable = true;
-    primaryScreen = "DP-4";
-    wallpaper = ../assets/orcas-2560-1440.jpg;
+    primaryScreen = "HDMI-A-2";
     monitors = [
-      "DP-4, 2560x1440@165, 0x0, 1"
-      "HDMI-A-2, 2560x1440@60, auto-left, 1.33, transform, 1"
       ", preferred, auto, 1"
     ];
   };

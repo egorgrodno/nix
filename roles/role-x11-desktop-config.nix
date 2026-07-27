@@ -21,7 +21,6 @@
   my.desktop = {
     enable = true;
     primaryScreen = "DP-0";
-    wallpaper = ../assets/orcas-2560-1440.jpg;
   };
 
   security.sudo.wheelNeedsPassword = false;

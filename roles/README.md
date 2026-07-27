@@ -44,7 +44,7 @@ Roles are ordinary NixOS modules and receive `specialArgs` (`users`, `forAllUser
 | `role-wayland-desktop-config.nix` | Hyprland on Wayland (`modules/desktop-wayland`). Pulls in network, locale, devtools, and print; nextcloud and vm-host are currently commented out. **WIP.** |
 | `role-headless-config.nix` | No GUI: `base.isHeadless`, `qwerty`, and kitty terminfo. Intended for server and SSH-only use. |
 
-**Namespace stability.** Both desktop roles expose the same `my.desktop.*` option namespace (`my.desktop.enable`, `my.desktop.primaryScreen`, `my.desktop.wallpaper`, …), so switching a host between X11 and Wayland is a single change to its role import.
+**Namespace stability.** Both desktop roles expose the same `my.desktop.*` option namespace (`my.desktop.enable`, `my.desktop.primaryScreen`, …), so switching a host between X11 and Wayland is a single change to its role import.
 
 ## How a host wires in a role
 
@@ -59,7 +59,7 @@ A new host requires the following:
 
 1. **Host files.** `hosts/<host>/configuration.nix` and `hosts/<host>/hardware-configuration.nix` define the machine.
 2. **Top-level role.** `hosts/<host>/configuration.nix` imports an existing top-level role, or a new role that imports `role-base-config.nix`.
-3. **Required options.** The host **must** set `base.keyboard.layout`, and the desktop options `my.desktop.primaryScreen` and `my.desktop.wallpaper`.
+3. **Required options.** The host **must** set `base.keyboard.layout` and the desktop option `my.desktop.primaryScreen`.
 4. **Registration.** The host is registered under `nixosConfigurations` in `flake.nix` with its `users` list, which drives both `users.users` and `home-manager.users` through the `forAllUsers` helper.
 
 ## Adding a new aspect role

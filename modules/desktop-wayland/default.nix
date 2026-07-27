@@ -44,6 +44,11 @@ let
     echo $! > "$pid_file"
   '';
 
+  nxe = pkgs.writeShellScriptBin "nxe" ''
+    exec ${pkgs.kitty}/bin/kitty -d /etc/nixos \
+      -e ${pkgs.zsh}/bin/zsh -c 'vim home.nix; exec ${pkgs.zsh}/bin/zsh'
+  '';
+
 in {
   options.my.desktop = {
     enable = mkEnableOption "Wayland Hyprland desktop environment";
@@ -51,11 +56,6 @@ in {
     primaryScreen = mkOption {
       type = types.str;
       default = "HDMI-0";
-    };
-
-    wallpaper = mkOption {
-      type = types.path;
-      description = "wallpaper path";
     };
 
     monitors = mkOption {
@@ -252,6 +252,9 @@ in {
         wlsunset
         xdg-desktop-portal-hyprland
 
+        swaybg
+        waypaper
+
         vivaldi
         ungoogled-chromium
         firefox
@@ -282,7 +285,7 @@ in {
         vlc
 
         (writeShellScriptBin "cps" "2>/dev/null 1>/dev/null kitty -d $PWD & disown")
-        (writeShellScriptBin "nxe" "${pkgs.kitty}/bin/kitty -d /etc/nixos -e vim home.nix")
+        nxe
       ];
 
       services.udiskie = {
@@ -360,6 +363,20 @@ in {
           "application/xml"
         ];
       };
+      xdg.desktopEntries.nxe = {
+        name = "nxe";
+        genericName = "NixOS Configuration";
+        comment = "Edit the NixOS configuration in vim";
+        type = "Application";
+        terminal = false;
+        icon = "nvim";
+        exec = "${nxe}/bin/nxe";
+        categories = [ "Utility" "TextEditor" "Development" ];
+        settings = {
+          Keywords = "nix;nixos;config;flake;vim;";
+          StartupNotify = "true";
+        };
+      };
       xdg.desktopEntries.pcmanfm = {
         name = "File Manager";
         genericName = "File Manager";
@@ -394,7 +411,7 @@ in {
 
           exec-once = [
             "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
-            "${pkgs.swaybg}/bin/swaybg -m fill -i ${cfg.wallpaper}"
+            "${pkgs.waypaper}/bin/waypaper --restore"
             "${waitForSni} && ${pkgs.networkmanagerapplet}/bin/nm-applet"
             "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
             "${pkgs.wl-clipboard}/bin/wl-paste --watch ${clipboardPersistCb}"
@@ -467,10 +484,6 @@ in {
             disable_hyprland_logo = false;
             disable_splash_rendering = false;
           };
-
-          workspace =
-            map (n: "${toString n}, monitor:${cfg.primaryScreen}") (lib.range 1 5)
-            ++ map (n: toString n + ", monitor:HDMI-A-2") (lib.range 6 10);
 
           animations = {
             enabled = true;

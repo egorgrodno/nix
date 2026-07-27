@@ -44,12 +44,11 @@ users/<name>.nix                           # per-user identity + optional homeMo
 
 ### Key Directories
 
-- `hosts/` — One subdirectory per machine. Each has `configuration.nix` (system settings, primary screen, wallpaper) and `hardware-configuration.nix` (disk UUIDs, CPU microcode).
+- `hosts/` — One subdirectory per machine. Each has `configuration.nix` (system settings, primary screen) and `hardware-configuration.nix` (disk UUIDs, CPU microcode).
 - `roles/` — Composable role files that bundle modules. `role-base-config.nix` defines shared NixOS options (`base.isNixosSystem`, `base.isDesktop`, `base.isHeadless`, `base.keyboard.layout`) and sets `home-manager.extraSpecialArgs` (so HM modules receive `keyboardLayout` and `isDesktop`). See `roles/README.md` for the full role catalog.
 - `modules/` — NixOS-level feature modules. Each module that has a `hm.nix` applies it to all users through the `forAllUsers` helper (from `specialArgs`) in its `default.nix`. Modules own both their system-level and home-manager configuration.
 - `profiles/` — Per-user home-manager profiles (for example `work.nix`). A profile is a home-manager module attached to a single user through that user's `homeModules`, never via a host or `forAllUsers`. See `profiles/README.md`.
 - `users/` — One file per user (`egor.nix`, `forge.nix`). Each declares `name`, `homedir`, and `stateVersion`, and optionally `homeModules` (a list of profiles to attach to that user). Imported into `specialArgs.users` in `flake.nix`.
-- `assets/` — Wallpaper images referenced by host configs.
 - `home.nix` — Loops over `users` from `specialArgs` to generate base `home-manager.users.*` entries (username, homeDirectory, stateVersion). Module-specific HM config is applied by each module's own `default.nix`.
 
 ### Multi-User Architecture
@@ -77,10 +76,10 @@ There are two parallel desktop roles that can be swapped in `hosts/<hostname>/co
 | `role-x11-desktop-config.nix` | `modules/desktop-x11/` | Stable — i3 window manager on X11 |
 | `role-wayland-desktop-config.nix` | `modules/desktop-wayland/` | WIP — Hyprland on Wayland |
 
-The desktop module is selected by importing the desired role in the host configuration. Both roles expose the same `my.desktop` option namespace (`my.desktop.enable`, `my.desktop.primaryScreen`, `my.desktop.wallpaper`), so host configurations do not change when switching roles.
+The desktop module is selected by importing the desired role in the host configuration. Both roles expose the same `my.desktop` option namespace (`my.desktop.enable`, `my.desktop.primaryScreen`), so host configurations do not change when switching roles.
 
-`modules/desktop-x11/` contains i3 config, i3status config, and xrandr multi-monitor scripts.
-`modules/desktop-wayland/` configures Hyprland, Waybar, pipewire audio, NVIDIA drivers for Wayland (PRIME sync, open kernel module), dunst notifications, GTK/cursor theming, and XDG MIME associations via home-manager.
+`modules/desktop-x11/` contains i3 config, i3status config, and xrandr multi-monitor scripts. It sets no wallpaper.
+`modules/desktop-wayland/` configures Hyprland, Waybar, pipewire audio, NVIDIA drivers for Wayland (PRIME sync, open kernel module), dunst notifications, GTK/cursor theming, and XDG MIME associations via home-manager. The wallpaper is runtime state, not configuration: `waypaper` picks it and Hyprland restores it on login with `waypaper --restore`.
 
 ### Theme System
 
