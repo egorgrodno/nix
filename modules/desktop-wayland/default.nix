@@ -56,6 +56,18 @@ let
     size = "${toString width} ${toString height}";
   };
 
+  # wlogout bakes its icons in an off-palette lavender. The shapes live in the
+  # alpha channel, so `-colorize` repaints them without touching the mask.
+  wlogoutIcons = pkgs.runCommand "wlogout-icons-one-dark" {
+    nativeBuildInputs = [ pkgs.imagemagick ];
+  } ''
+    mkdir -p $out
+    for icon in ${pkgs.wlogout}/share/wlogout/icons/*.png; do
+      magick "$icon" -fill "${theme.foreground.main}" -colorize 100 \
+        "$out/$(basename "$icon")"
+    done
+  '';
+
   nxe = pkgs.writeShellScriptBin "nxe" ''
     exec ${pkgs.kitty}/bin/kitty -d /etc/nixos \
       -e ${pkgs.zsh}/bin/zsh -c 'vim home.nix; exec ${pkgs.zsh}/bin/zsh'
@@ -752,36 +764,38 @@ in {
         button {
           color: ${theme.foreground.main};
           background-color: ${theme.background.light};
-          border: 1px solid #434956;
+          border: 1px solid ${theme.foreground.dark};
           border-radius: 10px;
           margin: 10px;
           background-repeat: no-repeat;
           background-position: center;
           background-size: 64px;
           font-size: 16px;
+          /* Materia's ripple animates background-size to 1000% on :active, and
+             a running animation outranks any static value. */
+          animation: none;
+          outline: none;
         }
 
-        #logout  { background-image: url("${pkgs.wlogout}/share/wlogout/icons/logout.png");   }
-        #shutdown  { background-image: url("${pkgs.wlogout}/share/wlogout/icons/shutdown.png");  }
-        #reboot    { background-image: url("${pkgs.wlogout}/share/wlogout/icons/reboot.png");    }
-        #suspend   { background-image: url("${pkgs.wlogout}/share/wlogout/icons/suspend.png");   }
-        #hibernate { background-image: url("${pkgs.wlogout}/share/wlogout/icons/hibernate.png"); }
-        #lock      { background-image: url("${pkgs.wlogout}/share/wlogout/icons/lock.png");      }
+        #logout    { background-image: url("${wlogoutIcons}/logout.png");    }
+        #shutdown  { background-image: url("${wlogoutIcons}/shutdown.png");  }
+        #reboot    { background-image: url("${wlogoutIcons}/reboot.png");    }
+        #suspend   { background-image: url("${wlogoutIcons}/suspend.png");   }
+        #hibernate { background-image: url("${wlogoutIcons}/hibernate.png"); }
+        #lock      { background-image: url("${wlogoutIcons}/lock.png");      }
 
-        button:focus,
+        /* No `:focus` rule: GTK focuses the first button, which would read as
+           a preselected option. */
         button:hover {
-          background-color: #2a4a4a;
-          border-color: #33ccff;
-          color: #33ccff;
-          outline: none;
-          background-size: 64px;
+          background-color: ${theme.foreground.dark};
+          border-color: ${theme.blue};
+          color: ${theme.blue};
         }
 
         button:active {
-          background-color: #1e3a3a;
-          border-color: #00ff99;
-          color: #00ff99;
-          background-size: 64px;
+          background-color: ${theme.background.main};
+          border-color: ${theme.blue};
+          color: ${theme.blue};
         }
       '';
 
