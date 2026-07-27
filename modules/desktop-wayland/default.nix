@@ -44,6 +44,18 @@ let
     echo $! > "$pid_file"
   '';
 
+  # Waybar's reserved strip: configured height 30, grown to 51 by padding.
+  barHeight = 51;
+
+  # Floats a window under the Waybar module that opens it. fromRight is that
+  # module's centre, measured off the bar — Hyprland cannot read Waybar.
+  underBarModule = { fromRight, width, height }: {
+    float = "yes";
+    pin = "yes";
+    move = "(monitor_w-${toString (fromRight + width / 2)}) ${toString barHeight}";
+    size = "${toString width} ${toString height}";
+  };
+
   nxe = pkgs.writeShellScriptBin "nxe" ''
     exec ${pkgs.kitty}/bin/kitty -d /etc/nixos \
       -e ${pkgs.zsh}/bin/zsh -c 'vim home.nix; exec ${pkgs.zsh}/bin/zsh'
@@ -592,25 +604,15 @@ in {
           windowrule = [
             { name = "firefox-workspace"; "match:class" = "^(firefox)$"; workspace = "1 silent"; }
             { name = "slack-workspace"; "match:class" = "^(slack)$"; workspace = "3 silent"; }
-            # Tray applets dock below the bar in the top-right corner of
-            # whichever monitor they open on: 100%-w anchors the window to the
-            # right edge, so no per-monitor geometry is hardcoded.
-            {
+            { name = "pcmanfm-float"; "match:class" = "^(pcmanfm)$"; float = "yes"; }
+            ({
               name = "nm-float-pin";
               "match:class" = "^(nm-connection-editor)$";
-              float = "yes";
-              pin = "yes";
-              move = "100%-w-160 40";
-              size = "400 400";
-            }
-            {
+            } // underBarModule { fromRight = 907; width = 400; height = 400; })
+            ({
               name = "pavucontrol-float-pin";
               "match:class" = "^(org\\.pulseaudio\\.pavucontrol)$";
-              float = "yes";
-              pin = "yes";
-              move = "100%-w-10 40";
-              size = "800 500";
-            }
+            } // underBarModule { fromRight = 460; width = 800; height = 500; })
             { name = "suppress-maximize"; "match:class" = ".*"; suppress_event = "maximize"; }
             {
               name = "fix-xwayland-drags";
@@ -755,7 +757,7 @@ in {
           margin: 10px;
           background-repeat: no-repeat;
           background-position: center;
-          background-size: 64px !important;
+          background-size: 64px;
           font-size: 16px;
         }
 

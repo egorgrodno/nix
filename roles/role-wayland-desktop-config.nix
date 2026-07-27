@@ -23,8 +23,7 @@
     primaryScreen = "HDMI-A-2";
     monitors = [
       "HDMI-A-2, 2560x1440@120, 0x0, 1"
-      # Catch-all: any further monitor runs at its preferred mode and is
-      # placed to the right of the ones declared above.
+      # Any further monitor: preferred mode, placed to the right.
       ", preferred, auto, 1"
     ];
   };
