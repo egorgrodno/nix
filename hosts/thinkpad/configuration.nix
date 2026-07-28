@@ -3,10 +3,19 @@
 {
   imports = [
     ./hardware-configuration.nix
-    ../../roles/role-x11-desktop-config.nix
+    ../../roles/role-desktop-config.nix
   ];
 
-  my.desktop.i3.importUserConfiguration = true;
+  my.desktop.primaryScreen = "eDP-1";
+
+  # Intel integrated graphics; no discrete GPU on this machine.
+  hardware.graphics.extraPackages = [ pkgs.intel-media-driver ];
+
+  # Wifi and Bluetooth firmware, and the Intel microcode the hardware file wires up.
+  hardware.enableRedistributableFirmware = true;
+
+  # Keep kernel chatter off the TTY so it does not corrupt the tuigreet screen.
+  boot.kernelParams = [ "loglevel=3" ];
 
   boot.loader = {
     efi.canTouchEfiVariables = false;
@@ -27,7 +36,15 @@
     dataDir = "/data/postgresql";
   };
 
-  powerManagement.cpuFreqGovernor = "ondemand";
+  # Laptop power handling. TLP owns the CPU frequency governor, so this host must
+  # not set `powerManagement.cpuFreqGovernor` — the two fight over the same knob.
+  services.tlp.enable = true;
+  services.thermald.enable = true;
+
+  services.logind.settings.Login = {
+    HandleLidSwitch = "suspend";
+    HandleLidSwitchExternalPower = "lock";
+  };
 
   networking.hostName = "thinkpad";
   networking.useDHCP = lib.mkDefault true;

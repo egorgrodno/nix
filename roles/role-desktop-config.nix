@@ -6,10 +6,10 @@
     ./role-network-config.nix
     ./role-locale-config.nix
     ./role-devtools.nix
-    ./role-nextcloud-client.nix
+    # ./role-nextcloud-client.nix
     ./role-print.nix
-    ./role-vm-host.nix
-    ../modules/desktop-x11
+    # ./role-vm-host.nix
+    ../modules/desktop
   ];
 
   base = {
@@ -18,10 +18,9 @@
     keyboard.layout = "hallmack";
   };
 
-  my.desktop = {
-    enable = true;
-    primaryScreen = "DP-0";
-  };
+  # The screen layout is hardware, so every host sets its own `my.desktop.*`
+  # options.
+  my.desktop.enable = true;
 
   security.sudo.wheelNeedsPassword = false;
 
@@ -29,7 +28,7 @@
     isNormalUser = true;
     home = u.homedir;
     shell = pkgs.zsh;
-    extraGroups = [ "wheel" "networkmanager" "audio" "sound" "lp" ];
+    extraGroups = [ "wheel" "networkmanager" "audio" "sound" "lp" "video" ];
   });
 
   environment.systemPackages = with pkgs; [
@@ -38,4 +37,6 @@
     nfs-utils
     cifs-utils
   ];
+
+  programs.nix-ld.enable = true;
 }

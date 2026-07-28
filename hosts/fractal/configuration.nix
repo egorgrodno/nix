@@ -1,10 +1,40 @@
-{ lib, ... }:
+{ config, lib, pkgs, ... }:
 
 {
   imports = [
     ./hardware-configuration.nix
-    ../../roles/role-wayland-desktop-config.nix
+    ../../roles/role-desktop-config.nix
   ];
+
+  my.desktop = {
+    primaryScreen = "HDMI-A-2";
+    primaryMode = "2560x1440@120";
+  };
+
+  # NVIDIA on a hybrid AMD/NVIDIA board. PRIME runs in sync mode: the NVIDIA GPU
+  # renders everything and the display is driven through it, so the bus IDs below
+  # are this machine's and nothing else's.
+  services.xserver.videoDrivers = [ "nvidia" ]; # still the driver knob under Wayland
+  hardware.nvidia = {
+    package = config.boot.kernelPackages.nvidiaPackages.stable;
+    open = true; # Recommended for 40-series cards
+    modesetting.enable = true;
+    powerManagement.enable = true;
+    prime = {
+      sync.enable = true;
+      nvidiaBusId = "PCI:1:0:0";
+      intelBusId = "PCI:51:0:0";
+      offload.enable = false;
+      offload.enableOffloadCmd = false;
+    };
+  };
+  boot.blacklistedKernelModules = [ "nouveau" ];
+  hardware.graphics.extraPackages = [ pkgs.nvidia-vaapi-driver ];
+
+  environment.sessionVariables = {
+    GBM_BACKEND = "nvidia-drm";
+    __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+  };
 
   # Use the systemd-boot EFI boot loader.
   # boot.loader.systemd-boot.enable = true;

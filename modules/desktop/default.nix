@@ -1,4 +1,4 @@
-{ config, lib, pkgs, forAllUsers, inputs, theme, fontPackages, ... }:
+{ config, lib, pkgs, forAllUsers, theme, fontPackages, ... }:
 
 with lib;
 
@@ -79,13 +79,34 @@ in {
 
     primaryScreen = mkOption {
       type = types.str;
-      default = "HDMI-0";
+      default = "eDP-1";
+      description = "Wayland connector name of the screen that carries the bar and tray.";
     };
 
-    monitors = mkOption {
+    primaryMode = mkOption {
+      type = types.str;
+      default = "preferred";
+      example = "2560x1440@120";
+      description = ''
+        Mode for the primary screen, as Hyprland's `<width>x<height>@<rate>`.
+        The keywords `preferred`, `highres` and `highrr` are also accepted.
+        Pinning a rate here is worthwhile whenever the EDID preferred mode is
+        not the one wanted, since `preferred` follows the display rather than
+        the configuration.
+      '';
+    };
+
+    extraMonitors = mkOption {
       type = types.listOf types.str;
-      default = [];
-      description = "Hyprland monitor config strings. Falls back to primaryScreen if empty.";
+      default = [ ", preferred, auto, 1" ];
+      example = [ "DP-1, 1920x1080@60, 2560x0, 1" ];
+      description = ''
+        Hyprland monitor strings for the outputs other than the primary, emitted
+        after it. The primary is always generated from `primaryScreen` and
+        `primaryMode`, so populating this list cannot silently drop it.
+        The default catch-all gives any further display its preferred mode,
+        placed to the right; replace it to position additional screens exactly.
+      '';
     };
   };
 
@@ -184,12 +205,15 @@ in {
     services.gnome.gnome-keyring.enable = true;
     security.pam.services.login.enableGnomeKeyring = true;
 
+    environment.variables.TERMINAL = "kitty";
+
     environment.systemPackages = with pkgs; [
       kitty.terminfo
 
       obsidian
       dconf
       ntfs3g
+      brightnessctl # backs the XF86MonBrightness binds
 
       (writeShellScriptBin "notify-volume" ''
         VOLUME_RAW=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{ print $2 }')
@@ -239,30 +263,15 @@ in {
       cliphist
     ];
 
-    services.xserver.videoDrivers = [ "nvidia" ];
-    hardware.nvidia.package = config.boot.kernelPackages.nvidiaPackages.stable;
-    hardware.nvidia.open = true; # Recommended for 40-series cards
-    hardware.nvidia = {
-      modesetting.enable = true;
-      powerManagement.enable = true;
-      prime = {
-        sync.enable = true;
-        nvidiaBusId = "PCI:1:0:0";
-        intelBusId = "PCI:51:0:0";
-        offload.enable = false;
-        offload.enableOffloadCmd = false;
-      };
-    };
-    boot.blacklistedKernelModules = [ "nouveau" "ntfs3" ];
-
+    # The GPU is hardware, so the driver, its VA-API backend and any vendor
+    # session variables belong to the host. This module claims only what every
+    # Wayland machine needs regardless of who made the card.
     hardware.graphics.enable = true;
-    hardware.graphics.extraPackages = with pkgs; [ nvidia-vaapi-driver ];
 
-    environment.sessionVariables = {
-      GBM_BACKEND = "nvidia-drm";
-      NIXOS_OZONE_WL = "1";
-      __GLX_VENDOR_LIBRARY_NAME = "nvidia";
-    };
+    # Paired with the ntfs3g package below; the in-kernel ntfs3 driver loses to it.
+    boot.blacklistedKernelModules = [ "ntfs3" ];
+
+    environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
     home-manager.users = forAllUsers {
       home.packages = with pkgs; [
@@ -423,10 +432,11 @@ in {
         settings = {
           "$mod" = "ALT";
 
+          # The primary screen always leads, anchored at the origin; everything
+          # else follows it.
           monitor =
-            if cfg.monitors != []
-            then cfg.monitors
-            else [ "${cfg.primaryScreen}, preferred, 0x0, 1" ", preferred, auto, 1" ];
+            [ "${cfg.primaryScreen}, ${cfg.primaryMode}, 0x0, 1" ]
+            ++ cfg.extraMonitors;
 
           env = [
             "XCURSOR_SIZE,24"
@@ -616,7 +626,13 @@ in {
           windowrule = [
             { name = "firefox-workspace"; "match:class" = "^(firefox)$"; workspace = "1 silent"; }
             { name = "slack-workspace"; "match:class" = "^(slack)$"; workspace = "3 silent"; }
-            { name = "pcmanfm-float"; "match:class" = "^(pcmanfm)$"; float = "yes"; }
+            {
+              name = "pcmanfm-float";
+              "match:class" = "^(pcmanfm)$";
+              float = "yes";
+              center = true;
+              size = "1200 900";
+            }
             ({
               name = "nm-float-pin";
               "match:class" = "^(nm-connection-editor)$";

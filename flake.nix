@@ -3,21 +3,16 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/master";
 
     home-manager.url = "github:nix-community/home-manager/master";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { nixpkgs, nixpkgs-unstable, home-manager, ... }@inputs:
+  outputs = { nixpkgs, home-manager, ... }@inputs:
     let
       system = "x86_64-linux";
       lib = nixpkgs.lib;
       pkgs = import nixpkgs {
-        inherit system;
-        config.allowUnfree = true;
-      };
-      pkgs-unstable = import nixpkgs-unstable {
         inherit system;
         config.allowUnfree = true;
       };
@@ -114,7 +109,7 @@
           inherit system pkgs;
 
           specialArgs = {
-            inherit inputs theme fontPackages pkgs-unstable users;
+            inherit inputs theme fontPackages users;
             forAllUsers = mkForAllUsers users;
           };
 
@@ -131,8 +126,10 @@
         in lib.nixosSystem {
           inherit system pkgs;
 
+          # Kept identical to fractal's, so a module argument added later cannot
+          # break one host while the other still evaluates.
           specialArgs = {
-            inherit theme fontPackages users;
+            inherit inputs theme fontPackages users;
             forAllUsers = mkForAllUsers users;
           };
 

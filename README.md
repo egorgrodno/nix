@@ -12,7 +12,7 @@ sudo nixos-rebuild switch --flake /etc/nixos#fractal
 
 ### 2. Set up Claude Code
 
-The Claude Code status line reads its command from `~/.claude/settings.json`:
+The status line reads its command from `~/.claude/settings.json` and shows token usage through `ccusage`:
 
 ```bash
 mkdir -p ~/.claude
@@ -27,11 +27,9 @@ cat > ~/.claude/settings.json << 'EOF'
 EOF
 ```
 
-**Status line.** This configuration shows token usage via `ccusage`.
-
 ### 3. Set up git identity
 
-**Git identity.** Git user identity is not stored in the flake and **must** be created once per user:
+Git identity is not stored in the flake and **must** be created once per user:
 
 ```bash
 mkdir -p ~/.config/git
@@ -53,14 +51,14 @@ home-manager switch --flake github:egorgrodno/nix#neovim-qwerty    # qwerty layo
 home-manager switch --flake github:egorgrodno/nix#neovim-hallmack  # hallmack layout
 ```
 
-**Account.** The profile defaults to user `egor` (`/home/egor`); a different account is selected by overriding `mkNeovimHome`'s `username` and `homeDirectory` in `flake.nix`. **Runtime tools.** The neovim module bundles its own runtime tools and language servers (`ripgrep`, `fd`, `nodejs`, and the LSP servers), so the profile is self-contained. Packer installs the editor plugins on first launch, so `:PackerSync` **must** be run once after the first `nvim` start.
+The profile is self-contained: the neovim module bundles its own runtime tools and language servers (`ripgrep`, `fd`, `nodejs`, the LSP servers). Packer installs plugins on first launch, so `:PackerSync` **must** be run once after the first `nvim` start. It defaults to user `egor` (`/home/egor`); override `mkNeovimHome`'s `username` and `homeDirectory` in `flake.nix` for another account.
 
 ## Hosts
 
 | Config | Host | Role |
 |---|---|---|
 | `fractal` | fractal desktop | Hyprland/Wayland, users: egor + forge |
-| `thinkpad` | ThinkPad laptop | i3/X11, user: egor |
+| `thinkpad` | ThinkPad laptop | Hyprland/Wayland, user: egor |
 
 ## Common Commands
 
