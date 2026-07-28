@@ -15,7 +15,6 @@ let
   '';
 
   clipboardPersistCb = pkgs.writeShellScript "clipboard-persist-cb" ''
-    content=$(cat)
     types=$(${pkgs.wl-clipboard}/bin/wl-paste --list-types 2>/dev/null)
     pid_file="''${XDG_RUNTIME_DIR:-/tmp}/clipboard-persist.pid"
 
@@ -38,9 +37,14 @@ let
       exit 0
     fi
 
-    [ -z "$content" ] && exit 0
+    # The payload arrives on stdin, but `$(cat)` would strip every trailing
+    # newline and `printf '%s'` cannot put them back — a line-wise yank would
+    # come back without the `\n` that makes a shell paste auto-execute. Re-read
+    # the selection instead, so the bytes never pass through the shell.
+    [ "$(${pkgs.wl-clipboard}/bin/wl-paste --no-newline | wc -c)" -eq 0 ] && exit 0
 
-    printf '%s' "$content" | ${pkgs.wl-clipboard}/bin/wl-copy --foreground &
+    ${pkgs.wl-clipboard}/bin/wl-paste --no-newline \
+      | ${pkgs.wl-clipboard}/bin/wl-copy --foreground &
     echo $! > "$pid_file"
   '';
 
@@ -162,13 +166,10 @@ in {
     services.gvfs.enable = true;
 
     xdg.mime.enable = true;
+    # Secondary handlers only — these widen the "Open with" list. The default
+    # for every type below stays whatever `defaultApplications` names, so
+    # images still open in viewnior rather than gimp.
     xdg.mime.addedAssociations = {
-      "video/x-matroska" = "handbrake.desktop";
-      "video/mp4" = "handbrake.desktop";
-      "video/webm" = "handbrake.desktop";
-      "video/ogg" = "handbrake.desktop";
-      "video/quicktime" = "handbrake.desktop";
-      "video/x-msvideo" = "handbrake.desktop";
       "image/png" = "gimp.desktop";
       "image/gif" = "gimp.desktop";
       "image/heic" = "gimp.desktop";
@@ -319,8 +320,10 @@ in {
         discord
         freecad
         galculator
+        gimp
         glances
         grimblast
+        kdePackages.okular
         libheif
         libnotify
         libreoffice
@@ -354,7 +357,9 @@ in {
         enable = true;
         defaultApplications = {
           "inode/directory"           = "pcmanfm.desktop";
-          "application/pdf"           = "org.gnome.Evince.desktop";
+          # Okular splits its associations per format; the main
+          # org.kde.okular.desktop entry declares only okular-archive.
+          "application/pdf"           = "okularApplication_pdf.desktop";
           "video/x-matroska"          = "vlc.desktop";
           "video/mp4"                 = "vlc.desktop";
           "video/webm"                = "vlc.desktop";
@@ -381,8 +386,7 @@ in {
           "application/x-7z-compressed" = "engrampa.desktop";
           "application/x-rar"           = "engrampa.desktop";
           "application/x-rar-compressed" = "engrampa.desktop";
-          "x-scheme-handler/magnet"   = "userapp-transmission-gtk-ULULF1.desktop";
-          "x-scheme-handler/postman"  = "Postman.desktop";
+          "x-scheme-handler/magnet"   = "transmission-gtk.desktop";
           "x-scheme-handler/http"     = "vivaldi-stable.desktop";
           "x-scheme-handler/https"    = "vivaldi-stable.desktop";
           "x-scheme-handler/about"    = "vivaldi-stable.desktop";
@@ -710,15 +714,22 @@ in {
         };
 
         extraConfig = ''
+          # Percentages, not pixels. Hyprland silently rejects a grow delta
+          # larger than the second child's own size along that axis, and a
+          # split's lower window bottoms out well under 100px — 58px on a
+          # 1345px column. A fixed 100px step therefore stranded it: every
+          # attempt to grow it back was refused outright and only the width
+          # still answered. `n%` of a window is always smaller than that
+          # window, so the rejection cannot trigger at any resolution.
           submap = resize
-          binde = , G, resizeactive, -100 0
-          binde = , A, resizeactive, 0 100
-          binde = , E, resizeactive, 0 -100
-          binde = , O, resizeactive, 100 0
-          binde = , left, resizeactive, -100 0
-          binde = , down, resizeactive, 0 100
-          binde = , up, resizeactive, 0 -100
-          binde = , right, resizeactive, 100 0
+          binde = , G, resizeactive, -10% 0
+          binde = , A, resizeactive, 0 10%
+          binde = , E, resizeactive, 0 -10%
+          binde = , O, resizeactive, 10% 0
+          binde = , left, resizeactive, -10% 0
+          binde = , down, resizeactive, 0 10%
+          binde = , up, resizeactive, 0 -10%
+          binde = , right, resizeactive, 10% 0
           bind = , Escape, submap, reset
           submap = reset
         '';
