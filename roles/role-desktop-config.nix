@@ -1,4 +1,4 @@
-{ pkgs, forAllUsers, ... }:
+{ pkgs, lib, forAllUsers, ... }:
 
 {
   imports = [
@@ -24,11 +24,14 @@
 
   security.sudo.wheelNeedsPassword = false;
 
+  # `wheel` is opt-in per user through `admin` in users/*.nix, because sudo here
+  # needs no password. A user file that omits the field stays unprivileged.
   users.users = forAllUsers (u: {
     isNormalUser = true;
     home = u.homedir;
     shell = pkgs.zsh;
-    extraGroups = [ "wheel" "networkmanager" "audio" "sound" "lp" "video" ];
+    extraGroups = [ "networkmanager" "audio" "sound" "lp" "video" ]
+      ++ lib.optional (u.admin or false) "wheel";
   });
 
   environment.systemPackages = with pkgs; [
