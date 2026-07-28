@@ -257,14 +257,24 @@ in {
       # presses walk through the rest. `togglespecialworkspace` only overlays
       # that workspace, which is the other half of the workflow.
       (writeShellScriptBin "hypr-move-to-active-workspace" ''
-        ADDRESS=$(hyprctl clients -j \
-          | ${pkgs.jq}/bin/jq -r 'map(select(.workspace.name == "special:magic")) | .[0].address // empty')
+        # With the overlay open the focused window is the one being looked at,
+        # so it wins. Only when focus is elsewhere does the first parked window
+        # apply, which lets repeated presses walk through the rest.
+        ADDRESS=$(hyprctl activewindow -j \
+          | ${pkgs.jq}/bin/jq -r 'select(.workspace.name == "special:magic") | .address // empty')
+
+        if [ -z "$ADDRESS" ]; then
+          ADDRESS=$(hyprctl clients -j \
+            | ${pkgs.jq}/bin/jq -r 'map(select(.workspace.name == "special:magic")) | .[0].address // empty')
+        fi
 
         if [ -z "$ADDRESS" ]; then
           notify-send "Scratchpad" "Empty" --urgency low --hint string:synchronous:my_scratchpad
           exit 0
         fi
 
+        # `activeworkspace` keeps reporting the real workspace while the
+        # special one is overlaid, so it is always a valid destination.
         WORKSPACE=$(hyprctl activeworkspace -j | ${pkgs.jq}/bin/jq -r '.id')
 
         hyprctl dispatch movetoworkspace "$WORKSPACE,address:$ADDRESS"
@@ -594,11 +604,12 @@ in {
               "$mod, B, workspace, previous"
               "$mod SHIFT, B, movetoworkspace, previous"
 
-              # Special workspace. S overlays it and stashes into it; minus
-              # pulls a window back out without opening the overlay first.
+              # Special workspace, standing in for i3's scratchpad. S only
+              # overlays it; minus stashes a window and pulls one back out,
+              # neither of which needs the overlay open.
               "$mod, S, togglespecialworkspace, magic"
-              "$mod SHIFT, S, movetoworkspace, special:magic"
               "$mod, minus, exec, hypr-move-to-active-workspace"
+              "$mod SHIFT, minus, movetoworkspacesilent, special:magic"
 
               # Screenshot
               ", Print, exec, DEFAULT_TARGET_DIR=$HOME/Screenshots grimblast save area"
