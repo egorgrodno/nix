@@ -209,8 +209,9 @@ in {
       playerctl # backs the XF86Audio{Play,Pause,Prev,Next} binds
 
       (writeShellScriptBin "notify-volume" ''
-        VOLUME_RAW=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{ print $2 }')
-        VOLUME=$(echo "$VOLUME_RAW * 100" | ${pkgs.bc}/bin/bc)
+        # printf "%d" truncates to an integer; bc would derive its scale from
+        # the operands and yield 25.00, which is not a valid `int` hint.
+        VOLUME=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{ printf "%d", $2 * 100 }')
 
         if wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -q "\[MUTED\]"; then
           notify-send "Volume" "Muted" --urgency low --hint "int:value:$VOLUME" --hint string:synchronous:my_volume
@@ -575,7 +576,7 @@ in {
               "$mod, ${splitKey}, layoutmsg, togglesplit"
               "$mod, M, exec, pavucontrol"
               "$mod, W, exec, pcmanfm"
-              "$mod SHIFT, R, exec, pkill waybar; waybar"
+              "$mod SHIFT, R, exec, systemctl --user restart waybar"
               "$mod, R, submap, resize"
               "$mod, 0, exec, wlogout"
               "$mod SHIFT, 0, exec, hyprlock"
@@ -618,7 +619,7 @@ in {
               "$mod, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && notify-volume"
               "$mod, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- --limit 1.0 && notify-volume"
               "$mod SHIFT, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && notify-volume"
-              "$mod SHIFT, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 10% && notify-volume"
+              "$mod SHIFT, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && notify-volume"
               "$mod, T, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && notify-volume"
               "$mod, N, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && notify-mic"
 
@@ -1006,7 +1007,9 @@ in {
 
         settings = {
           global = {
-            monitor = "keyboard";
+            # `follow` is what takes keyboard/mouse; setting it overrides
+            # `monitor`, which wants an output name or index instead.
+            follow = "keyboard";
             notification_limit = 5;
             font = "${theme.fontMono} 12";
             background = theme.background.light;
