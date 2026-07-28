@@ -121,18 +121,10 @@ in {
     my.zsh.enable = true;
     my.waybar.enable = true;
 
-    services.libinput = {
-      enable = true;
-      mouse = {
-        accelProfile = "flat";
-        disableWhileTyping = true;
-      };
-      touchpad = {
-        tapping = false;
-        middleEmulation = false;
-        disableWhileTyping = true;
-      };
-    };
+    # Enabled for the libinput udev rules only. The `mouse` and `touchpad`
+    # option trees are gated on `services.xserver.enable` in nixpkgs, so they
+    # are inert on Wayland; pointer behaviour lives in Hyprland's `input` block.
+    services.libinput.enable = true;
 
     security.pam.services.hyprlock = {};
 
@@ -214,6 +206,7 @@ in {
       dconf
       ntfs3g
       brightnessctl # backs the XF86MonBrightness binds
+      playerctl # backs the XF86Audio{Play,Pause,Prev,Next} binds
 
       (writeShellScriptBin "notify-volume" ''
         VOLUME_RAW=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{ print $2 }')
@@ -257,6 +250,24 @@ in {
         fi
 
         notify-send -i "$ICON" "Keyboard Status" "$MESSAGE" --urgency normal --hint string:synchronous:my_caps
+      '')
+
+      # The Hyprland equivalent of i3's `scratchpad show`: pull the first window
+      # parked on the special workspace onto the focused one, so repeated
+      # presses walk through the rest. `togglespecialworkspace` only overlays
+      # that workspace, which is the other half of the workflow.
+      (writeShellScriptBin "hypr-move-to-active-workspace" ''
+        ADDRESS=$(hyprctl clients -j \
+          | ${pkgs.jq}/bin/jq -r 'map(select(.workspace.name == "special:magic")) | .[0].address // empty')
+
+        if [ -z "$ADDRESS" ]; then
+          notify-send "Scratchpad" "Empty" --urgency low --hint string:synchronous:my_scratchpad
+          exit 0
+        fi
+
+        WORKSPACE=$(hyprctl activeworkspace -j | ${pkgs.jq}/bin/jq -r '.id')
+
+        hyprctl dispatch movetoworkspace "$WORKSPACE,address:$ADDRESS"
       '')
 
       wl-clipboard
@@ -492,10 +503,18 @@ in {
               then "grp:win_space_toggle,caps:swapescape"
               else "grp:win_space_toggle";
             follow_mouse = 1;
+            # Hyprland applies these to every pointer, the touchpad included;
+            # scoping them to the mouse would take a per-device section, whose
+            # name is host-specific.
             sensitivity = 0.4;
             accel_profile = "flat";
             touchpad = {
               natural_scroll = false;
+              # Hyprland defaults tap-to-click on, which fires clicks from palm
+              # brushes while typing.
+              "tap-to-click" = false;
+              middle_button_emulation = false;
+              disable_while_typing = true;
             };
           };
 
@@ -575,10 +594,11 @@ in {
               "$mod, B, workspace, previous"
               "$mod SHIFT, B, movetoworkspace, previous"
 
-              # Special workspace
+              # Special workspace. S overlays it and stashes into it; minus
+              # pulls a window back out without opening the overlay first.
               "$mod, S, togglespecialworkspace, magic"
               "$mod SHIFT, S, movetoworkspace, special:magic"
-              "$mod SHIFT, minus, exec, hypr-move-to-active-workspace"
+              "$mod, minus, exec, hypr-move-to-active-workspace"
 
               # Screenshot
               ", Print, exec, DEFAULT_TARGET_DIR=$HOME/Screenshots grimblast save area"
@@ -625,7 +645,9 @@ in {
 
           windowrule = [
             { name = "firefox-workspace"; "match:class" = "^(firefox)$"; workspace = "1 silent"; }
-            { name = "slack-workspace"; "match:class" = "^(slack)$"; workspace = "3 silent"; }
+            # XWayland reports WM_CLASS's second field, and Hyprland matches
+            # case-sensitively, so the class is `Slack`.
+            { name = "slack-workspace"; "match:class" = "^(Slack)$"; workspace = "3 silent"; }
             {
               name = "pcmanfm-float";
               "match:class" = "^(pcmanfm)$";

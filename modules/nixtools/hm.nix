@@ -3,10 +3,12 @@
 {
   home.packages = [
     (pkgs.writeShellScriptBin "nxu" "nix flake update --flake /etc/nixos")
-    (pkgs.writeShellScriptBin "nxs" "nixos-rebuild switch --flake /etc/nixos#fractal")
-    (pkgs.writeShellScriptBin "nxc" "nixos-rebuild build --flake /etc/nixos#fractal")
-    (pkgs.writeShellScriptBin "nxb" "nixos-rebuild boot --flake /etc/nixos#fractal")
-    (pkgs.writeShellScriptBin "nxt" "nixos-rebuild test --flake /etc/nixos#fractal")
+    # No flake attribute: this module fans out to every user on every host, so
+    # nixos-rebuild must resolve the configuration by hostname.
+    (pkgs.writeShellScriptBin "nxs" "nixos-rebuild switch --flake /etc/nixos")
+    (pkgs.writeShellScriptBin "nxc" "nixos-rebuild build --flake /etc/nixos")
+    (pkgs.writeShellScriptBin "nxb" "nixos-rebuild boot --flake /etc/nixos")
+    (pkgs.writeShellScriptBin "nxt" "nixos-rebuild test --flake /etc/nixos")
 
     (pkgs.writeShellScriptBin "permfixer" ''
       if [ -z "$1" ]; then
