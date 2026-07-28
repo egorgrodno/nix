@@ -34,7 +34,7 @@ precmd() {
   vcs_info
   echo -n -e "\033]0;$USER@$HOST: ''${PWD/$HOME/~}\007"
 }
-RPROMPT=" ''${vcs_info_msg_0_} %?"
+RPROMPT=' ''${vcs_info_msg_0_} %?'
 
 setopt GLOBSTARSHORT
 setopt HIST_IGNORE_ALL_DUPS
