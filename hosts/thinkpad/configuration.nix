@@ -14,9 +14,6 @@
   # Wifi and Bluetooth firmware, and the Intel microcode the hardware file wires up.
   hardware.enableRedistributableFirmware = true;
 
-  # Keep kernel chatter off the TTY so it does not corrupt the tuigreet screen.
-  boot.kernelParams = [ "loglevel=3" ];
-
   boot.loader = {
     efi.canTouchEfiVariables = false;
     grub = {

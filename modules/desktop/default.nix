@@ -153,6 +153,12 @@ in {
       };
     };
 
+    # Kernel chatter on the TTY corrupts the tuigreet screen above, so the module
+    # that turns the greeter on is the one that has to silence the console. This
+    # must go through consoleLogLevel rather than kernelParams: NixOS appends its
+    # own `loglevel=` from that option, and the kernel honours the last one.
+    boot.consoleLogLevel = 3;
+
     programs.hyprland = {
       enable = true;
       withUWSM = true;
