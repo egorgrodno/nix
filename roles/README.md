@@ -37,7 +37,7 @@ A host **must** import exactly one. Each pulls in the foundation plus the aspect
 | Role | Stack |
 |---|---|
 | `role-desktop-config.nix` | Hyprland on Wayland (`modules/desktop`). Network, locale, devtools, print; nextcloud and vm-host are commented out. |
-| `role-headless-config.nix` | No GUI: `base.isHeadless` and `qwerty`. Servers and SSH-only use. |
+| `role-headless-config.nix` | No GUI: `base.isHeadless` and `qwerty`. Servers and SSH-only use; no host imports it at present. |
 
 **Hardware stays with the host.** A role enables the stack; the host declares the screens (`my.desktop.primaryScreen`, `primaryMode`, `extraMonitors`) and the graphics driver, so two machines with different GPUs and panels share a role unchanged.
 

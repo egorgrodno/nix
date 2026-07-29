@@ -22,7 +22,7 @@ A profile is listed in a user's `homeModules`. It is never imported by a host or
 
 | Profile | Purpose |
 |---|---|
-| `work.nix` | Work tooling for one account: `gpclient`, `slack` (forced onto XWayland), `uv`, and a GlobalProtect URL handler through `xdg.desktopEntries` and `xdg.mimeApps`. Attached to `forge`. |
+| `work.nix` | Work tooling for one account: `gpclient`, `slack` (forced onto XWayland), `uv`. Attached to `forge`. |
 
 ## Adding a profile
 

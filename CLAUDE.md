@@ -16,8 +16,9 @@ nxc   # nixos-rebuild build --flake /etc/nixos   (build without activating)
 nxb   # nixos-rebuild boot --flake /etc/nixos    (build and add boot entry, no activation)
 nxt   # nixos-rebuild test --flake /etc/nixos    (activate temporarily, no boot entry)
 nxu   # nix flake update --flake /etc/nixos      (update flake.lock)
-nxe   # open home.nix in editor
 ```
+
+`nxe` opens `home.nix` in a kitty window, so it ships with `modules/desktop/` rather than `modules/nixtools/`.
 
 ```bash
 nix flake check /etc/nixos    # validate flake
@@ -74,7 +75,7 @@ users = [
 
 | `my.desktop` option | Meaning |
 |---|---|
-| `primaryScreen` | Connector name, **required**. Always emitted first, at `0x0`. |
+| `primaryScreen` | Connector name; defaults to `eDP-1`. Always emitted first, at `0x0`. |
 | `primaryMode` | `2560x1440@120`, or `preferred` / `highres` / `highrr`. |
 | `extraMonitors` | Hyprland strings for the remaining outputs, appended after the primary. |
 
