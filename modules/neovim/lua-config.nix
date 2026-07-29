@@ -356,7 +356,115 @@ require'luasnip.loaders.from_lua'.load({ paths = '~/.config/nvim/snippets' })
 -- TreeSitter
 --------------------------------------------------------------------------------
 
-vim.opt.indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+-- The `main` branch of nvim-treesitter starts nothing on its own, and Neovim's
+-- runtime only auto-starts the handful of parsers it ships itself. Highlighting,
+-- indenting and the selection maps below are therefore attached per buffer, and
+-- only where a parser for the filetype actually loaded.
+
+-- Ancestor node stack backing the incremental selection maps, one per buffer.
+local ts_sel = {}
+
+-- Reselect a node charwise. Node ends are exclusive; an end column of 0 means
+-- the node stops at the start of the line, so the selection ends on the one above.
+local function ts_reselect(node)
+  local srow, scol, erow, ecol = node:range()
+  if ecol == 0 then
+    if erow == 0 then return end
+    erow = erow - 1
+    ecol = #(vim.api.nvim_buf_get_lines(0, erow, erow + 1, false)[1] or "")
+  end
+  if vim.fn.mode():match('[vV\22]') then
+    vim.cmd('normal! ' .. vim.keycode('<Esc>'))
+  end
+  vim.fn.setpos("'<", { 0, srow + 1, scol + 1, 0 })
+  vim.fn.setpos("'>", { 0, erow + 1, ecol, 0 })
+  vim.cmd('normal! gv')
+end
+
+-- Ranges captured as @local.scope by the language's locals query, keyed for
+-- lookup by an ancestor walk.
+local function ts_scope_ranges(buf)
+  local ranges = {}
+  local parser = vim.treesitter.get_parser(buf, nil, { error = false })
+  local query = parser and vim.treesitter.query.get(parser:lang(), 'locals')
+  if not query then return ranges end
+  for id, node in query:iter_captures(parser:parse()[1]:root(), buf, 0, -1) do
+    if query.captures[id] == 'local.scope' then
+      ranges[table.concat({ node:range() }, ',')] = true
+    end
+  end
+  return ranges
+end
+
+-- Walk up from the top of the stack until `accept` takes an ancestor, pushing it.
+local function ts_grow(accept)
+  local buf = vim.api.nvim_get_current_buf()
+  local stack = ts_sel[buf]
+  if not stack or #stack == 0 then return end
+  local node = stack[#stack]:parent()
+  while node do
+    if accept(node) then
+      stack[#stack + 1] = node
+      ts_reselect(node)
+      return
+    end
+    node = node:parent()
+  end
+end
+
+local function ts_sel_init()
+  local buf = vim.api.nvim_get_current_buf()
+  local parser = vim.treesitter.get_parser(buf, nil, { error = false })
+  if not parser then return end
+  parser:parse()  -- parsing is otherwise driven by redraw, and may not have run yet
+  local node = vim.treesitter.get_node()
+  if not node then return end
+  ts_sel[buf] = { node }
+  ts_reselect(node)
+end
+
+-- <TAB>: the next ancestor that actually covers more text than the current node.
+local function ts_sel_node_incremental()
+  local stack = ts_sel[vim.api.nvim_get_current_buf()]
+  local current = stack and stack[#stack]
+  if not current then return end
+  local range = table.concat({ current:range() }, ',')
+  ts_grow(function(node) return table.concat({ node:range() }, ',') ~= range end)
+end
+
+-- <CR> in visual mode: the next ancestor the locals query calls a scope.
+local function ts_sel_scope_incremental()
+  local scopes = ts_scope_ranges(vim.api.nvim_get_current_buf())
+  ts_grow(function(node) return scopes[table.concat({ node:range() }, ',')] end)
+end
+
+local function ts_sel_node_decremental()
+  local stack = ts_sel[vim.api.nvim_get_current_buf()]
+  if not stack or #stack < 2 then return end
+  stack[#stack] = nil
+  ts_reselect(stack[#stack])
+end
+
+vim.api.nvim_create_autocmd('FileType', {
+  callback = function(args)
+    local lang = vim.treesitter.language.get_lang(args.match)
+    if not lang or not pcall(vim.treesitter.start, args.buf, lang) then return end
+
+    vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+
+    -- Buffer-local so that quickfix, netrw, Neogit and the pickers keep their <CR>.
+    local opts = { silent = true, buffer = args.buf }
+    vim.keymap.set('n', '<CR>', ts_sel_init, opts)
+    vim.keymap.set('x', '<CR>', ts_sel_scope_incremental, opts)
+    vim.keymap.set('x', '<TAB>', ts_sel_node_incremental, opts)
+    vim.keymap.set('x', '<S-TAB>', ts_sel_node_decremental, opts)
+  end,
+})
+
+-- Stacks hold TSNodes, which keep their tree alive; drop them with the buffer.
+vim.api.nvim_create_autocmd('BufDelete', {
+  callback = function(args) ts_sel[args.buf] = nil end,
+})
 
 --------------------------------------------------------------------------------
 -- Folding (uses TreeSitter)
