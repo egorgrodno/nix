@@ -6,6 +6,11 @@ let
   cfg = config.my.desktop;
 
   rgba = import ../../lib/rgba.nix lib;
+  hyprColor = import ../../lib/hypr-color.nix lib;
+
+  # The focused-window accent, reused by hyprlock's password field so the lock
+  # screen and the session agree on what "active" looks like.
+  activeBorder = "${hyprColor theme.blue "ff"} ${hyprColor theme.cyan "ff"} 45deg";
 
   waitForSni = pkgs.writeShellScript "wait-for-sni" ''
     until ${pkgs.dbus}/bin/dbus-send --session --print-reply \
@@ -421,7 +426,7 @@ in {
         color4 = theme.blue;
         color5 = theme.magenta;
         color6 = theme.cyan;
-        color7 = theme.foreground.main;
+        color7 = theme.foreground.muted;
 
         color8 = theme.foreground.dark;
         color9 = theme.bright.red;
@@ -520,8 +525,8 @@ in {
             gaps_in = 5;
             gaps_out = 20;
             border_size = 2;
-            "col.active_border" = "rgba(33ccffee) rgba(00ff99ee) 45deg";
-            "col.inactive_border" = "rgba(595959aa)";
+            "col.active_border" = activeBorder;
+            "col.inactive_border" = hyprColor theme.foreground.dark "aa";
             resize_on_border = false;
             allow_tearing = false;
             layout = "dwindle";
@@ -921,9 +926,9 @@ in {
             size = "300, 50";
             outline_thickness = 2;
             dots_spacing = 0.3;
-            outer_color = "rgba(33ccffee) rgba(00ff99ee) 45deg";
+            outer_color = activeBorder;
             inner_color = "rgba(0, 0, 0, 0.0)";
-            font_color = "rgb(cdd6f4)";
+            font_color = hyprColor theme.foreground.main "ff";
             fade_on_empty = false;
             placeholder_text = "Password...";
             rounding = 15;

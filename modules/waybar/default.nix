@@ -171,14 +171,14 @@ in {
 
         style = ''
           @define-color border-color ${theme.blue};
-          @define-color main-bg-color rgba(43, 48, 59, 0.3);
+          @define-color main-bg-color ${rgba theme.background.main "0.3"};
           @define-color main-fg-color #fff;
-          @define-color module-bg-color rgba(62, 68, 82, 0.8);
-          @define-color module-bg-color-hover rgba(62, 68, 82, 1);
+          @define-color module-bg-color ${rgba theme.background.light "0.8"};
+          @define-color module-bg-color-hover ${rgba theme.background.light "1"};
           @define-color tooltip-bg-color ${theme.background.main};
 
           @define-color error ${theme.red};
-          @define-color disabled #a9b6c2;
+          @define-color disabled ${theme.foreground.muted};
 
           * {
             font-family: "${theme.fontUI}", monospace;

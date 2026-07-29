@@ -26,6 +26,7 @@
         foreground = {
           main = "#DCDFE4";
           light = "#F2F4F5";
+          muted = "#ABB2BF";
           dark = "#434956";
         };
         red = "#E06C75";
