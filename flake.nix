@@ -20,11 +20,12 @@
         fontMono = "Inconsolata LGC Nerd Font Mono";
         fontUI   = "Overpass Nerd Font";
         background = {
-          main = "#282C34";
-          light = "#30343C";
+          main = "#16191D";
+          light = "#21252B";
         };
         foreground = {
           main = "#DCDFE4";
+          light = "#F2F4F5";
           dark = "#434956";
         };
         red = "#E06C75";
@@ -33,6 +34,18 @@
         blue = "#61AFEF";
         magenta = "#C678DD";
         cyan = "#56B6C2";
+        # The ANSI bright half, for terminals. Each is its accent above carried
+        # through One Dark Pro's own normal-to-bright step — +0.08 lightness and
+        # +0.24 saturation in HSL — so bright text gains vividness, not pallor,
+        # and stays on the hue it brightens.
+        bright = {
+          red = "#F87C86";
+          green = "#AAE282";
+          yellow = "#FAD48E";
+          blue = "#79C3FF";
+          magenta = "#DC88F5";
+          cyan = "#5CD5E4";
+        };
       };
       # Packages that provide the font families.
       fontPackages = [

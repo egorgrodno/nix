@@ -5,6 +5,8 @@ with lib;
 let
   cfg = config.my.desktop;
 
+  rgba = import ../../lib/rgba.nix lib;
+
   waitForSni = pkgs.writeShellScript "wait-for-sni" ''
     until ${pkgs.dbus}/bin/dbus-send --session --print-reply \
         --dest=org.freedesktop.DBus /org/freedesktop/DBus \
@@ -402,6 +404,34 @@ in {
       };
 
       programs.kitty.enable = true; # required for the default Hyprland config
+      programs.kitty.font = {
+        name = theme.fontMono;
+        size = 11;
+      };
+      # The terminal is the only surface that consumes ANSI colors, so it is
+      # where the accent half of `theme` earns its keep.
+      programs.kitty.settings = {
+        background = theme.background.main;
+        foreground = theme.foreground.main;
+
+        color0 = theme.background.light;
+        color1 = theme.red;
+        color2 = theme.green;
+        color3 = theme.yellow;
+        color4 = theme.blue;
+        color5 = theme.magenta;
+        color6 = theme.cyan;
+        color7 = theme.foreground.main;
+
+        color8 = theme.foreground.dark;
+        color9 = theme.bright.red;
+        color10 = theme.bright.green;
+        color11 = theme.bright.yellow;
+        color12 = theme.bright.blue;
+        color13 = theme.bright.magenta;
+        color14 = theme.bright.cyan;
+        color15 = theme.foreground.light;
+      };
       programs.kitty.keybindings = {
         "ctrl+shift+enter" = "no_op";
         "ctrl+shift+]" = "no_op";
@@ -760,53 +790,57 @@ in {
       '';
 
       xdg.configFile."wofi/style.css".text = ''
+        /* The window is the only painted surface. Every box inside it is
+           transparent, so the launcher background is stated once and a change
+           to `theme` cannot leave one layer behind. */
         window {
           font-family: "${theme.fontUI}", monospace;
           font-size: 17px;
           letter-spacing: 0.2px;
           margin: 0px;
-          background-color: #44475a;
+          background-color: ${theme.background.light};
           border-radius: 10px;
+        }
+
+        #outer-box,
+        #inner-box,
+        #scroll,
+        #entry {
+          background-color: transparent;
+          border: none;
+        }
+
+        #inner-box {
+          margin: 0 8px 8px;
+        }
+
+        #scroll {
+          max-height: 300px;
         }
 
         #input {
           margin: 14px 8px;
           border: none;
-          color: #f8f8f2;
-        }
-
-        #inner-box {
-          margin: 0 8px 8px;
-          border: none;
-          background-color: #282a36;
-        }
-
-        #outer-box {
-          border: none;
-          background-color: #282a36;
-        }
-
-        #scroll {
-          border: none;
-          max-height: 300px;
+          color: ${theme.foreground.main};
         }
 
         #text {
           margin: 0px 6px;
-          color: #f8f8f2;
           border: none;
+          color: ${theme.foreground.main};
         }
 
-        #entry.activatable #text {
-          color: #282a36;
-        }
-
-        #entry > * {
-          color: #f8f8f2;
-        }
-
+        /* The selected row is the one place a second color is wanted, so it
+           takes the accent rather than a second shade of the background: two
+           near-identical greys is what made the selection vanish. */
         #entry:selected {
-          background-color: #44475a;
+          background-color: ${theme.blue};
+          border-radius: 6px;
+        }
+
+        #entry:selected #text,
+        #entry:selected > * {
+          color: ${theme.background.main};
         }
       '';
 
@@ -828,7 +862,7 @@ in {
         }
 
         window {
-          background-color: rgba(40, 44, 52, 0.92);
+          background-color: ${rgba theme.background.main "0.92"};
         }
 
         button {

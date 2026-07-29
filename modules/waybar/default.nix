@@ -4,6 +4,8 @@ let
   cfg = config.my.waybar;
   borderRadius = "20px";
 
+  rgba = import ../../lib/rgba.nix lib;
+
   waybar-network = pkgs.writeShellScriptBin "waybar-network" ''
     iface=$(${pkgs.iproute2}/bin/ip route get 8.8.8.8 2>/dev/null | grep -oP 'dev \K\S+')
     if [ -z "$iface" ]; then
@@ -168,14 +170,14 @@ in {
         }];
 
         style = ''
-          @define-color border-color #5294e2;
+          @define-color border-color ${theme.blue};
           @define-color main-bg-color rgba(43, 48, 59, 0.3);
           @define-color main-fg-color #fff;
           @define-color module-bg-color rgba(62, 68, 82, 0.8);
           @define-color module-bg-color-hover rgba(62, 68, 82, 1);
-          @define-color tooltip-bg-color #282c34;
+          @define-color tooltip-bg-color ${theme.background.main};
 
-          @define-color error #ff5555;
+          @define-color error ${theme.red};
           @define-color disabled #a9b6c2;
 
           * {
@@ -295,12 +297,12 @@ in {
 
 
           #custom-wlogout {
-            color: #E06C75;
+            color: ${theme.red};
           }
 
           #custom-wlogout:hover {
             color: #fff;
-            background-color: rgba(224, 108, 117, 0.5);
+            background-color: ${rgba theme.red "0.5"};
           }
         '';
       };
