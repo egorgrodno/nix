@@ -45,10 +45,16 @@
       #
       # username/homeDirectory default to the invoking user's $USER/$HOME so the
       # profile works on any account; this requires evaluating with `--impure`.
-      # Under pure evaluation (getEnv returns "") they fall back to egor.
+      # getEnv yields "" under pure evaluation, which must fail loudly: a silent
+      # fallback would install the profile under the wrong account's name and
+      # paths, and home-manager only catches that at activation time.
+      requireEnv = var: arg:
+        let value = builtins.getEnv var; in
+        if value != "" then value
+        else throw "mkNeovimHome: \$${var} is empty, which means evaluation is pure. Pass `--impure`, or set `${arg}` explicitly.";
       mkNeovimHome =
         { layout
-        , username ? (let u = builtins.getEnv "USER"; in if u != "" then u else "egor")
+        , username ? requireEnv "USER" "username"
         , homeDirectory ? (let h = builtins.getEnv "HOME"; in if h != "" then h else "/home/${username}")
         }:
         home-manager.lib.homeManagerConfiguration {
