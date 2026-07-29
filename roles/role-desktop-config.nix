@@ -6,9 +6,7 @@
     ./role-network-config.nix
     ./role-locale-config.nix
     ./role-devtools.nix
-    # ./role-nextcloud-client.nix
     ./role-print.nix
-    # ./role-vm-host.nix
     ../modules/desktop
   ];
 
