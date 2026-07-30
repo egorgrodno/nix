@@ -388,8 +388,7 @@ cmp.setup.cmdline(':', {
 -- Servers needing settings of their own are set up below rather than listed here.
 local lsp_servers = {
   'arduino_language_server', 'bashls', 'clangd', 'cssls', 'dockerls', 'eslint',
-  'gopls', 'hls', 'html', 'jsonls', 'marksman', 'nil_ls', 'rust_analyzer',
-  'yamlls',
+  'gopls', 'hls', 'html', 'jsonls', 'marksman', 'rust_analyzer', 'yamlls',
 }
 
 local lsp_capabilities = require('cmp_nvim_lsp').default_capabilities()
@@ -431,6 +430,16 @@ lsp_setup('vtsls', {
       inlayHints = {
         functionLikeReturnTypes = { enabled = true },
       },
+    },
+  },
+})
+
+-- nil implements no formatter of its own and silently answers an empty edit list
+-- unless handed a command. Bracket syntax because nil is a Lua keyword.
+lsp_setup('nil_ls', {
+  settings = {
+    ['nil'] = {
+      formatting = { command = { 'nixfmt' } },
     },
   },
 })

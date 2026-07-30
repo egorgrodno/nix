@@ -18,6 +18,7 @@
     dockerfile-language-server
     clang-tools     # clangd, which arduino-language-server proxies to and cannot start without
     nil
+    nixfmt          # nil delegates formatting; without it <leader>f is a no-op on .nix
     rust-analyzer
     cargo
     rustc
