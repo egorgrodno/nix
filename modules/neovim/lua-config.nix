@@ -385,7 +385,12 @@ cmp.setup.cmdline(':', {
 })
 
 -- Server names: https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md
-local lsp_servers = { 'bashls', 'eslint', 'hls', 'nil_ls', 'rust_analyzer', 'arduino_language_server', 'cssls' }
+-- Servers needing settings of their own are set up below rather than listed here.
+local lsp_servers = {
+  'arduino_language_server', 'bashls', 'clangd', 'cssls', 'dockerls', 'eslint',
+  'gopls', 'hls', 'html', 'jsonls', 'marksman', 'nil_ls', 'rust_analyzer',
+  'yamlls',
+}
 
 local lsp_capabilities = require('cmp_nvim_lsp').default_capabilities()
 
@@ -393,13 +398,19 @@ local lsp_flags = {
   debounce_text_changes = 15
 }
 
-for _, lsp in ipairs(lsp_servers) do
-  vim.lsp.config(lsp, {
+-- vim.lsp.config deep-merges onto whatever nvim-lspconfig ships for the server,
+-- so opts only has to carry what differs from that default.
+local function lsp_setup(name, opts)
+  vim.lsp.config(name, vim.tbl_extend('force', {
     on_attach = lsp_on_attach,
     capabilities = lsp_capabilities,
     flags = lsp_flags,
-  })
-  vim.lsp.enable(lsp)
+  }, opts or {}))
+  vim.lsp.enable(name)
+end
+
+for _, lsp in ipairs(lsp_servers) do
+  lsp_setup(lsp)
 end
 
 vim.keymap.set('n', '<leader>b', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end)
@@ -408,10 +419,7 @@ vim.keymap.set('n', '<leader>b', function() vim.lsp.inlay_hint.enable(not vim.ls
 -- and can be previewed before it is applied. Running both at once is unsupported.
 -- Settings take the VSCode names, not tsserver's includeInlay* ones, and every
 -- hint not named here is already off by default.
-vim.lsp.config('vtsls', {
-  on_attach = lsp_on_attach,
-  capabilities = lsp_capabilities,
-  flags = lsp_flags,
+lsp_setup('vtsls', {
   settings = {
     typescript = {
       inlayHints = {
@@ -427,7 +435,16 @@ vim.lsp.config('vtsls', {
   },
 })
 
-vim.lsp.enable('vtsls')
+-- Only VIMRUNTIME goes in the library: pulling all of runtimepath in makes every
+-- plugin a workspace file and stalls the server on this config's own directory.
+lsp_setup('lua_ls', {
+  settings = {
+    Lua = {
+      runtime = { version = 'LuaJIT', path = { 'lua/?.lua', 'lua/?/init.lua' } },
+      workspace = { library = { vim.env.VIMRUNTIME }, checkThirdParty = false },
+    },
+  },
+})
 
 -- Remove built-in LSP keybindings that conflict with custom ones in lsp_on_attach
 -- Alternatives: gr=references, gi=implementation, gtd=type_def, <leader>r=rename, <leader>a=code_action

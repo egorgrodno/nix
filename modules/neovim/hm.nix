@@ -12,10 +12,17 @@
     bash-language-server
     vtsls
     vscode-langservers-extracted
+    lua-language-server
+    marksman
+    yaml-language-server
+    dockerfile-language-server
+    clang-tools     # clangd, which arduino-language-server proxies to and cannot start without
     nil
     rust-analyzer
     cargo
     rustc
+    gopls
+    go              # gopls shells out to `go list` for anything outside the open file
     haskell.compiler.ghc96
     haskellPackages.haskell-language-server
     arduino-language-server
