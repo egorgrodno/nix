@@ -3,13 +3,14 @@
 {
   home.packages = with pkgs; [
     # Runtime tools the editor shells out to.
-    ripgrep   # telescope live_grep / grep_string
-    fd        # telescope find_files (falls back to `find` if absent)
-    nodejs    # runtime for the node-based language servers below
+    ripgrep     # telescope live_grep / grep_string
+    fd          # telescope find_files (falls back to `find` if absent)
+    nodejs      # runtime for the node-based language servers below
+    shellcheck  # bashls has no diagnostics, and so no quickfixes, without it
 
     # Language servers.
     bash-language-server
-    typescript-language-server
+    vtsls
     vscode-langservers-extracted
     nil
     rust-analyzer

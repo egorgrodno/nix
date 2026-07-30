@@ -70,6 +70,8 @@ vim.opt.swapfile = true
 vim.opt.tabstop = 2
 vim.opt.shiftwidth = 2
 vim.opt.ttimeoutlen = 0
+-- Only reaches floats that pass no border of their own; telescope and cmp keep theirs.
+vim.opt.winborder = 'rounded'
 vim.opt.wildignore = { '*/tmp/*', '*.so', '*.swp', '*.zip', '*.svg', '*.png', '*.jpg', '*.gif', 'node_modules', 'dist', 'build' }
 
 local kmapopts = { silent = true }
@@ -169,6 +171,111 @@ vim.keymap.set('x', '<leader>p', '"_dP')
 -- Language Server protocol & completion
 --------------------------------------------------------------------------------
 
+local hover_opts = {
+  title_pos = 'left',
+  max_width = 80,
+  max_height = 20,
+  anchor_bias = 'above',
+}
+
+-- Hashed from the client name, not assigned by attachment order, so the colour
+-- of a server's hover title is stable across sessions.
+local client_color_names = { 'blue', 'green', 'yellow', 'purple', 'cyan' }
+
+local function client_hl(name)
+  local sum = 0
+  for i = 1, #name do sum = sum + name:byte(i) end
+  local idx = (sum % #client_color_names) + 1
+  local group = 'LspHoverClient' .. idx
+  -- Palette resolved on use: it is only loadable once onenord.setup has run,
+  -- which happens further down this file.
+  vim.api.nvim_set_hl(0, group, {
+    fg = require('onenord.colors').load()[client_color_names[idx]],
+    bold = true,
+  })
+  return group
+end
+
+local function lsp_hover()
+  local names = {}
+  for _, c in ipairs(vim.lsp.get_clients({ bufnr = 0 })) do
+    if c:supports_method('textDocument/hover') then names[#names + 1] = c.name end
+  end
+  -- Chunks, because vim.lsp.buf.hover never hands the window back: a title given
+  -- as [text, highlight] pairs is the only way to colour parts of it separately.
+  local title = nil
+  if #names > 0 then
+    title = {}
+    for i, name in ipairs(names) do
+      if i > 1 then title[#title + 1] = { '·', 'FloatBorder' } end
+      title[#title + 1] = { ' ' .. name .. ' ', client_hl(name) }
+    end
+  end
+  vim.lsp.buf.hover(vim.tbl_extend('force', hover_opts, { title = title }))
+end
+
+-- One float configuration behind every diagnostic key, so they cannot drift.
+vim.diagnostic.config {
+  -- The sign column and the float already carry the diagnostic.
+  virtual_text = false,
+  float = {
+    header = "",              -- drops the redundant "Diagnostics:" line
+    source = 'if_many',       -- names the server only when more than one attaches
+    severity_sort = true,
+  },
+  -- Written by codepoint, not as literals: the glyphs live in the font's private
+  -- use area and do not survive every pipe and editor they pass through.
+  signs = {
+    text = {
+      [vim.diagnostic.severity.ERROR] = vim.fn.nr2char(0xf057) .. ' ',  -- times-circle
+      [vim.diagnostic.severity.WARN]  = vim.fn.nr2char(0xf071) .. ' ',  -- warning triangle
+      [vim.diagnostic.severity.INFO]  = vim.fn.nr2char(0xf05a) .. ' ',  -- info-circle
+      [vim.diagnostic.severity.HINT]  = vim.fn.nr2char(0xf0eb) .. ' ',  -- lightbulb
+    },
+  },
+  severity_sort = true,       -- an error outranks a warning for the one sign slot
+}
+
+local severity_hl = {
+  [vim.diagnostic.severity.ERROR] = 'DiagnosticError',
+  [vim.diagnostic.severity.WARN]  = 'DiagnosticWarn',
+  [vim.diagnostic.severity.INFO]  = 'DiagnosticInfo',
+  [vim.diagnostic.severity.HINT]  = 'DiagnosticHint',
+}
+
+-- Border takes the colour of the worst diagnostic it holds. winhighlight is
+-- per window, so it is unreachable through vim.diagnostic.config and has to
+-- wait for open_float to return the window id.
+local function diagnostic_float(opts, severity)
+  local _, winid = vim.diagnostic.open_float(opts)
+  if not winid then return end
+  local worst = severity
+  if not worst then
+    local lnum = vim.api.nvim_win_get_cursor(0)[1] - 1
+    for _, d in ipairs(vim.diagnostic.get(0, { lnum = lnum })) do
+      if not worst or d.severity < worst then worst = d.severity end
+    end
+  end
+  local hl = severity_hl[worst]
+  if hl then vim.wo[winid].winhighlight = 'FloatBorder:' .. hl end
+end
+
+-- The float must open inside on_jump, not after the jump returns: its default
+-- close_events include CursorMoved, which the jump itself queues.
+local function diagnostic_jump(count)
+  return function()
+    vim.diagnostic.jump {
+      count = count,
+      on_jump = function(diagnostic, bufnr)
+        diagnostic_float(
+          { bufnr = bufnr, scope = 'cursor', focus = false },
+          diagnostic and diagnostic.severity
+        )
+      end,
+    }
+  end
+end
+
 local lsp_on_attach = function(client, bufnr)
   -- enable completion triggered by <C-x><C-o>
   vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
@@ -177,17 +284,17 @@ local lsp_on_attach = function(client, bufnr)
   local bufopts = { noremap = true, silent = true, buffer = bufnr }
 
   ${if config.base.keyboard.layout == "hallmack" then ''
-  vim.keymap.set('n', '<C-a>', vim.diagnostic.goto_next,    bufopts)
-  vim.keymap.set('n', '<C-e>', vim.diagnostic.goto_prev,    bufopts)
-  vim.keymap.set('n', 'E',     vim.lsp.buf.hover,           bufopts)
+  vim.keymap.set('n', '<C-a>', diagnostic_jump(1),          bufopts)
+  vim.keymap.set('n', '<C-e>', diagnostic_jump(-1),         bufopts)
+  vim.keymap.set('n', 'E',     lsp_hover,                   bufopts)
   vim.keymap.set('n', 'hd',    vim.lsp.buf.definition,      bufopts)
   vim.keymap.set('n', 'htd',   vim.lsp.buf.type_definition, bufopts)
   vim.keymap.set('n', 'hi',    vim.lsp.buf.implementation,  bufopts)
   vim.keymap.set('n', 'hr',    vim.lsp.buf.references,      bufopts)
   '' else ''
-  vim.keymap.set('n', '<C-j>', vim.diagnostic.goto_next,    bufopts)
-  vim.keymap.set('n', '<C-k>', vim.diagnostic.goto_prev,    bufopts)
-  vim.keymap.set('n', 'K',     vim.lsp.buf.hover,           bufopts)
+  vim.keymap.set('n', '<C-j>', diagnostic_jump(1),          bufopts)
+  vim.keymap.set('n', '<C-k>', diagnostic_jump(-1),         bufopts)
+  vim.keymap.set('n', 'K',     lsp_hover,                   bufopts)
   vim.keymap.set('n', 'gd',    vim.lsp.buf.definition,      bufopts)
   vim.keymap.set('n', 'gtd',   vim.lsp.buf.type_definition, bufopts)
   vim.keymap.set('n', 'gi',    vim.lsp.buf.implementation,  bufopts)
@@ -198,7 +305,7 @@ local lsp_on_attach = function(client, bufnr)
   vim.keymap.set({ 'n', 'x' }, '<leader>a', function()
     require('actions-preview').code_actions()
   end, bufopts)
-  vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float,   bufopts)
+  vim.keymap.set('n', '<leader>e', diagnostic_float,            bufopts)
   vim.keymap.set('n', '<leader>f', vim.lsp.buf.format,          bufopts)
   vim.keymap.set('n', '<leader>l', vim.diagnostic.setloclist,   bufopts)
 end
@@ -288,61 +395,41 @@ local lsp_flags = {
   debounce_text_changes = 15
 }
 
-local lsp_handlers = {
-  ['textDocument/publishDiagnostics'] = vim.lsp.with(
-    vim.lsp.diagnostic.on_publish_diagnostics,
-    { virtual_text = false }
-  ),
-}
-
 for _, lsp in ipairs(lsp_servers) do
   vim.lsp.config(lsp, {
     on_attach = lsp_on_attach,
     capabilities = lsp_capabilities,
     flags = lsp_flags,
-    handlers = lsp_handlers,
   })
   vim.lsp.enable(lsp)
 end
 
 vim.keymap.set('n', '<leader>b', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled()) end)
 
-vim.lsp.config('ts_ls', {
+-- vtsls, not ts_ls: it answers codeAction/resolve, so a refactor carries its edit
+-- and can be previewed before it is applied. Running both at once is unsupported.
+-- Settings take the VSCode names, not tsserver's includeInlay* ones, and every
+-- hint not named here is already off by default.
+vim.lsp.config('vtsls', {
   on_attach = lsp_on_attach,
   capabilities = lsp_capabilities,
   flags = lsp_flags,
-  handlers = lsp_handlers,
   settings = {
     typescript = {
       inlayHints = {
-        -- You can set this to 'all' or 'literals' to enable more hints
-        includeInlayParameterNameHints = "none", -- 'none' | 'literals' | 'all'
-        includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-        includeInlayFunctionParameterTypeHints = false,
-        includeInlayVariableTypeHints = false,
-        includeInlayVariableTypeHintsWhenTypeMatchesName = false,
-        includeInlayPropertyDeclarationTypeHints = false,
-        includeInlayFunctionLikeReturnTypeHints = true,
-        includeInlayEnumMemberValueHints = true,
+        functionLikeReturnTypes = { enabled = true },
+        enumMemberValues = { enabled = true },
       },
     },
     javascript = {
       inlayHints = {
-        -- Set this to 'all' or 'literals' to enable more hints
-        includeInlayParameterNameHints = "none", -- 'none' | 'literals' | 'all'
-        includeInlayParameterNameHintsWhenArgumentMatchesName = false,
-        includeInlayVariableTypeHints = false,
-        includeInlayFunctionParameterTypeHints = false,
-        includeInlayVariableTypeHintsWhenTypeMatchesName = false,
-        includeInlayPropertyDeclarationTypeHints = false,
-        includeInlayFunctionLikeReturnTypeHints = true,
-        includeInlayEnumMemberValueHints = true,
+        functionLikeReturnTypes = { enabled = true },
       },
     },
   },
 })
 
-vim.lsp.enable('ts_ls')
+vim.lsp.enable('vtsls')
 
 -- Remove built-in LSP keybindings that conflict with custom ones in lsp_on_attach
 -- Alternatives: gr=references, gi=implementation, gtd=type_def, <leader>r=rename, <leader>a=code_action
@@ -631,6 +718,11 @@ require'lualine'.setup {
 }
 vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
 vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none' })
+
+-- Below onenord.setup, which defines both groups itself and would win otherwise.
+local float_palette = require('onenord.colors').load()
+vim.api.nvim_set_hl(0, 'FloatBorder', { fg = float_palette.light_gray, bg = 'none' })
+vim.api.nvim_set_hl(0, 'FloatTitle', { fg = float_palette.blue, bg = 'none', bold = true })
 
 --------------------------------------------------------------------------------
 -- GitSigns staged highlights
