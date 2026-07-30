@@ -633,6 +633,47 @@ vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
 vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none' })
 
 --------------------------------------------------------------------------------
+-- GitSigns staged highlights
+--------------------------------------------------------------------------------
+
+-- gitsigns derives its GitSignsStaged* groups once, when it is required, and on
+-- every later ColorScheme skips whichever are already set. Requiring it above the
+-- colorscheme therefore freezes them as half-brightness copies of Neovim's own
+-- Added/Changed/Removed, which share no hue with the palette: staged `change`
+-- lands on teal while the unstaged sign beside it is blue. Redefining them here,
+-- below onenord, puts them back on the unstaged hue.
+
+local function blend(fg, bg, alpha)
+  local out = 0
+  for _, shift in ipairs({ 65536, 256, 1 }) do
+    local f, b = math.floor(fg / shift) % 256, math.floor(bg / shift) % 256
+    out = out + math.floor(f + (b - f) * alpha + 0.5) * shift
+  end
+  return out
+end
+
+local function gitsigns_staged_hl()
+  local bg = tonumber(require('onenord.colors').load().bg:sub(2), 16)
+  for _, ty in ipairs({ 'Add', 'Change', 'Delete', 'Changedelete', 'Topdelete', 'Untracked' }) do
+    local unstaged = vim.api.nvim_get_hl(0, { name = 'GitSigns' .. ty, link = false })
+    if unstaged.fg then
+      -- Same hue, sunk toward the background: the sign character already carries
+      -- the staged/unstaged distinction, so the colour only has to recede.
+      local fg = blend(unstaged.fg, bg, 0.4)
+      -- Nr and Cul are separate groups because numhl and cursorline are both on.
+      for _, kind in ipairs({ "", 'Nr', 'Cul' }) do
+        vim.api.nvim_set_hl(0, 'GitSignsStaged' .. ty .. kind, { fg = fg })
+      end
+    end
+  end
+end
+
+gitsigns_staged_hl()
+-- Registered after gitsigns' own ColorScheme handler, so it overwrites rather
+-- than being skipped.
+vim.api.nvim_create_autocmd('ColorScheme', { callback = gitsigns_staged_hl })
+
+--------------------------------------------------------------------------------
 -- Indent Blankline
 --------------------------------------------------------------------------------
 
