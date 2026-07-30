@@ -67,6 +67,31 @@ let
     size = "${toString width} ${toString height}";
   };
 
+  # Windows tile; a class earns a float rule by being dismissed rather than
+  # inhabited, and the kind it lands in fixes the geometry once. Matching is
+  # case-insensitive because the same program reports a capitalised WM_CLASS
+  # under XWayland and a lowercase app id when built native — viewnior is
+  # `Viewnior` today, and a package bump would otherwise silently kill the
+  # rule. Hyprland matches with RE2, which honours `(?i)`.
+  floatRule = kind: props: class: {
+    name = "${kind}-${class}";
+    "match:class" = "(?i)^(${escapeRegex class})$";
+    float = "yes";
+    center = true;
+  } // props;
+
+  # A fraction of the display, not pixels: one module serves fractal's 2560x1440
+  # and the thinkpad's panel, so a constant is right on at most one of them.
+  # `size` is evaluated by muParser over `monitor_w`/`monitor_h`, so a term
+  # carries no spaces and a percentage would throw at map time.
+  manager = floatRule "manager" { size = "monitor_w*0.47 monitor_h*0.62"; };
+  utility = floatRule "utility" { size = "monitor_w*0.23 monitor_h*0.35"; };
+
+  # The content sets the shape, so none is imposed. `max_size` would clamp it,
+  # but it takes pixels only and any ceiling would be wrong on one of the hosts.
+  viewer = floatRule "viewer" { };
+  dialog = floatRule "dialog" { };
+
   # wlogout bakes its icons in an off-palette lavender. The shapes live in the
   # alpha channel, so `-colorize` repaints them without touching the mask.
   wlogoutIcons = pkgs.runCommand "wlogout-icons-one-dark" {
@@ -267,6 +292,23 @@ in {
         notify-send -i "$ICON" "Keyboard Status" "$MESSAGE" --urgency normal --hint string:synchronous:my_caps
       '')
 
+      # `togglefloating` floats a window at whatever geometry its tile happened
+      # to have, which is the geometry being escaped. This lands it where the
+      # manager kind would have, for the windows no rule caught. Percentages
+      # here go through the dispatcher rather than muParser, so they parse.
+      (writeShellScriptBin "hypr-float-here" ''
+        hyprctl --batch "dispatch setfloating ; dispatch resizeactive exact 47% 62% ; dispatch centerwindow"
+      '')
+
+      # Classifying a program means knowing the class it actually reports, which
+      # is not derivable from its name: viewnior answers `Viewnior` under
+      # XWayland, okular `org.kde.okular`, and blueman leaks its Nix wrapper.
+      (writeShellScriptBin "hypr-window-class" ''
+        hyprctl activewindow -j \
+          | ${pkgs.jq}/bin/jq -r '"class: \(.class)\ninitialClass: \(.initialClass)\nxwayland: \(.xwayland)"' \
+          | xargs -0 notify-send "Window class" --urgency normal --hint string:synchronous:my_class
+      '')
+
       # The Hyprland equivalent of i3's `scratchpad show`: pull the first window
       # parked on the special workspace onto the focused one, so repeated
       # presses walk through the rest. `togglespecialworkspace` only overlays
@@ -347,6 +389,7 @@ in {
         networkmanagerapplet
         obs-studio
         pavucontrol
+        pwvucontrol
         pcmanfm
         roboto
         stretchly
@@ -617,9 +660,11 @@ in {
               "$mod, D, exec, wofi --show drun"
               "$mod, F, fullscreen"
               "$mod, SPACE, togglefloating"
+              "$mod SHIFT, SPACE, exec, hypr-float-here"
+              "$mod CTRL, SPACE, exec, hypr-window-class"
               "$mod, P, pseudo"
               "$mod, ${splitKey}, layoutmsg, togglesplit"
-              "$mod, M, exec, pavucontrol"
+              "$mod, M, exec, pwvucontrol"
               "$mod, W, exec, pcmanfm"
               "$mod SHIFT, R, exec, systemctl --user restart waybar"
               "$mod, R, submap, resize"
@@ -703,25 +748,46 @@ in {
             ", mouse:276, movewindow"
           ];
 
-          windowrule = [
+          windowrule =
+            # Generated rules lead. Apply order is list order and the last match
+            # wins a property, so every hand-written rule below stays an override
+            # — notably the two that dock under a Waybar module, which would
+            # otherwise be re-centred by their kind.
+
+            # Browse a collection, act once, close.
+            map manager [ "engrampa" "pcmanfm" "transmission-gtk" ]
+
+            # Single-purpose control surface, never compared against a neighbour.
+            ++ map utility [ ".blueman-manager-wrapped" "galculator" "waypaper" ]
+
+            # One piece of content, sized by its own aspect ratio.
+            ++ map viewer [ "Viewnior" "org.kde.okular" "vlc" ]
+
+            # Raised by another window and answered before work continues. These
+            # three are standalone agents with no parent to inherit from; the
+            # modal rule below covers every dialog that does have one.
+            ++ map dialog [
+              "gcr-prompter"
+              "polkit-gnome-authentication-agent-1"
+              "xdg-desktop-portal-gtk"
+            ]
+
+            ++ [
+            # A modal child is an interruption whatever raised it, so this is the
+            # one dialog rule that needs no class list. Browsers that draw their
+            # own file chooser in-process are still out of reach.
+            { name = "dialog-modal"; "match:modal" = true; float = "yes"; center = true; }
             { name = "firefox-workspace"; "match:class" = "^(firefox)$"; workspace = "1 silent"; }
             # XWayland reports WM_CLASS's second field, and Hyprland matches
             # case-sensitively, so the class is `Slack`.
             { name = "slack-workspace"; "match:class" = "^(Slack)$"; workspace = "3 silent"; }
-            {
-              name = "pcmanfm-float";
-              "match:class" = "^(pcmanfm)$";
-              float = "yes";
-              center = true;
-              size = "1200 900";
-            }
             ({
               name = "nm-float-pin";
               "match:class" = "^(nm-connection-editor)$";
             } // underBarModule { fromRight = 907; width = 400; height = 400; })
             ({
-              name = "pavucontrol-float-pin";
-              "match:class" = "^(org\\.pulseaudio\\.pavucontrol)$";
+              name = "pwvucontrol-float-pin";
+              "match:class" = "^(com\\.saivert\\.pwvucontrol)$";
             } // underBarModule { fromRight = 460; width = 800; height = 500; })
             { name = "suppress-maximize"; "match:class" = ".*"; suppress_event = "maximize"; }
             {
@@ -1004,8 +1070,14 @@ in {
 
       dconf = {
         enable = true;
-        settings."org.gnome.desktop.wm.preferences".button-layout = "appmenu:close";
-        settings."org.gnome.desktop.interface".overlay-scrolling = false;
+        # Keys are dconf paths: the separator is a slash, and a dotted name is
+        # written verbatim into a group no schema reads.
+        settings."org/gnome/desktop/wm/preferences".button-layout = "appmenu:close";
+        settings."org/gnome/desktop/interface" = {
+          overlay-scrolling = false;
+          # libadwaita ignores gtk.theme; dark mode comes from this preference.
+          color-scheme = "prefer-dark";
+        };
       };
 
       gtk = {
@@ -1024,11 +1096,15 @@ in {
         };
         gtk3.extraConfig = {
           "gtk-overlay-scrolling" = false;
+          # Chromium clients draw their own buttons but read this, so it is what
+          # strips minimize and maximize from Vivaldi.
+          "gtk-decoration-layout" = "appmenu:close";
         };
         gtk4 = {
           theme = null;
           extraConfig = {
             "gtk-overlay-scrolling" = false;
+            "gtk-decoration-layout" = "appmenu:close";
           };
         };
       };

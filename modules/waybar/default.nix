@@ -115,7 +115,10 @@ in {
               "default-muted" = "";
             };
             "scroll-step" = 5;
-            "on-click" = "pavucontrol";
+            # Absolute paths throughout: Waybar runs as a systemd user service,
+            # whose PATH carries a few core utilities and nothing else, so a bare
+            # command name never resolves.
+            "on-click" = "${pkgs.pwvucontrol}/bin/pwvucontrol";
           };
 
 
@@ -124,7 +127,7 @@ in {
             interval = 2;
             format = "{}";
             tooltip = false;
-            "on-click" = "nm-connection-editor";
+            "on-click" = "${pkgs.networkmanagerapplet}/bin/nm-connection-editor";
           };
 
           cpu = {
@@ -146,7 +149,9 @@ in {
             tooltip = true;
             "tooltip-format" = "Free: {free}\nUsed: {percentage_used}%, {used} / {total}";
             "critical-threshold" = 90;
-            "on-click" = "xdg-open /";
+            # pcmanfm rather than xdg-open, which would need a PATH of its own to
+            # reach the configured inode/directory handler.
+            "on-click" = "${pkgs.pcmanfm}/bin/pcmanfm /";
           };
 
           battery = {
