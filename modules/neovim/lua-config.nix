@@ -27,6 +27,8 @@ require'packer'.startup(function(use)
     'nvim-telescope/telescope-fzf-native.nvim',
     run = 'nix-shell -p cmake --command "cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release"'
   }
+  use { 'nvim-telescope/telescope-ui-select.nvim', requires = 'nvim-telescope/telescope.nvim' }
+  use { 'aznhe21/actions-preview.nvim', requires = 'nvim-telescope/telescope.nvim' }
   use {
     'smoka7/hop.nvim',
     config = function()
@@ -192,7 +194,10 @@ local lsp_on_attach = function(client, bufnr)
   vim.keymap.set('n', 'gr',    vim.lsp.buf.references,      bufopts)
   ''}
   vim.keymap.set('n', '<leader>r', vim.lsp.buf.rename,          bufopts)
-  vim.keymap.set('n', '<leader>a', vim.lsp.buf.code_action,     bufopts)
+  -- Visual mode too: the range is what makes extract-to-function offerable.
+  vim.keymap.set({ 'n', 'x' }, '<leader>a', function()
+    require('actions-preview').code_actions()
+  end, bufopts)
   vim.keymap.set('n', '<leader>e', vim.diagnostic.open_float,   bufopts)
   vim.keymap.set('n', '<leader>f', vim.lsp.buf.format,          bufopts)
   vim.keymap.set('n', '<leader>l', vim.diagnostic.setloclist,   bufopts)
@@ -772,11 +777,16 @@ require('telescope').setup {
       override_generic_sorter = true,  -- override the generic sorter
       override_file_sorter = true,     -- override the file sorter
       case_mode = "smart_case"         -- or "ignore_case" or "respect_case"
-    }
+    },
+    ['ui-select'] = { require('telescope.themes').get_dropdown {} }
   }
 }
 
 require('telescope').load_extension('fzf')
+
+-- Routes every vim.ui.select through telescope, which is what the LSP rename
+-- conflict prompts and the plugins' own pickers fall back to.
+require('telescope').load_extension('ui-select')
 
 local tls_builtin = require('telescope.builtin')
 
@@ -786,6 +796,16 @@ vim.keymap.set('n', 'tg', tls_builtin.live_grep, { desc = 'Telescope live grep' 
 vim.keymap.set('n', 'ts', tls_builtin.grep_string, { desc = 'Telescope grep string under cursor' })
 vim.keymap.set('n', 'tb', tls_builtin.buffers, { desc = 'Telescope buffers' })
 vim.keymap.set('n', 'th', tls_builtin.help_tags, { desc = 'Telescope help tags' })
+
+--------------------------------------------------------------------------------
+-- Code actions
+--------------------------------------------------------------------------------
+
+-- Replaces the bare vim.lsp.buf.code_action list on <leader>a with a picker that
+-- previews each action as a diff before it is applied.
+require('actions-preview').setup {
+  telescope = require('telescope.themes').get_dropdown {}
+}
 
 --------------------------------------------------------------------------------
 -- Comment
