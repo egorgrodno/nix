@@ -277,10 +277,8 @@ local function diagnostic_jump(count)
 end
 
 local lsp_on_attach = function(client, bufnr)
-  -- enable completion triggered by <C-x><C-o>
   vim.api.nvim_buf_set_option(bufnr, 'omnifunc', 'v:lua.vim.lsp.omnifunc')
 
-  -- see `:help vim.lsp.*` for documentation on any of the below functions
   local bufopts = { noremap = true, silent = true, buffer = bufnr }
 
   ${if config.base.keyboard.layout == "hallmack" then ''
@@ -386,7 +384,7 @@ cmp.setup.cmdline(':', {
   })
 })
 
--- ttps://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md
+-- Server names: https://github.com/neovim/nvim-lspconfig/blob/master/doc/configs.md
 local lsp_servers = { 'bashls', 'eslint', 'hls', 'nil_ls', 'rust_analyzer', 'arduino_language_server', 'cssls' }
 
 local lsp_capabilities = require('cmp_nvim_lsp').default_capabilities()
@@ -448,10 +446,9 @@ require'luasnip.loaders.from_lua'.load({ paths = '~/.config/nvim/snippets' })
 -- TreeSitter
 --------------------------------------------------------------------------------
 
--- The `main` branch of nvim-treesitter starts nothing on its own, and Neovim's
--- runtime only auto-starts the handful of parsers it ships itself. Highlighting,
--- indenting and the selection maps below are therefore attached per buffer, and
--- only where a parser for the filetype actually loaded.
+-- The `main` branch of nvim-treesitter starts nothing on its own, so highlighting,
+-- indenting and the selection maps below attach per buffer, and only where a
+-- parser for the filetype actually loaded.
 
 -- Ancestor node stack backing the incremental selection maps, one per buffer.
 local ts_sel = {}
@@ -573,10 +570,9 @@ vim.opt.foldlevelstart = 99    -- Prevents mass collapsing on first fold
 
 vim.opt.viewoptions:remove('curdir') -- Omit current working directory
 
--- Ordinary file buffers only. Plugin scratch buffers (Neogit, NvimTree) carry a
--- path-shaped name, so mkview writes views for them too. Tests the current
--- buffer, not the event's: mkview and loadview act on the window in focus, which
--- on BufWinLeave is already the incoming buffer.
+-- Ordinary file buffers only; Neogit and NvimTree carry path-shaped names that
+-- mkview would otherwise write views for. Tests the current buffer, not the
+-- event's, because mkview acts on the window in focus.
 local function view_worthy()
   return #vim.bo.buftype == 0 and #vim.api.nvim_buf_get_name(0) > 0
 end
@@ -728,12 +724,9 @@ vim.api.nvim_set_hl(0, 'FloatTitle', { fg = float_palette.blue, bg = 'none', bol
 -- GitSigns staged highlights
 --------------------------------------------------------------------------------
 
--- gitsigns derives its GitSignsStaged* groups once, when it is required, and on
--- every later ColorScheme skips whichever are already set. Requiring it above the
--- colorscheme therefore freezes them as half-brightness copies of Neovim's own
--- Added/Changed/Removed, which share no hue with the palette: staged `change`
--- lands on teal while the unstaged sign beside it is blue. Redefining them here,
--- below onenord, puts them back on the unstaged hue.
+-- gitsigns derives its GitSignsStaged* groups when required and later skips any
+-- already set, so requiring it above the colorscheme freezes them off-palette.
+-- Redefining below onenord puts them back on the unstaged hue.
 
 local function blend(fg, bg, alpha)
   local out = 0
@@ -819,9 +812,6 @@ local function nvimtree_on_attach(bufnr)
   '' else ''
   vim.keymap.set('n', 'o', api.fs.create, opts('Create'))
   ''}
-  -- vim.keymap.set('n', 'bd', api.marks.bulk.delete, opts('Delete Bookmarked'))
-  -- vim.keymap.set('n', 'bt', api.marks.bulk.trash, opts('Trash Bookmarked'))
-  -- vim.keymap.set('n', 'bmv', api.marks.bulk.move, opts('Move Bookmarked'))
   vim.keymap.set('n', 'B', api.tree.toggle_no_buffer_filter, opts('Toggle Filter: No Buffer'))
   vim.keymap.set('n', 'c', api.fs.copy.node, opts('Copy'))
   vim.keymap.set('n', 'C', api.tree.toggle_git_clean_filter, opts('Toggle Filter: Git Clean'))
@@ -830,20 +820,13 @@ local function nvimtree_on_attach(bufnr)
   vim.keymap.set('n', 'd', api.fs.remove, opts('Delete'))
   vim.keymap.set('n', 'D', api.fs.trash, opts('Trash'))
   vim.keymap.set('n', 'L', api.tree.expand_all, opts('Expand All'))
-  -- vim.keymap.set('n', '<e', api.fs.rename_basename, opts('Rename: Basename'))
-  -- vim.keymap.set('n', ']e', api.node.navigate.diagnostics.next, opts('Next Diagnostic'))
-  -- vim.keymap.set('n', '[e', api.node.navigate.diagnostics.prev, opts('Prev Diagnostic'))
   vim.keymap.set('n', 'F', api.live_filter.clear, opts('Clean Filter'))
   vim.keymap.set('n', 'f', api.live_filter.start, opts('Filter'))
   vim.keymap.set('n', '?', api.tree.toggle_help, opts('Help'))
-  -- vim.keymap.set('n', 'gy', api.fs.copy.absolute_path, opts('Copy Absolute Path'))
-  -- vim.keymap.set('n', 'H', api.tree.toggle_hidden_filter, opts('Toggle Filter: Dotfiles'))
   vim.keymap.set('n', 'I', api.tree.toggle_gitignore_filter, opts('Toggle Filter: Git Ignore'))
   vim.keymap.set('n', 'A', api.node.navigate.sibling.last, opts('Last Sibling'))
   vim.keymap.set('n', 'E', api.node.navigate.sibling.first, opts('First Sibling'))
   vim.keymap.set('n', 'm', api.marks.toggle, opts('Toggle Bookmark'))
-  -- vim.keymap.set('n', 'o', api.node.open.edit, opts('Open'))
-  -- vim.keymap.set('n', 'O', api.node.open.no_window_picker, opts('Open: No Window Picker'))
   vim.keymap.set('n', 'p', api.fs.paste, opts('Paste'))
   vim.keymap.set('n', 'P', api.node.navigate.parent, opts('Parent Directory'))
   vim.keymap.set('n', 'q', api.tree.close, opts('Close'))

@@ -18,7 +18,6 @@
 
       target_path="$1"
 
-      # Check if the path exists
       if [ ! -e "$target_path" ]; then
         echo "Error: path does not exist"
         exit 1

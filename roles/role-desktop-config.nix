@@ -18,8 +18,8 @@
     keyboard.layout = lib.mkDefault "hallmack";
   };
 
-  # The screen layout is hardware, so every host sets its own `my.desktop.*`
-  # options.
+  # Enable only; the screens are hardware, so each host sets its own
+  # `my.desktop.*`.
   my.desktop.enable = true;
 
   security.sudo.wheelNeedsPassword = false;

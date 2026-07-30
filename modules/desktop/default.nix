@@ -69,10 +69,8 @@ let
 
   # Windows tile; a class earns a float rule by being dismissed rather than
   # inhabited, and the kind it lands in fixes the geometry once. Matching is
-  # case-insensitive because the same program reports a capitalised WM_CLASS
-  # under XWayland and a lowercase app id when built native — viewnior is
-  # `Viewnior` today, and a package bump would otherwise silently kill the
-  # rule. Hyprland matches with RE2, which honours `(?i)`.
+  # case-insensitive: the same program reports a capitalised WM_CLASS under
+  # XWayland and a lowercase app id when built native. RE2 honours `(?i)`.
   floatRule = kind: props: class: {
     name = "${kind}-${class}";
     "match:class" = "(?i)^(${escapeRegex class})$";
@@ -341,9 +339,8 @@ in {
       cliphist
     ];
 
-    # The GPU is hardware, so the driver, its VA-API backend and any vendor
-    # session variables belong to the host. This module claims only what every
-    # Wayland machine needs regardless of who made the card.
+    # Vendor-neutral: the driver, its VA-API backend and any vendor session
+    # variables belong to the host.
     hardware.graphics.enable = true;
 
     # Paired with the ntfs3g package below; the in-kernel ntfs3 driver loses to it.
@@ -821,13 +818,8 @@ in {
         };
 
         extraConfig = ''
-          # Percentages, not pixels. Hyprland silently rejects a grow delta
-          # larger than the second child's own size along that axis, and a
-          # split's lower window bottoms out well under 100px — 58px on a
-          # 1345px column. A fixed 100px step therefore stranded it: every
-          # attempt to grow it back was refused outright and only the width
-          # still answered. `n%` of a window is always smaller than that
-          # window, so the rejection cannot trigger at any resolution.
+          # Percentages, not pixels: Hyprland rejects a grow delta larger than
+          # the window itself, which a fixed step hits on short splits.
           submap = resize
           binde = , G, resizeactive, -10% 0
           binde = , A, resizeactive, 0 10%
@@ -1116,15 +1108,9 @@ in {
         size = 17;
       };
 
-      # Day/night colour-temperature via wlsunset. hyprsunset (0.3.3) has no
-      # transition support: it snaps to a profile's temperature at its `time`
-      # and rejects `transition_duration` (that option does not exist upstream).
-      # wlsunset instead ramps gradually over `-d` seconds in manual mode:
-      #   morning: night -> day over (sunrise - d) .. sunrise
-      #   evening: day -> night over sunset .. (sunset + d)
-      # A single `-d` applies to both edges, so the 30 min / 2 h split is folded
-      # into one 2 h transition: warm-up finishes at 07:00, dimming runs 18:30 ..
-      # 20:30. The service binds to graphical-session.target, as hyprsunset did.
+      # A single `-d` covers both edges, so the intended 30 min / 2 h split is
+      # folded into one 2 h transition: warm-up ends 07:00, dimming runs
+      # 18:30 .. 20:30.
       systemd.user.services.wlsunset = {
         Unit = {
           Description = "Day/night colour temperature (wlsunset)";

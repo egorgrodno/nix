@@ -48,20 +48,13 @@
           cyan = "#5CD5E4";
         };
       };
-      # Packages that provide the font families.
       fontPackages = [
         pkgs.nerd-fonts.inconsolata-lgc
         pkgs.nerd-fonts.overpass
       ];
-      # Standalone home-manager profile that installs the neovim editor + git for
-      # a given keyboard layout. The neovim module carries its own runtime deps
-      # so this profile is self-contained.
-      #
-      # username/homeDirectory default to the invoking user's $USER/$HOME so the
-      # profile works on any account; this requires evaluating with `--impure`.
-      # getEnv yields "" under pure evaluation, which must fail loudly: a silent
-      # fallback would install the profile under the wrong account's name and
-      # paths, and home-manager only catches that at activation time.
+      # Must throw rather than fall back: under pure evaluation getEnv yields "",
+      # and a default would install the profile under the wrong account's paths,
+      # which home-manager only catches at activation time.
       requireEnv = var: arg:
         let value = builtins.getEnv var; in
         if value != "" then value

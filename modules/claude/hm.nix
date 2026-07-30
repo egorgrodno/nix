@@ -2,8 +2,7 @@
 
 {
   home.packages = [
-    # The Claude Code CLI itself. Wraps `nix run`, so it only works where Nix is
-    # available (i.e. NixOS or a machine with the Nix package manager).
+    # Wraps `nix run`, so it only works where Nix is available.
     (pkgs.writeShellScriptBin "claude" ''
       nix run github:sadjow/claude-code-nix -- "$@"
     '')
