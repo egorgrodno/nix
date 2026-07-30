@@ -481,14 +481,26 @@ vim.opt.foldlevelstart = 99    -- Prevents mass collapsing on first fold
 
 vim.opt.viewoptions:remove('curdir') -- Omit current working directory
 
+-- Ordinary file buffers only. Plugin scratch buffers (Neogit, NvimTree) carry a
+-- path-shaped name, so mkview writes views for them too. Tests the current
+-- buffer, not the event's: mkview and loadview act on the window in focus, which
+-- on BufWinLeave is already the incoming buffer.
+local function view_worthy()
+  return #vim.bo.buftype == 0 and #vim.api.nvim_buf_get_name(0) > 0
+end
+
+-- noautocmd is load-bearing: every view file ends in `doautoall SessionLoadPost`,
+-- and Neogit answers that event by wiping every buffer it owns.
 vim.api.nvim_create_autocmd('BufWinLeave', {
-  pattern = '*',
-  command = 'silent! mkview'
+  callback = function()
+    if view_worthy() then vim.cmd('silent! noautocmd mkview') end
+  end
 })
 
 vim.api.nvim_create_autocmd('BufWinEnter', {
-  pattern = '*',
-  command = 'silent! loadview'
+  callback = function()
+    if view_worthy() then vim.cmd('silent! noautocmd loadview') end
+  end
 })
 
 --------------------------------------------------------------------------------
