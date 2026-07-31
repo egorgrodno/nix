@@ -4,7 +4,7 @@ let
   mkUserHome = u: {
     name = u.name;
     value = {
-      imports = u.homeModules or [];
+      imports = u.homeModules or [ ];
       programs.home-manager.enable = true;
 
       home = {

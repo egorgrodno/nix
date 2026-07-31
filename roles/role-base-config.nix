@@ -5,7 +5,8 @@ with lib;
 let
   cfg = config.base;
 
-in {
+in
+{
   options.base = {
     isNixosSystem = mkOption {
       type = types.bool;
@@ -27,7 +28,10 @@ in {
 
     keyboard = {
       layout = mkOption {
-        type = types.enum [ "qwerty" "hallmack" ];
+        type = types.enum [
+          "qwerty"
+          "hallmack"
+        ];
         description = "Keyboard layout";
       };
 

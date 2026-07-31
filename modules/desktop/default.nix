@@ -1,4 +1,12 @@
-{ config, lib, pkgs, forAllUsers, theme, fontPackages, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  forAllUsers,
+  theme,
+  fontPackages,
+  ...
+}:
 
 with lib;
 
@@ -60,23 +68,32 @@ let
 
   # Floats a window under the Waybar module that opens it. fromRight is that
   # module's centre, measured off the bar — Hyprland cannot read Waybar.
-  underBarModule = { fromRight, width, height }: {
-    float = "yes";
-    pin = "yes";
-    move = "(monitor_w-${toString (fromRight + width / 2)}) ${toString barHeight}";
-    size = "${toString width} ${toString height}";
-  };
+  underBarModule =
+    {
+      fromRight,
+      width,
+      height,
+    }:
+    {
+      float = "yes";
+      pin = "yes";
+      move = "(monitor_w-${toString (fromRight + width / 2)}) ${toString barHeight}";
+      size = "${toString width} ${toString height}";
+    };
 
   # Windows tile; a class earns a float rule by being dismissed rather than
   # inhabited, and the kind it lands in fixes the geometry once. Matching is
   # case-insensitive: the same program reports a capitalised WM_CLASS under
   # XWayland and a lowercase app id when built native. RE2 honours `(?i)`.
-  floatRule = kind: props: class: {
-    name = "${kind}-${class}";
-    "match:class" = "(?i)^(${escapeRegex class})$";
-    float = "yes";
-    center = true;
-  } // props;
+  floatRule =
+    kind: props: class:
+    {
+      name = "${kind}-${class}";
+      "match:class" = "(?i)^(${escapeRegex class})$";
+      float = "yes";
+      center = true;
+    }
+    // props;
 
   # A fraction of the display, not pixels: one module serves fractal's 2560x1440
   # and the thinkpad's panel, so a constant is right on at most one of them.
@@ -92,22 +109,26 @@ let
 
   # wlogout bakes its icons in an off-palette lavender. The shapes live in the
   # alpha channel, so `-colorize` repaints them without touching the mask.
-  wlogoutIcons = pkgs.runCommand "wlogout-icons-one-dark" {
-    nativeBuildInputs = [ pkgs.imagemagick ];
-  } ''
-    mkdir -p $out
-    for icon in ${pkgs.wlogout}/share/wlogout/icons/*.png; do
-      magick "$icon" -fill "${theme.foreground.main}" -colorize 100 \
-        "$out/$(basename "$icon")"
-    done
-  '';
+  wlogoutIcons =
+    pkgs.runCommand "wlogout-icons-one-dark"
+      {
+        nativeBuildInputs = [ pkgs.imagemagick ];
+      }
+      ''
+        mkdir -p $out
+        for icon in ${pkgs.wlogout}/share/wlogout/icons/*.png; do
+          magick "$icon" -fill "${theme.foreground.main}" -colorize 100 \
+            "$out/$(basename "$icon")"
+        done
+      '';
 
   nxe = pkgs.writeShellScriptBin "nxe" ''
     exec ${pkgs.kitty}/bin/kitty -d /etc/nixos \
       -e ${pkgs.zsh}/bin/zsh -c 'vim home.nix; exec ${pkgs.zsh}/bin/zsh'
   '';
 
-in {
+in
+{
   options.my.desktop = {
     enable = mkEnableOption "Wayland Hyprland desktop environment";
 
@@ -160,7 +181,7 @@ in {
     # are inert on Wayland; pointer behaviour lives in Hyprland's `input` block.
     services.libinput.enable = true;
 
-    security.pam.services.hyprlock = {};
+    security.pam.services.hyprlock = { };
 
     security.rtkit.enable = true;
     services.pipewire = {
@@ -225,7 +246,10 @@ in {
 
     xdg.portal.extraPortals = [ pkgs.xdg-desktop-portal-gtk ];
     xdg.portal.config.hyprland = {
-      default = [ "hyprland" "gtk" ];
+      default = [
+        "hyprland"
+        "gtk"
+      ];
       "org.freedesktop.impl.portal.ScreenCast" = "hyprland";
       "org.freedesktop.impl.portal.Screenshot" = "hyprland";
     };
@@ -409,42 +433,42 @@ in {
       xdg.mimeApps = {
         enable = true;
         defaultApplications = {
-          "inode/directory"           = "pcmanfm.desktop";
+          "inode/directory" = "pcmanfm.desktop";
           # Okular splits its associations per format; the main
           # org.kde.okular.desktop entry declares only okular-archive.
-          "application/pdf"           = "okularApplication_pdf.desktop";
-          "video/x-matroska"          = "vlc.desktop";
-          "video/mp4"                 = "vlc.desktop";
-          "video/webm"                = "vlc.desktop";
-          "video/ogg"                 = "vlc.desktop";
-          "video/quicktime"           = "vlc.desktop";
-          "video/x-msvideo"           = "vlc.desktop";
-          "image/png"                 = "viewnior.desktop";
-          "image/gif"                 = "viewnior.desktop";
-          "image/heic"                = "viewnior.desktop";
-          "image/jpeg"                = "viewnior.desktop";
-          "image/svg+xml"             = "viewnior.desktop";
-          "image/webp"                = "viewnior.desktop";
-          "text/plain"                = "nvim-gui.desktop";
-          "text/markdown"             = "nvim-gui.desktop";
+          "application/pdf" = "okularApplication_pdf.desktop";
+          "video/x-matroska" = "vlc.desktop";
+          "video/mp4" = "vlc.desktop";
+          "video/webm" = "vlc.desktop";
+          "video/ogg" = "vlc.desktop";
+          "video/quicktime" = "vlc.desktop";
+          "video/x-msvideo" = "vlc.desktop";
+          "image/png" = "viewnior.desktop";
+          "image/gif" = "viewnior.desktop";
+          "image/heic" = "viewnior.desktop";
+          "image/jpeg" = "viewnior.desktop";
+          "image/svg+xml" = "viewnior.desktop";
+          "image/webp" = "viewnior.desktop";
+          "text/plain" = "nvim-gui.desktop";
+          "text/markdown" = "nvim-gui.desktop";
           "application/x-shellscript" = "nvim-gui.desktop";
-          "application/json"          = "nvim-gui.desktop";
-          "application/xml"           = "nvim-gui.desktop";
-          "application/zip"             = "engrampa.desktop";
+          "application/json" = "nvim-gui.desktop";
+          "application/xml" = "nvim-gui.desktop";
+          "application/zip" = "engrampa.desktop";
           "application/x-zip-compressed" = "engrampa.desktop";
-          "application/x-tar"           = "engrampa.desktop";
+          "application/x-tar" = "engrampa.desktop";
           "application/x-compressed-tar" = "engrampa.desktop";
           "application/x-bzip-compressed-tar" = "engrampa.desktop";
           "application/x-xz-compressed-tar" = "engrampa.desktop";
           "application/x-7z-compressed" = "engrampa.desktop";
-          "application/x-rar"           = "engrampa.desktop";
+          "application/x-rar" = "engrampa.desktop";
           "application/x-rar-compressed" = "engrampa.desktop";
-          "x-scheme-handler/magnet"   = "transmission-gtk.desktop";
-          "x-scheme-handler/http"     = "vivaldi-stable.desktop";
-          "x-scheme-handler/https"    = "vivaldi-stable.desktop";
-          "x-scheme-handler/about"    = "vivaldi-stable.desktop";
-          "x-scheme-handler/unknown"  = "vivaldi-stable.desktop";
-          "text/html"                 = "vivaldi-stable.desktop";
+          "x-scheme-handler/magnet" = "transmission-gtk.desktop";
+          "x-scheme-handler/http" = "vivaldi-stable.desktop";
+          "x-scheme-handler/https" = "vivaldi-stable.desktop";
+          "x-scheme-handler/about" = "vivaldi-stable.desktop";
+          "x-scheme-handler/unknown" = "vivaldi-stable.desktop";
+          "text/html" = "vivaldi-stable.desktop";
         };
       };
 
@@ -491,7 +515,11 @@ in {
         type = "Application";
         terminal = false;
         icon = "nvim";
-        categories = [ "Utility" "TextEditor" "Development" ];
+        categories = [
+          "Utility"
+          "TextEditor"
+          "Development"
+        ];
 
         exec = "${pkgs.kitty}/bin/kitty nvim %f";
 
@@ -511,7 +539,11 @@ in {
         terminal = false;
         icon = "nvim";
         exec = "${nxe}/bin/nxe";
-        categories = [ "Utility" "TextEditor" "Development" ];
+        categories = [
+          "Utility"
+          "TextEditor"
+          "Development"
+        ];
         settings = {
           Keywords = "nix;nixos;config;flake;vim;";
           StartupNotify = "true";
@@ -523,7 +555,13 @@ in {
         exec = "pcmanfm -n %U";
         icon = "system-file-manager";
         mimeType = [ "inode/directory" ];
-        categories = [ "System" "FileTools" "FileManager" "Utility" "Core" ];
+        categories = [
+          "System"
+          "FileTools"
+          "FileManager"
+          "Utility"
+          "Core"
+        ];
         settings = {
           StartupNotify = "true";
         };
@@ -541,9 +579,7 @@ in {
 
           # The primary screen always leads, anchored at the origin; everything
           # else follows it.
-          monitor =
-            [ "${cfg.primaryScreen}, ${cfg.primaryMode}, 0x0, 1" ]
-            ++ cfg.extraMonitors;
+          monitor = [ "${cfg.primaryScreen}, ${cfg.primaryMode}, 0x0, 1" ] ++ cfg.extraMonitors;
 
           env = [
             "XCURSOR_SIZE,24"
@@ -595,9 +631,10 @@ in {
             repeat_rate = 30;
             kb_layout = "us,ru";
             kb_options =
-              if config.base.keyboard.swapCapsEscape
-              then "grp:win_space_toggle,caps:swapescape"
-              else "grp:win_space_toggle";
+              if config.base.keyboard.swapCapsEscape then
+                "grp:win_space_toggle,caps:swapescape"
+              else
+                "grp:win_space_toggle";
             follow_mouse = 1;
             # Hyprland applies these to every pointer, the touchpad included;
             # scoping them to the mouse would take a per-device section, whose
@@ -647,11 +684,23 @@ in {
           bind =
             let
               dirs =
-                if config.base.keyboard.layout == "hallmack"
-                then { l = "G"; d = "A"; u = "E"; r = "O"; }
-                else { l = "H"; d = "J"; u = "K"; r = "L"; };
+                if config.base.keyboard.layout == "hallmack" then
+                  {
+                    l = "G";
+                    d = "A";
+                    u = "E";
+                    r = "O";
+                  }
+                else
+                  {
+                    l = "H";
+                    d = "J";
+                    u = "K";
+                    r = "L";
+                  };
               splitKey = if config.base.keyboard.layout == "hallmack" then "L" else "E";
-            in [
+            in
+            [
               "$mod, Return, exec, kitty"
               "$mod, Escape, killactive"
               "$mod, D, exec, wofi --show drun"
@@ -752,13 +801,25 @@ in {
             # otherwise be re-centred by their kind.
 
             # Browse a collection, act once, close.
-            map manager [ "engrampa" "pcmanfm" "transmission-gtk" ]
+            map manager [
+              "engrampa"
+              "pcmanfm"
+              "transmission-gtk"
+            ]
 
             # Single-purpose control surface, never compared against a neighbour.
-            ++ map utility [ ".blueman-manager-wrapped" "galculator" "waypaper" ]
+            ++ map utility [
+              ".blueman-manager-wrapped"
+              "galculator"
+              "waypaper"
+            ]
 
             # One piece of content, sized by its own aspect ratio.
-            ++ map viewer [ "Viewnior" "org.kde.okular" "vlc" ]
+            ++ map viewer [
+              "Viewnior"
+              "org.kde.okular"
+              "vlc"
+            ]
 
             # Raised by another window and answered before work continues. These
             # three are standalone agents with no parent to inherit from; the
@@ -770,51 +831,82 @@ in {
             ]
 
             ++ [
-            # A modal child is an interruption whatever raised it, so this is the
-            # one dialog rule that needs no class list. Browsers that draw their
-            # own file chooser in-process are still out of reach.
-            { name = "dialog-modal"; "match:modal" = true; float = "yes"; center = true; }
-            { name = "firefox-workspace"; "match:class" = "^(firefox)$"; workspace = "1 silent"; }
-            # XWayland reports WM_CLASS's second field, and Hyprland matches
-            # case-sensitively, so the class is `Slack`.
-            { name = "slack-workspace"; "match:class" = "^(Slack)$"; workspace = "3 silent"; }
-            ({
-              name = "nm-float-pin";
-              "match:class" = "^(nm-connection-editor)$";
-            } // underBarModule { fromRight = 907; width = 400; height = 400; })
-            ({
-              name = "pwvucontrol-float-pin";
-              "match:class" = "^(com\\.saivert\\.pwvucontrol)$";
-            } // underBarModule { fromRight = 460; width = 800; height = 500; })
-            { name = "suppress-maximize"; "match:class" = ".*"; suppress_event = "maximize"; }
-            {
-              name = "fix-xwayland-drags";
-              "match:class" = "^$";
-              "match:float" = true;
-              "match:fullscreen" = false;
-              "match:pin" = false;
-              "match:title" = "^$";
-              "match:xwayland" = true;
-              no_focus = true;
-            }
-            {
-              name = "wofi-float";
-              "match:class" = "^(wofi)$";
-              center = true;
-              float = "yes";
-              pin = "yes";
-              size = "520 320";
-              dim_around = true;
-            }
-            {
-              name = "stretchly-break";
-              "match:class" = "^electron$";
-              "match:title" = "^Time to take a break!$";
-              center = true;
-              pin = "yes";
-              dim_around = true;
-            }
-          ];
+              # A modal child is an interruption whatever raised it, so this is the
+              # one dialog rule that needs no class list. Browsers that draw their
+              # own file chooser in-process are still out of reach.
+              {
+                name = "dialog-modal";
+                "match:modal" = true;
+                float = "yes";
+                center = true;
+              }
+              {
+                name = "firefox-workspace";
+                "match:class" = "^(firefox)$";
+                workspace = "1 silent";
+              }
+              # XWayland reports WM_CLASS's second field, and Hyprland matches
+              # case-sensitively, so the class is `Slack`.
+              {
+                name = "slack-workspace";
+                "match:class" = "^(Slack)$";
+                workspace = "3 silent";
+              }
+              (
+                {
+                  name = "nm-float-pin";
+                  "match:class" = "^(nm-connection-editor)$";
+                }
+                // underBarModule {
+                  fromRight = 907;
+                  width = 400;
+                  height = 400;
+                }
+              )
+              (
+                {
+                  name = "pwvucontrol-float-pin";
+                  "match:class" = "^(com\\.saivert\\.pwvucontrol)$";
+                }
+                // underBarModule {
+                  fromRight = 460;
+                  width = 800;
+                  height = 500;
+                }
+              )
+              {
+                name = "suppress-maximize";
+                "match:class" = ".*";
+                suppress_event = "maximize";
+              }
+              {
+                name = "fix-xwayland-drags";
+                "match:class" = "^$";
+                "match:float" = true;
+                "match:fullscreen" = false;
+                "match:pin" = false;
+                "match:title" = "^$";
+                "match:xwayland" = true;
+                no_focus = true;
+              }
+              {
+                name = "wofi-float";
+                "match:class" = "^(wofi)$";
+                center = true;
+                float = "yes";
+                pin = "yes";
+                size = "520 320";
+                dim_around = true;
+              }
+              {
+                name = "stretchly-break";
+                "match:class" = "^electron$";
+                "match:title" = "^Time to take a break!$";
+                center = true;
+                pin = "yes";
+                dim_around = true;
+              }
+            ];
         };
 
         extraConfig = ''
@@ -910,12 +1002,42 @@ in {
       # https://github.com/end-4/dots-hyprland/blob/main/dots/.config/kitty/kitty.conf
       # https://github.com/end-4/dots-hyprland/blob/main/dots/.config/wlogout/style.css
       xdg.configFile."wlogout/layout".text = lib.concatMapStrings (entry: builtins.toJSON entry + "\n") [
-        { label = "lock";      action = "hyprlock";                        text = "Lock";      keybind = "l"; }
-        { label = "hibernate"; action = "systemctl hibernate";             text = "Hibernate"; keybind = "h"; }
-        { label = "logout";    action = "loginctl terminate-user $USER";   text = "Logout";    keybind = "e"; }
-        { label = "shutdown";  action = "systemctl poweroff";              text = "Shutdown";  keybind = "s"; }
-        { label = "suspend";   action = "systemctl suspend";               text = "Suspend";   keybind = "u"; }
-        { label = "reboot";    action = "systemctl reboot";                text = "Reboot";    keybind = "r"; }
+        {
+          label = "lock";
+          action = "hyprlock";
+          text = "Lock";
+          keybind = "l";
+        }
+        {
+          label = "hibernate";
+          action = "systemctl hibernate";
+          text = "Hibernate";
+          keybind = "h";
+        }
+        {
+          label = "logout";
+          action = "loginctl terminate-user $USER";
+          text = "Logout";
+          keybind = "e";
+        }
+        {
+          label = "shutdown";
+          action = "systemctl poweroff";
+          text = "Shutdown";
+          keybind = "s";
+        }
+        {
+          label = "suspend";
+          action = "systemctl suspend";
+          text = "Suspend";
+          keybind = "u";
+        }
+        {
+          label = "reboot";
+          action = "systemctl reboot";
+          text = "Reboot";
+          keybind = "r";
+        }
       ];
 
       xdg.configFile."wlogout/style.css".text = ''
@@ -972,28 +1094,32 @@ in {
           general = {
             hide_cursor = true;
           };
-          background = [{
-            monitor = "";
-            path = "screenshot";
-            blur_passes = 3;
-            blur_size = 7;
-            brightness = 0.5;
-          }];
-          input-field = [{
-            monitor = "";
-            size = "300, 50";
-            outline_thickness = 2;
-            dots_spacing = 0.3;
-            outer_color = activeBorder;
-            inner_color = "rgba(0, 0, 0, 0.0)";
-            font_color = hyprColor theme.foreground.main "ff";
-            fade_on_empty = false;
-            placeholder_text = "Password...";
-            rounding = 15;
-            position = "0, -60";
-            halign = "center";
-            valign = "center";
-          }];
+          background = [
+            {
+              monitor = "";
+              path = "screenshot";
+              blur_passes = 3;
+              blur_size = 7;
+              brightness = 0.5;
+            }
+          ];
+          input-field = [
+            {
+              monitor = "";
+              size = "300, 50";
+              outline_thickness = 2;
+              dots_spacing = 0.3;
+              outer_color = activeBorder;
+              inner_color = "rgba(0, 0, 0, 0.0)";
+              font_color = hyprColor theme.foreground.main "ff";
+              fade_on_empty = false;
+              placeholder_text = "Password...";
+              rounding = 15;
+              position = "0, -60";
+              halign = "center";
+              valign = "center";
+            }
+          ];
           label = [
             {
               monitor = "";
@@ -1051,12 +1177,17 @@ in {
         extraConfig = ''
           filetype *.pdf,*.jpg,*.jpeg,*.png,*.gif xdg-open %f &
 
-          ${if config.base.keyboard.layout == "hallmack" then ''
-          nnoremap H L
-          nnoremap L H
-          nnoremap j <nop>
-          nnoremap k <nop>
-          '' else ""}
+          ${
+            if config.base.keyboard.layout == "hallmack" then
+              ''
+                nnoremap H L
+                nnoremap L H
+                nnoremap j <nop>
+                nnoremap k <nop>
+              ''
+            else
+              ""
+          }
         '';
       };
 
@@ -1118,8 +1249,7 @@ in {
           PartOf = [ "graphical-session.target" ];
           ConditionEnvironment = "WAYLAND_DISPLAY";
         };
-        Service.ExecStart =
-          "${pkgs.wlsunset}/bin/wlsunset -S 07:00 -s 18:30 -T 6500 -t 3500 -d 7200";
+        Service.ExecStart = "${pkgs.wlsunset}/bin/wlsunset -S 07:00 -s 18:30 -T 6500 -t 3500 -d 7200";
         Install.WantedBy = [ "graphical-session.target" ];
       };
 

@@ -2,7 +2,8 @@
 
 let
   binPath = "$HOME/.config/bin";
-in {
+in
+{
   programs.zsh.initContent = ''
     export PATH="$PATH:${binPath}"
   '';

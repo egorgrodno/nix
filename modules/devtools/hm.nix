@@ -8,7 +8,8 @@ let
       chromium --disable-web-security --user-data-dir=.config/chromium-without-cors
     '')
   ];
-in {
+in
+{
   home.packages = [
     fd
     jq
@@ -38,5 +39,6 @@ in {
       # sweeps all images plus all build cache; --volumes adds unused volumes.
       $DOCKER system prune -af --volumes
     '')
-  ] ++ (if isDesktop then desktopPackages else []);
+  ]
+  ++ (if isDesktop then desktopPackages else [ ]);
 }

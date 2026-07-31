@@ -3,11 +3,11 @@
 {
   home.packages = with pkgs; [
     # Runtime tools the editor shells out to.
-    ripgrep     # telescope live_grep / grep_string
-    fd          # telescope find_files (falls back to `find` if absent)
-    nodejs      # runtime for the node-based language servers below
-    shellcheck  # bashls has no diagnostics, and so no quickfixes, without it
-    delta       # actions-preview pipes its code-action diff through it
+    ripgrep # telescope live_grep / grep_string
+    fd # telescope find_files (falls back to `find` if absent)
+    nodejs # runtime for the node-based language servers below
+    shellcheck # bashls has no diagnostics, and so no quickfixes, without it
+    delta # actions-preview pipes its code-action diff through it
 
     # Language servers.
     bash-language-server
@@ -17,14 +17,14 @@
     marksman
     yaml-language-server
     dockerfile-language-server
-    clang-tools     # clangd, which arduino-language-server proxies to and cannot start without
+    clang-tools # clangd, which arduino-language-server proxies to and cannot start without
     nil
-    nixfmt          # nil delegates formatting; without it <leader>f is a no-op on .nix
+    nixfmt # nil delegates formatting; without it <leader>f is a no-op on .nix
     rust-analyzer
     cargo
     rustc
     gopls
-    go              # gopls shells out to `go list` for anything outside the open file
+    go # gopls shells out to `go list` for anything outside the open file
     haskell.compiler.ghc96
     haskellPackages.haskell-language-server
     arduino-language-server
@@ -33,7 +33,9 @@
   xdg.configFile."nvim/snippets/all.lua".source = ./snippets.lua;
 
   xdg.configFile."nvim/lua/config.lua".text = import ./lua-config.nix {
-    config = { base.keyboard.layout = keyboardLayout; };
+    config = {
+      base.keyboard.layout = keyboardLayout;
+    };
   };
 
   programs.neovim = {
@@ -53,9 +55,28 @@
           lua require('config')
         '';
       }
-      (pkgs.vimPlugins.nvim-treesitter.withPlugins (p: with p; [
-        c cpp css diff dockerfile go haskell html javascript json lua nix rust scss tsx typescript vim yaml
-      ]))
+      (pkgs.vimPlugins.nvim-treesitter.withPlugins (
+        p: with p; [
+          c
+          cpp
+          css
+          diff
+          dockerfile
+          go
+          haskell
+          html
+          javascript
+          json
+          lua
+          nix
+          rust
+          scss
+          tsx
+          typescript
+          vim
+          yaml
+        ]
+      ))
     ];
   };
 }

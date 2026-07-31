@@ -1,4 +1,9 @@
-{ config, pkgs, forAllUsers, ... }:
+{
+  config,
+  pkgs,
+  forAllUsers,
+  ...
+}:
 
 with pkgs;
 
@@ -10,10 +15,9 @@ let
     unzip
     file
   ];
-in {
-  environment.systemPackages = if config.base.isNixosSystem
-    then systemPackages
-    else [];
+in
+{
+  environment.systemPackages = if config.base.isNixosSystem then systemPackages else [ ];
 
   home-manager.users = forAllUsers { imports = [ ./hm.nix ]; };
 }

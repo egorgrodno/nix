@@ -1,4 +1,9 @@
-{ pkgs, lib, forAllUsers, ... }:
+{
+  pkgs,
+  lib,
+  forAllUsers,
+  ...
+}:
 
 {
   imports = [
@@ -30,8 +35,14 @@
     isNormalUser = true;
     home = u.homedir;
     shell = pkgs.zsh;
-    extraGroups = [ "networkmanager" "audio" "sound" "lp" "video" ]
-      ++ lib.optional (u.admin or false) "wheel";
+    extraGroups = [
+      "networkmanager"
+      "audio"
+      "sound"
+      "lp"
+      "video"
+    ]
+    ++ lib.optional (u.admin or false) "wheel";
   });
 
   environment.systemPackages = with pkgs; [

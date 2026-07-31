@@ -4,8 +4,13 @@
   programs.git = {
     enable = true;
     package = pkgs.gitSVN;
-    includes = [{ path = "${config.xdg.configHome}/git/config.local"; }];
-    ignores = [ "*.swp" "*node_modules*" "build" "dist" ];
+    includes = [ { path = "${config.xdg.configHome}/git/config.local"; } ];
+    ignores = [
+      "*.swp"
+      "*node_modules*"
+      "build"
+      "dist"
+    ];
     settings = {
       alias = {
         co = "checkout";

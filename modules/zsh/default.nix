@@ -1,11 +1,17 @@
-{ config, lib, forAllUsers, ... }:
+{
+  config,
+  lib,
+  forAllUsers,
+  ...
+}:
 
 with lib;
 
 let
   cfg = config.my.zsh;
 
-in {
+in
+{
   options.my.zsh.enable = mkEnableOption "zsh shell";
 
   config = mkIf cfg.enable {

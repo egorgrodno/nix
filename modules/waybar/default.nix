@@ -1,4 +1,11 @@
-{ config, lib, pkgs, forAllUsers, theme, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  forAllUsers,
+  theme,
+  ...
+}:
 
 let
   cfg = config.my.waybar;
@@ -40,7 +47,8 @@ let
     echo "󰜷 $up  󰜮 $down"
   '';
 
-in {
+in
+{
   options.my.waybar.enable = lib.mkEnableOption "Waybar status bar";
 
   config = lib.mkIf cfg.enable {
@@ -48,131 +56,179 @@ in {
       programs.waybar = {
         enable = true;
 
-        settings = [{
-          layer = "top";
-          position = "top";
-          height = 30;
-          "margin-top" = 0;
-          "margin-bottom" = 0;
-          spacing = 0;
+        settings = [
+          {
+            layer = "top";
+            position = "top";
+            height = 30;
+            "margin-top" = 0;
+            "margin-bottom" = 0;
+            spacing = 0;
 
-          "modules-left" = [ "hyprland/window" ];
-          "modules-center" = [ "hyprland/submap" "hyprland/workspaces" ];
-          "modules-right" = [ "battery" "custom/network" "cpu" "memory" "disk" "pulseaudio" "tray" "clock" "custom/wlogout" ];
+            "modules-left" = [ "hyprland/window" ];
+            "modules-center" = [
+              "hyprland/submap"
+              "hyprland/workspaces"
+            ];
+            "modules-right" = [
+              "battery"
+              "custom/network"
+              "cpu"
+              "memory"
+              "disk"
+              "pulseaudio"
+              "tray"
+              "clock"
+              "custom/wlogout"
+            ];
 
-          "hyprland/workspaces" = {
-            format = "{name}";
-            "on-click" = "activate";
-            width = 300;
-            "persistent-only" = false;
-            "format-icons" = {
-              "1" = "";
-              "2" = "";
-              "3" = "";
-              "4" = "";
-              "5" = "";
-              active = "";
-              default = "";
+            "hyprland/workspaces" = {
+              format = "{name}";
+              "on-click" = "activate";
+              width = 300;
+              "persistent-only" = false;
+              "format-icons" = {
+                "1" = "";
+                "2" = "";
+                "3" = "";
+                "4" = "";
+                "5" = "";
+                active = "";
+                default = "";
+              };
             };
-          };
 
-          "hyprland/window" = {
-            "max-length" = 50;
-            "separate-outputs" = true;
-            format = "   {title}";
-          };
-
-          tray = {
-            format = "{icon} {count}";
-            "icon-size" = 24;
-            spacing = 10;
-            "max-length" = 30;
-            position = "right";
-            "reverse-direction" = true;
-          };
-
-          clock = {
-            interval = 1;
-            timezone = "Europe/Amsterdam";
-            "tooltip-format" = "{calendar}";
-            format = "{:%a %b %d %Y %H:%M}";
-            "format-alt" = "{:%e.%m.%Y %X}";
-          };
-
-          pulseaudio = {
-            format = "{format_source}    {icon}  {volume}%";
-            "format-source" = "";
-            "format-source-muted" = "󰍭";
-            "tooltip-format" = "{desc}";
-            "format-icons" = {
-              headphones = [ " " " " " " ];
-              handsfree = "";
-              headset = [ " " " " " " ];
-              phone = [ " " " " " " ];
-              portable = [ " " " " " " ];
-              car = [ " " " " " " ];
-              default = [ "" "" "" ];
-              "default-muted" = "";
+            "hyprland/window" = {
+              "max-length" = 50;
+              "separate-outputs" = true;
+              format = "   {title}";
             };
-            "scroll-step" = 5;
-            # Absolute paths throughout: Waybar runs as a systemd user service,
-            # whose PATH carries a few core utilities and nothing else, so a bare
-            # command name never resolves.
-            "on-click" = "${pkgs.pwvucontrol}/bin/pwvucontrol";
-          };
 
-
-          "custom/network" = {
-            exec = "${waybar-network}/bin/waybar-network";
-            interval = 2;
-            format = "{}";
-            tooltip = false;
-            "on-click" = "${pkgs.networkmanagerapplet}/bin/nm-connection-editor";
-          };
-
-          cpu = {
-            format = "CPU {usage}%";
-            interval = 10;
-          };
-
-          memory = {
-            format = "RAM {}%";
-            interval = 10;
-            "tooltip-format" = "Used: {percentage}%, {used:0.1f}GiB / {total:0.1f}GiB";
-          };
-
-          disk = {
-            interval = 30;
-            format = "DISK {percentage_used}%";
-            "format-icons" = [ "" "" "" ];
-            path = "/";
-            tooltip = true;
-            "tooltip-format" = "Free: {free}\nUsed: {percentage_used}%, {used} / {total}";
-            "critical-threshold" = 90;
-            # pcmanfm rather than xdg-open, which would need a PATH of its own to
-            # reach the configured inode/directory handler.
-            "on-click" = "${pkgs.pcmanfm}/bin/pcmanfm /";
-          };
-
-          battery = {
-            states = {
-              good = 90;
-              warning = 30;
-              critical = 15;
+            tray = {
+              format = "{icon} {count}";
+              "icon-size" = 24;
+              spacing = 10;
+              "max-length" = 30;
+              position = "right";
+              "reverse-direction" = true;
             };
-            format = "{icon} {capacity}%";
-            "format-charging" = " {capacity}%";
-            "format-plugged" = " {capacity}%";
-            "format-alt" = "{time} {icon}";
-            "format-icons" = [ "" "" "" "" "" ];
-          };
 
-          "custom/wlogout" = {
-            format = "⏻";
-            "on-click" = "${pkgs.wlogout}/bin/wlogout";
-            tooltip = false;
-          };
-        }];
+            clock = {
+              interval = 1;
+              timezone = "Europe/Amsterdam";
+              "tooltip-format" = "{calendar}";
+              format = "{:%a %b %d %Y %H:%M}";
+              "format-alt" = "{:%e.%m.%Y %X}";
+            };
+
+            pulseaudio = {
+              format = "{format_source}    {icon}  {volume}%";
+              "format-source" = "";
+              "format-source-muted" = "󰍭";
+              "tooltip-format" = "{desc}";
+              "format-icons" = {
+                headphones = [
+                  " "
+                  " "
+                  " "
+                ];
+                handsfree = "";
+                headset = [
+                  " "
+                  " "
+                  " "
+                ];
+                phone = [
+                  " "
+                  " "
+                  " "
+                ];
+                portable = [
+                  " "
+                  " "
+                  " "
+                ];
+                car = [
+                  " "
+                  " "
+                  " "
+                ];
+                default = [
+                  ""
+                  ""
+                  ""
+                ];
+                "default-muted" = "";
+              };
+              "scroll-step" = 5;
+              # Absolute paths throughout: Waybar runs as a systemd user service,
+              # whose PATH carries a few core utilities and nothing else, so a bare
+              # command name never resolves.
+              "on-click" = "${pkgs.pwvucontrol}/bin/pwvucontrol";
+            };
+
+            "custom/network" = {
+              exec = "${waybar-network}/bin/waybar-network";
+              interval = 2;
+              format = "{}";
+              tooltip = false;
+              "on-click" = "${pkgs.networkmanagerapplet}/bin/nm-connection-editor";
+            };
+
+            cpu = {
+              format = "CPU {usage}%";
+              interval = 10;
+            };
+
+            memory = {
+              format = "RAM {}%";
+              interval = 10;
+              "tooltip-format" = "Used: {percentage}%, {used:0.1f}GiB / {total:0.1f}GiB";
+            };
+
+            disk = {
+              interval = 30;
+              format = "DISK {percentage_used}%";
+              "format-icons" = [
+                ""
+                ""
+                ""
+              ];
+              path = "/";
+              tooltip = true;
+              "tooltip-format" = "Free: {free}\nUsed: {percentage_used}%, {used} / {total}";
+              "critical-threshold" = 90;
+              # pcmanfm rather than xdg-open, which would need a PATH of its own to
+              # reach the configured inode/directory handler.
+              "on-click" = "${pkgs.pcmanfm}/bin/pcmanfm /";
+            };
+
+            battery = {
+              states = {
+                good = 90;
+                warning = 30;
+                critical = 15;
+              };
+              format = "{icon} {capacity}%";
+              "format-charging" = " {capacity}%";
+              "format-plugged" = " {capacity}%";
+              "format-alt" = "{time} {icon}";
+              "format-icons" = [
+                ""
+                ""
+                ""
+                ""
+                ""
+              ];
+            };
+
+            "custom/wlogout" = {
+              format = "⏻";
+              "on-click" = "${pkgs.wlogout}/bin/wlogout";
+              tooltip = false;
+            };
+          }
+        ];
 
         style = ''
           @define-color border-color ${theme.blue};

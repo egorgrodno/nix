@@ -11,7 +11,14 @@
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs, home-manager, treefmt-nix, ... }@inputs:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      home-manager,
+      treefmt-nix,
+      ...
+    }@inputs:
     let
       system = "x86_64-linux";
       lib = nixpkgs.lib;
@@ -21,7 +28,7 @@
       };
       theme = {
         fontMono = "Inconsolata LGC Nerd Font Mono";
-        fontUI   = "Overpass Nerd Font";
+        fontUI = "Overpass Nerd Font";
         background = {
           main = "#16191D";
           light = "#21252B";
@@ -58,23 +65,40 @@
       # Must throw rather than fall back: under pure evaluation getEnv yields "",
       # and a default would install the profile under the wrong account's paths,
       # which home-manager only catches at activation time.
-      requireEnv = var: arg:
-        let value = builtins.getEnv var; in
-        if value != "" then value
-        else throw "mkNeovimHome: \$${var} is empty, which means evaluation is pure. Pass `--impure`, or set `${arg}` explicitly.";
+      requireEnv =
+        var: arg:
+        let
+          value = builtins.getEnv var;
+        in
+        if value != "" then
+          value
+        else
+          throw "mkNeovimHome: \$${var} is empty, which means evaluation is pure. Pass `--impure`, or set `${arg}` explicitly.";
       mkNeovimHome =
-        { layout
-        , username ? requireEnv "USER" "username"
-        , homeDirectory ? (let h = builtins.getEnv "HOME"; in if h != "" then h else "/home/${username}")
+        {
+          layout,
+          username ? requireEnv "USER" "username",
+          homeDirectory ? (
+            let
+              h = builtins.getEnv "HOME";
+            in
+            if h != "" then h else "/home/${username}"
+          ),
         }:
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
-          extraSpecialArgs = { keyboardLayout = layout; isDesktop = false; };
+          extraSpecialArgs = {
+            keyboardLayout = layout;
+            isDesktop = false;
+          };
           modules = [
             ./modules/neovim/hm.nix
             ./modules/git/hm.nix
             {
-              home = { inherit username homeDirectory; stateVersion = "24.05"; };
+              home = {
+                inherit username homeDirectory;
+                stateVersion = "24.05";
+              };
               programs.home-manager.enable = true;
             }
           ];
@@ -83,84 +107,108 @@
       # Apply a home-manager module (or per-user module function) to every user.
       # `f` may be a plain attrset, or a function `u: attrset` when it needs
       # per-user values like u.homedir.
-      mkForAllUsers = users: f:
-        builtins.listToAttrs (map (u: {
-          name = u.name;
-          value = if builtins.isFunction f then f u else f;
-        }) users);
+      mkForAllUsers =
+        users: f:
+        builtins.listToAttrs (
+          map (u: {
+            name = u.name;
+            value = if builtins.isFunction f then f u else f;
+          }) users
+        );
 
       treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
 
       nixosConfigurationModules = [
-        ({ pkgs, ... }: {
-          nix.package = pkgs.nixVersions.stable;
-          nix.registry.nixpkgs.flake = nixpkgs;
-          nix.extraOptions = "experimental-features = nix-command flakes";
-        })
+        (
+          { pkgs, ... }:
+          {
+            nix.package = pkgs.nixVersions.stable;
+            nix.registry.nixpkgs.flake = nixpkgs;
+            nix.extraOptions = "experimental-features = nix-command flakes";
+          }
+        )
       ];
 
       homeConfigurationModules = [
         home-manager.nixosModules.home-manager
 
-        ({ pkgs, ... }: {
-          home-manager.useGlobalPkgs = true;
-          home-manager.useUserPackages = true;
-        })
+        (
+          { pkgs, ... }:
+          {
+            home-manager.useGlobalPkgs = true;
+            home-manager.useUserPackages = true;
+          }
+        )
 
         ./home.nix
       ];
 
-    in {
+    in
+    {
       formatter.${system} = treefmtEval.config.build.wrapper;
       checks.${system}.formatting = treefmtEval.config.build.check self;
 
       # Portable editor profiles for non-NixOS machines
       homeConfigurations = {
-        neovim-qwerty   = mkNeovimHome { layout = "qwerty"; };
+        neovim-qwerty = mkNeovimHome { layout = "qwerty"; };
         neovim-hallmack = mkNeovimHome { layout = "hallmack"; };
       };
 
       nixosConfigurations = {
-        fractal = let
-          users = [
-            (import ./users/egor.nix)
-            (import ./users/forge.nix)
-          ];
-        in lib.nixosSystem {
-          inherit system pkgs;
+        fractal =
+          let
+            users = [
+              (import ./users/egor.nix)
+              (import ./users/forge.nix)
+            ];
+          in
+          lib.nixosSystem {
+            inherit system pkgs;
 
-          specialArgs = {
-            inherit inputs theme fontPackages users;
-            forAllUsers = mkForAllUsers users;
+            specialArgs = {
+              inherit
+                inputs
+                theme
+                fontPackages
+                users
+                ;
+              forAllUsers = mkForAllUsers users;
+            };
+
+            modules =
+              nixosConfigurationModules
+              ++ homeConfigurationModules
+              ++ [
+                ./hosts/fractal/configuration.nix
+              ];
           };
 
-          modules =
-            nixosConfigurationModules
-            ++ homeConfigurationModules
-            ++ [
-              ./hosts/fractal/configuration.nix
-            ];
-        };
+        thinkpad =
+          let
+            users = [ (import ./users/egor.nix) ];
+          in
+          lib.nixosSystem {
+            inherit system pkgs;
 
-        thinkpad = let
-          users = [ (import ./users/egor.nix) ];
-        in lib.nixosSystem {
-          inherit system pkgs;
+            # Kept identical to fractal's, so a module argument added later cannot
+            # break one host while the other still evaluates.
+            specialArgs = {
+              inherit
+                inputs
+                theme
+                fontPackages
+                users
+                ;
+              forAllUsers = mkForAllUsers users;
+            };
 
-          # Kept identical to fractal's, so a module argument added later cannot
-          # break one host while the other still evaluates.
-          specialArgs = {
-            inherit inputs theme fontPackages users;
-            forAllUsers = mkForAllUsers users;
+            modules =
+              nixosConfigurationModules
+              ++ homeConfigurationModules
+              ++ [
+                ./hosts/thinkpad/configuration.nix
+              ];
           };
-
-          modules =
-            nixosConfigurationModules
-            ++ homeConfigurationModules
-            ++ [
-              ./hosts/thinkpad/configuration.nix
-            ];
-        };
       };
     };
 }

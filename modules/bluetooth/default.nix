@@ -1,8 +1,15 @@
-{ config, lib, forAllUsers, ... }:
+{
+  config,
+  lib,
+  forAllUsers,
+  ...
+}:
 
-let cfg = config.my.bluetooth;
+let
+  cfg = config.my.bluetooth;
 
-in {
+in
+{
   options.my.bluetooth.enable = lib.mkEnableOption "Enable bluetooth support";
 
   config = lib.mkIf cfg.enable {
