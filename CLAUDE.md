@@ -21,9 +21,14 @@ nxu   # nix flake update --flake /etc/nixos      (update flake.lock)
 `nxe` opens `home.nix` in a kitty window, so it ships with `modules/desktop/` rather than `modules/nixtools/`.
 
 ```bash
-nix flake check /etc/nixos    # validate flake
+nix flake check /etc/nixos    # validate flake, formatting included
 nix flake show /etc/nixos     # show outputs
+nix fmt                       # format the tree
 ```
+
+`treefmt.nix` defines the formatters: nixfmt for `*.nix`, stylua for `*.lua`, shfmt for shell. Markdown is deliberately excluded and stays hand-formatted against the conventions below.
+
+A pre-commit hook in `.githooks/` rejects a commit whose staged files are not formatted, and reformats them in place so recovering is `git add` and commit again. It runs `nix fmt`, so it cannot drift from `checks.formatting` or from the editor.
 
 ## Architecture
 
