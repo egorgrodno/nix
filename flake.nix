@@ -6,9 +6,12 @@
 
     home-manager.url = "github:nix-community/home-manager/master";
     home-manager.inputs.nixpkgs.follows = "nixpkgs";
+
+    treefmt-nix.url = "github:numtide/treefmt-nix";
+    treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { nixpkgs, home-manager, ... }@inputs:
+  outputs = { self, nixpkgs, home-manager, treefmt-nix, ... }@inputs:
     let
       system = "x86_64-linux";
       lib = nixpkgs.lib;
@@ -86,6 +89,8 @@
           value = if builtins.isFunction f then f u else f;
         }) users);
 
+      treefmtEval = treefmt-nix.lib.evalModule pkgs ./treefmt.nix;
+
       nixosConfigurationModules = [
         ({ pkgs, ... }: {
           nix.package = pkgs.nixVersions.stable;
@@ -106,6 +111,9 @@
       ];
 
     in {
+      formatter.${system} = treefmtEval.config.build.wrapper;
+      checks.${system}.formatting = treefmtEval.config.build.check self;
+
       # Portable editor profiles for non-NixOS machines
       homeConfigurations = {
         neovim-qwerty   = mkNeovimHome { layout = "qwerty"; };
