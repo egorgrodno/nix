@@ -372,6 +372,11 @@ in
 
     environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
+    # Qt6 picks Wayland up on its own; Qt5 defaults to xcb and silently lands on
+    # XWayland unless told otherwise. `xcb` stays as the fallback for any app
+    # whose closure lacks the qtwayland plugin.
+    environment.sessionVariables.QT_QPA_PLATFORM = "wayland;xcb";
+
     home-manager.users = forAllUsers {
       home.packages = with pkgs; [
         wofi
