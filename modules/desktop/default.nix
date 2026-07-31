@@ -765,12 +765,12 @@ in
 
               # Audio (with notify). The unshifted pair steps by 5% inside
               # `--limit 1.0`. Holding SHIFT deliberately escapes that limit:
-              # C climbs past 100%, and V is an absolute assignment that drops
+              # V climbs past 100%, and C is an absolute assignment that drops
               # straight back to 10% rather than a decrement.
-              "$mod, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && notify-volume"
-              "$mod, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- --limit 1.0 && notify-volume"
-              "$mod SHIFT, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && notify-volume"
-              "$mod SHIFT, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 10% && notify-volume"
+              "$mod, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && notify-volume"
+              "$mod, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- --limit 1.0 && notify-volume"
+              "$mod SHIFT, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && notify-volume"
+              "$mod SHIFT, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 10% && notify-volume"
               "$mod, T, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && notify-volume"
               "$mod, N, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && notify-mic"
 
