@@ -45,6 +45,21 @@
   bindkey -s "^Z" "fg\n"
   bindkey -s "^N" "cps\n"
 
+  # WORDCHARS is trimmed inside the widget, not globally: dropping - . = /
+  # walks a path or a flag piece by piece, while ^W and the vi motions keep
+  # the default.
+  function ctrl-forward-word ctrl-backward-word {
+    local WORDCHARS='*?_[]~&;!#$%^(){}<>'
+    zle ''${WIDGET#ctrl-}
+  }
+  zle -N ctrl-forward-word
+  zle -N ctrl-backward-word
+
+  for keymap in viins vicmd; do
+    bindkey -M $keymap "^[[1;5C" ctrl-forward-word
+    bindkey -M $keymap "^[[1;5D" ctrl-backward-word
+  done
+
   ${
     if config.base.keyboard.layout == "hallmack" then
       ''
