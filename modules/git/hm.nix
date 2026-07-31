@@ -4,7 +4,16 @@
   programs.git = {
     enable = true;
     package = pkgs.gitSVN;
-    includes = [ { path = "${config.xdg.configHome}/git/config.local"; } ];
+    includes = [
+      { path = "${config.xdg.configHome}/git/config.local"; }
+      # Conditional rather than a global core.hooksPath, which would point every
+      # other checkout at a hook directory it does not have. The path is absolute
+      # because git resolves hooksPath against the cwd, not the repository root.
+      {
+        condition = "gitdir:/etc/nixos/";
+        contents.core.hooksPath = "/etc/nixos/.githooks";
+      }
+    ];
     ignores = [
       "*.swp"
       "*node_modules*"

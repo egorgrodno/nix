@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+# Blocks a commit whose staged files are not treefmt-clean, whoever staged them.
+# Runs `nix fmt`, so this hook, <leader>f in the editor and checks.formatting
+# are one formatter rather than three that can drift.
+#
+# Formats in place and then fails: the fix is already applied by the time the
+# message appears, so recovering is `git add` and commit again.
+
+set -euo pipefail
+
+mapfile -t staged < <(git diff --cached --name-only --diff-filter=ACMR)
+[ ${#staged[@]} -eq 0 ] && exit 0
+
+if nix fmt -- --fail-on-change --no-cache -- "${staged[@]}" >/dev/null 2>&1; then
+  exit 0
+fi
+
+echo 'pre-commit: treefmt reformatted staged files.' >&2
+echo >&2
+git diff --name-only -- "${staged[@]}" | sed 's/^/  /' >&2
+echo >&2
+echo 'Review, `git add` them, and commit again. `--no-verify` skips this.' >&2
+exit 1
