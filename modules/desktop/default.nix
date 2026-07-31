@@ -122,9 +122,34 @@ let
         done
       '';
 
+  # vim must start from an interactive shell: `:suspend` signals its whole
+  # process group, and `zsh -c` has no job control to put vim in one of its
+  # own, so ^Z stops the shell too and freezes the window. The throwaway
+  # ZDOTDIR sources the real one, so that shell is still the configured one.
   nxe = pkgs.writeShellScriptBin "nxe" ''
-    exec ${pkgs.kitty}/bin/kitty -d /etc/nixos \
-      -e ${pkgs.zsh}/bin/zsh -c 'vim home.nix; exec ${pkgs.zsh}/bin/zsh'
+    set -eu
+    zdotdir=$(mktemp -d)
+
+    # ZDOTDIR is unset when nxe is launched from the desktop entry, so resolve
+    # it the way zsh does rather than reading it from this environment.
+    cat >"$zdotdir/.zshenv" <<'EOF'
+    nxe_tmp=$ZDOTDIR
+    [ -r "$HOME/.zshenv" ] && . "$HOME/.zshenv"
+    [ "$ZDOTDIR" = "$nxe_tmp" ] && ZDOTDIR=$HOME
+    nxe_real=$ZDOTDIR
+    ZDOTDIR=$nxe_tmp
+    EOF
+
+    cat >"$zdotdir/.zshrc" <<'EOF'
+    ZDOTDIR=$nxe_real
+    [ -r "$ZDOTDIR/.zshrc" ] && . "$ZDOTDIR/.zshrc"
+    rm -rf "$nxe_tmp"
+    unset nxe_tmp nxe_real
+    vim home.nix
+    EOF
+
+    export ZDOTDIR="$zdotdir"
+    exec ${pkgs.kitty}/bin/kitty -d /etc/nixos -e ${pkgs.zsh}/bin/zsh
   '';
 
 in
