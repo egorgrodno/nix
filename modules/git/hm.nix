@@ -29,7 +29,7 @@
     };
   };
 
-  programs.diff-so-fancy = {
+  programs.delta = {
     enable = true;
     enableGitIntegration = true;
   };

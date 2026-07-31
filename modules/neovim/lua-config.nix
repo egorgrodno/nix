@@ -944,9 +944,11 @@ vim.keymap.set('n', 'th', tls_builtin.help_tags, { desc = 'Telescope help tags' 
 --------------------------------------------------------------------------------
 
 -- Replaces the bare vim.lsp.buf.code_action list on <leader>a with a picker that
--- previews each action as a diff before it is applied.
+-- previews each action as a diff before it is applied. Without highlight_command
+-- that preview is plain text; delta renders it in a terminal buffer instead.
 require('actions-preview').setup {
-  telescope = require('telescope.themes').get_dropdown {}
+  telescope = require('telescope.themes').get_dropdown {},
+  highlight_command = { require('actions-preview.highlight').delta() },
 }
 
 --------------------------------------------------------------------------------

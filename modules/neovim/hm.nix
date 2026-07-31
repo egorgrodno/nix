@@ -7,6 +7,7 @@
     fd          # telescope find_files (falls back to `find` if absent)
     nodejs      # runtime for the node-based language servers below
     shellcheck  # bashls has no diagnostics, and so no quickfixes, without it
+    delta       # actions-preview pipes its code-action diff through it
 
     # Language servers.
     bash-language-server
