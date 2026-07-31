@@ -416,7 +416,14 @@ in
         stretchly
         telegram-desktop
         transmission_4-gtk
-        viewnior
+        # nixpkgs pins GDK_BACKEND=x11, which forces XWayland; the later `--set`
+        # overrides that `--set-default`. The pin guards an upstream bug where
+        # panning a zoomed-in image does not work under Wayland.
+        (viewnior.overrideAttrs (old: {
+          postInstall = (old.postInstall or "") + ''
+            gappsWrapperArgs+=(--set GDK_BACKEND wayland,x11)
+          '';
+        }))
         vlc
 
         (writeShellScriptBin "cps" "2>/dev/null 1>/dev/null kitty -d $PWD & disown")
