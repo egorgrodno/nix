@@ -60,6 +60,56 @@
     bindkey -M $keymap "^[[1;5D" ctrl-backward-word
   done
 
+  # Bracket and quote text objects — ci[, ca(, di" and friends. These need no
+  # operator widget, unlike surround below: in viopp the leading i/a is a
+  # prefix that is not itself a binding, so zsh waits for the second key
+  # instead of timing out.
+  autoload -Uz select-bracketed select-quoted
+  zle -N select-bracketed
+  zle -N select-quoted
+  for keymap in visual viopp; do
+    for pair in {a,i}{'(',')','[',']','{','}','<','>',b,B}; do
+      bindkey -M $keymap $pair select-bracketed
+    done
+    for pair in {a,i}{\',\",\`}; do
+      bindkey -M $keymap $pair select-quoted
+    done
+  done
+
+  # vim-surround, bound to the operator key alone rather than to cs/ds/ys:
+  # c, d and y are complete bindings as well as prefixes, so zsh would wait
+  # only KEYTIMEOUT — 1, to keep Escape instant — for the second key before
+  # firing the bare operator. `read -k` has no such timeout.
+  #
+  # The widget names must match surround's own change-*/delete-*/add-* dispatch
+  # on $WIDGET, and surround must be called as a function: for a nested `zle`
+  # call zsh leaves $WIDGET at the outer widget's name.
+  autoload -Uz surround
+
+  function _surround-operator {
+    local key
+    read -k 1 key
+    if [[ $key == s ]]; then
+      surround
+    else
+      zle -U "$key"
+      zle "$1"
+    fi
+  }
+  function change-surround-or-vi-change { _surround-operator .vi-change }
+  function delete-surround-or-vi-delete { _surround-operator .vi-delete }
+  function add-surround-or-vi-yank { _surround-operator .vi-yank }
+  zle -N change-surround-or-vi-change
+  zle -N delete-surround-or-vi-delete
+  zle -N add-surround-or-vi-yank
+
+  bindkey -M vicmd "c" change-surround-or-vi-change
+  bindkey -M vicmd "d" delete-surround-or-vi-delete
+  bindkey -M vicmd "y" add-surround-or-vi-yank
+
+  zle -N add-surround surround
+  bindkey -M visual "S" add-surround
+
   ${
     if config.base.keyboard.layout == "hallmack" then
       ''
