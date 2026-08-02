@@ -631,7 +631,6 @@ in
             "${pkgs.wl-clipboard}/bin/wl-paste --watch ${clipboardPersistCb}"
             "wl-paste --type text --watch cliphist store"
             "wl-paste --type image --watch cliphist store"
-            "${waitForSni} && ${pkgs.stretchly}/bin/stretchly"
           ];
 
           general = {
