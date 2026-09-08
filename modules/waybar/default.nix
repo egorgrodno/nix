@@ -56,6 +56,12 @@ in
       programs.waybar = {
         enable = true;
 
+        # Home-manager's unit carries `ConditionEnvironment=WAYLAND_DISPLAY`,
+        # which the NixOS `programs.waybar` unit lacks: without it waybar starts
+        # against a missing compositor and `Restart=on-failure` burns through
+        # the start limit before Hyprland publishes the socket.
+        systemd.enable = true;
+
         settings = [
           {
             layer = "top";

@@ -300,8 +300,6 @@ in
       xwayland.enable = true;
     };
 
-    programs.waybar.enable = true;
-
     services.udisks2.enable = true;
     services.udisks2.mountOnMedia = true;
     services.gvfs.enable = true;
