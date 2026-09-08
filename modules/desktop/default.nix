@@ -966,10 +966,14 @@ in
 
             # One piece of content, sized by its own aspect ratio.
             ++ map viewer [
-              "Viewnior"
               "org.kde.okular"
               "vlc"
             ]
+
+            # viewnior opens at GTK's 480x300 default whatever the image, and
+            # its own `start-maximized` is eaten by the blanket
+            # suppress-maximize rule below, so the size is set here.
+            ++ [ (viewer "Viewnior" // { size = "960 600"; }) ]
 
             # Raised by another window and answered before work continues. These
             # three are standalone agents with no parent to inherit from; the
