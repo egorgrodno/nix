@@ -20,6 +20,50 @@ let
   # screen and the session agree on what "active" looks like.
   activeBorder = "${hyprColor theme.blue "ff"} ${hyprColor theme.cyan "ff"} 45deg";
 
+  # tuigreet writes ANSI to a pty, which a bare Wayland compositor cannot hand
+  # it, so the greeter runs inside foot.
+  greeterTerminal =
+    let
+      hex = removePrefix "#";
+    in
+    pkgs.writeText "foot-greeter.ini" ''
+      font=${theme.fontMono}:size=14
+      # Without this a desktop appearance preference can select the empty
+      # `colors-light` section.
+      initial-color-theme=dark
+      # Without this foot maps at its 700x500 default and is only then resized
+      # by cage, which reads on screen as the greeter snapping to size.
+      initial-window-mode=fullscreen
+
+      [colors-dark]
+      background=${hex theme.background.main}
+      foreground=${hex theme.foreground.main}
+
+      regular0=${hex theme.background.light}
+      regular1=${hex theme.red}
+      regular2=${hex theme.green}
+      regular3=${hex theme.yellow}
+      regular4=${hex theme.blue}
+      regular5=${hex theme.magenta}
+      regular6=${hex theme.cyan}
+      regular7=${hex theme.foreground.muted}
+
+      bright0=${hex theme.foreground.dark}
+      bright1=${hex theme.bright.red}
+      bright2=${hex theme.bright.green}
+      bright3=${hex theme.bright.yellow}
+      bright4=${hex theme.bright.blue}
+      bright5=${hex theme.bright.magenta}
+      bright6=${hex theme.bright.cyan}
+      bright7=${hex theme.foreground.light}
+    '';
+
+  # tuigreet names ANSI roles, not colours, so these resolve against the palette
+  # above: `black` is its regular0, `gray` regular7, `white` bright7. Restyling
+  # means naming a different role, never a hex value. `title` follows `border`
+  # and `greet` follows `text`, which is why neither is listed.
+  greeterTheme = "container=black;border=blue;text=gray;time=cyan;prompt=cyan;input=white;action=gray;button=yellow";
+
   waitForSni = pkgs.writeShellScript "wait-for-sni" ''
     until ${pkgs.dbus}/bin/dbus-send --session --print-reply \
         --dest=org.freedesktop.DBus /org/freedesktop/DBus \
@@ -216,23 +260,38 @@ in
       jack.enable = true;
     };
 
+    # cage rather than the kernel console: fbcon locks its character grid in at
+    # boot and never re-probes, so a monitor swapped between power-on and login
+    # leaves the greeter sized for the display that is gone. A host driving its
+    # outputs from a discrete card must pin `WLR_DRM_DEVICES` in
+    # `environment.sessionVariables` for the greeter to reach that card too.
+    #
+    # `withUWSM` publishes both a plain and a uwsm-managed Hyprland session and
+    # the plain one sorts first; picking it leaves the compositor a child of
+    # greetd, logging to the VT instead of the journal, with no systemd user
+    # units. `--remember-session` makes one deliberate choice stick.
     services.greetd = {
       enable = true;
       settings = {
         default_session.command = ''
-          ${pkgs.tuigreet}/bin/tuigreet \
-            --time \
-            --asterisks \
-            --user-menu \
-            --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions
+          ${pkgs.cage}/bin/cage -d -s -- \
+            ${pkgs.foot}/bin/foot \
+              --config=${greeterTerminal} \
+              --term=xterm-256color \
+              -e ${pkgs.tuigreet}/bin/tuigreet \
+                --time \
+                --asterisks \
+                --user-menu \
+                --remember-session \
+                --theme '${greeterTheme}' \
+                --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions
         '';
       };
     };
 
-    # Kernel chatter on the TTY corrupts the tuigreet screen above, so the module
-    # that turns the greeter on is the one that has to silence the console. This
-    # must go through consoleLogLevel rather than kernelParams: NixOS appends its
-    # own `loglevel=` from that option, and the kernel honours the last one.
+    # Kernel chatter makes the plain TTYs behind the greeter unreadable. This
+    # must go through consoleLogLevel rather than kernelParams: NixOS appends
+    # its own `loglevel=` from that option, and the kernel honours the last one.
     boot.consoleLogLevel = 3;
 
     programs.hyprland = {
