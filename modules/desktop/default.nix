@@ -461,6 +461,12 @@ in
     # whose closure lacks the qtwayland plugin.
     environment.sessionVariables.QT_QPA_PLATFORM = "wayland;xcb";
 
+    # uwsm narrates unit generation to stdout, which greetd points at the VT, so
+    # every login paints the console before the compositor takes over. `1` keeps
+    # warnings and errors, `2` would drop those too, and uwsm logs to syslog
+    # either way.
+    environment.sessionVariables.UWSM_SILENT_START = "1";
+
     home-manager.users = forAllUsers {
       home.packages = with pkgs; [
         wofi
