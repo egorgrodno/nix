@@ -898,7 +898,7 @@ in
               "$mod SHIFT, minus, movetoworkspacesilent, special:magic"
 
               # Screenshot
-              ", Print, exec, DEFAULT_TARGET_DIR=$HOME/Screenshots grimblast save area"
+              ", Print, exec, DEFAULT_TARGET_DIR=$HOME/Screenshots grimblast --freeze save area"
 
               # Audio (with notify). The unshifted pair steps by 5% inside
               # `--limit 1.0`. Holding SHIFT deliberately escapes that limit:
