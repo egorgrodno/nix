@@ -5,6 +5,13 @@
   ...
 }:
 
+let
+  # Both variables below take a colon-separated list, which rules out the
+  # `by-path` node whose own name contains colons; `cardN` numbering follows
+  # enumeration order and shifts between boots. Hence the udev symlink.
+  discreteGpu = "/dev/dri/nvidia-card";
+in
+
 {
   imports = [
     ./hardware-configuration.nix
@@ -19,29 +26,38 @@
     primaryMode = "2560x1440@120";
   };
 
-  # NVIDIA on a hybrid AMD/NVIDIA board. PRIME runs in sync mode: the NVIDIA GPU
-  # renders everything and the display is driven through it, so the bus IDs below
-  # are this machine's and nothing else's.
+  # NVIDIA on a hybrid AMD/NVIDIA board. No `prime`: it emits Xorg
+  # provider-offload configuration, and no Xorg runs here. `AQ_DRM_DEVICES`
+  # below is what confines the session to the discrete card.
   services.xserver.videoDrivers = [ "nvidia" ]; # still the driver knob under Wayland
   hardware.nvidia = {
     package = config.boot.kernelPackages.nvidiaPackages.stable;
     open = true; # Recommended for 40-series cards
     modesetting.enable = true;
     powerManagement.enable = true;
-    prime = {
-      sync.enable = true;
-      nvidiaBusId = "PCI:1:0:0";
-      intelBusId = "PCI:51:0:0";
-      offload.enable = false;
-      offload.enableOffloadCmd = false;
-    };
   };
   boot.blacklistedKernelModules = [ "nouveau" ];
   hardware.graphics.extraPackages = [ pkgs.nvidia-vaapi-driver ];
 
+  # DEVNAME because the connector devices under this card are also `card*`, and
+  # an exact ID_PATH because the boot framebuffer hangs off the same PCI address
+  # with a longer one.
+  services.udev.extraRules = ''
+    SUBSYSTEM=="drm", ENV{DEVNAME}=="/dev/dri/card*", ENV{ID_PATH}=="pci-0000:01:00.0", SYMLINK+="dri/nvidia-card"
+  '';
+
   environment.sessionVariables = {
     GBM_BACKEND = "nvidia-drm";
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";
+    # Unpinned, aquamarine renders on the Raphael iGPU and copies every frame
+    # across PCIe to the card that drives HDMI-A-2, which speckles the screen
+    # with artifacts. The cost of the pin: the board's own outputs go dark.
+    AQ_DRM_DEVICES = discreteGpu;
+    # The greeter's cage is wlroots, not aquamarine, so the same pin arrives a
+    # second time under wlroots' name. It belongs here rather than on
+    # greetd.service: greetd builds the greeter's environment from PAM, which
+    # reads these, and discards its own.
+    WLR_DRM_DEVICES = discreteGpu;
   };
 
   boot.loader.efi = {
