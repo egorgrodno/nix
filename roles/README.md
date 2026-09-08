@@ -29,6 +29,7 @@ Single-concern bundles, imported by top-level roles rather than by hosts.
 | `role-devtools.nix` | `git`, `direnv`, `less`, `neovim`, `devtools`, `ripgrep`, `nixtools`, `extools`, `claude`. |
 | `role-nextcloud-client.nix` | Nextcloud client and a per-user sync service. |
 | `role-vm-host.nix` | VirtualBox host; blacklists the KVM modules, adds users to `vboxusers`. |
+| `role-docker.nix` | Docker, with `dockerd` left down at boot; adds `admin` users to `docker`. |
 
 ## Top-level roles
 
