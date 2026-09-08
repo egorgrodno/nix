@@ -9,7 +9,7 @@
   imports = [
     ./hardware-configuration.nix
     ../../roles/role-desktop-config.nix
-    # ../../roles/role-nextcloud-client.nix
+    ../../roles/role-nextcloud-client.nix
     ../../roles/role-docker.nix
     # ../../roles/role-vm-host.nix
   ];
