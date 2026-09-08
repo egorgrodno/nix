@@ -864,7 +864,6 @@ in
               "$mod SHIFT, S, exec, hypr-monitor-scale"
               "$mod, R, submap, resize"
               "$mod, 0, exec, wlogout"
-              "$mod SHIFT, 0, exec, hyprlock"
 
               # Focus
               "$mod, ${dirs.l}, movefocus, l"
@@ -934,6 +933,8 @@ in
             ", XF86AudioPause, exec, playerctl play-pause"
             ", XF86AudioPrev, exec, playerctl previous"
             ", XF86AudioNext, exec, playerctl next"
+
+            "$mod SHIFT, 0, exec, pidof hyprlock || hyprlock"
           ];
 
           bindm = [
