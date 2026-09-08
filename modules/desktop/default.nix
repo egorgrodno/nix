@@ -441,6 +441,55 @@ in
         hyprctl dispatch movetoworkspace "$WORKSPACE,address:$ADDRESS"
       '')
 
+      # Scale is runtime state, the way the wallpaper is: the `monitor` setting
+      # is what a session starts at, and `hyprctl keyword` overrides it until
+      # the next config reload.
+      (writeShellScriptBin "hypr-monitor-scale" ''
+        read -r NAME W H RR X Y CURRENT < <(hyprctl monitors -j \
+          | ${pkgs.jq}/bin/jq -r '.[] | select(.focused)
+              | "\(.name) \(.width) \(.height) \(.refreshRate) \(.x) \(.y) \(.scale)"')
+
+        if [ -z "$NAME" ]; then
+          notify-send "Monitor scale" "No focused monitor" --urgency critical
+          exit 1
+        fi
+
+        # Hyprland quantises a scale to 1/120 and substitutes one of its own for
+        # any value that leaves the mode a fractional number of logical pixels,
+        # so d/120 applies as written exactly when d divides 120*gcd(W, H).
+        #
+        # The two-decimal label is for reading; the exact scale rides in a
+        # second tabbed field, since 1.875 is a divisor and 1.88 is not.
+        MENU=$(${pkgs.gawk}/bin/awk -v w="$W" -v h="$H" -v cur="$CURRENT" 'BEGIN {
+          a = w; b = h; while (b) { t = b; b = a % b; a = t }
+          limit = 120 * a
+
+          for (d = 120; d <= 240; d++) {
+            if (limit % d) continue
+            scale = d / 120
+            mark = sprintf("%.2f", scale) == sprintf("%.2f", cur) ? "  (current)" : ""
+            row = sprintf("%.2f  %-9s%s", scale, sprintf("%dx%d", w * 120 / d, h * 120 / d), mark)
+            sub(/ +$/, "", row)
+            printf "%s\t%.6f\n", row, scale
+          }
+        }')
+
+        CHOICE=$(printf '%s\n' "$MENU" | cut -f1 | wofi --dmenu \
+          --prompt "Scale $NAME" --width 320 --lines "$(printf '%s\n' "$MENU" | wc -l)")
+        [ -n "$CHOICE" ] || exit 0
+
+        SCALE=$(printf '%s\n' "$MENU" \
+          | ${pkgs.gawk}/bin/awk -F'\t' -v c="$CHOICE" '$1 == c { print $2; exit }')
+        LOGICAL=$(printf '%s\n' "$CHOICE" | ${pkgs.gawk}/bin/awk '{ print $2 }')
+
+        # Mode and position are read back from the monitor rather than passed as
+        # `auto`, which would re-run mode selection and re-lay-out every output.
+        hyprctl keyword monitor "$NAME,''${W}x''${H}@''${RR},''${X}x''${Y},$SCALE"
+
+        notify-send "Monitor scale" "$NAME at ''${CHOICE%% *}x — $LOGICAL" \
+          --urgency normal --hint string:synchronous:my_scale
+      '')
+
       wl-clipboard
       cliphist
     ];
@@ -812,6 +861,7 @@ in
               "$mod, M, exec, pwvucontrol"
               "$mod, W, exec, pcmanfm"
               "$mod SHIFT, R, exec, systemctl --user restart waybar"
+              "$mod SHIFT, S, exec, hypr-monitor-scale"
               "$mod, R, submap, resize"
               "$mod, 0, exec, wlogout"
               "$mod SHIFT, 0, exec, hyprlock"
@@ -988,13 +1038,15 @@ in
                 "match:xwayland" = true;
                 no_focus = true;
               }
+              # No `size`: a rule that sets one wins the initial map and the
+              # window then snaps back to what wofi asks for. Callers passing
+              # `--width`/`--lines`, as hypr-monitor-scale does, need theirs.
               {
                 name = "wofi-float";
                 "match:class" = "^(wofi)$";
                 center = true;
                 float = "yes";
                 pin = "yes";
-                size = "520 320";
                 dim_around = true;
               }
               {
