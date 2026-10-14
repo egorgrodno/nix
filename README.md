@@ -42,6 +42,14 @@ EOF
 
 The git module (`modules/git/hm.nix`) includes this file automatically.
 
+### 4. Install neovim plugins
+
+Packer fetches the plugins outside the Nix store and installs none by itself, so each user **must** sync them once, then restart `nvim`:
+
+```bash
+nvim +PackerSync
+```
+
 ## Standalone Neovim
 
 The `neovim-qwerty` and `neovim-hallmack` home-manager profiles install this neovim configuration, together with git, on any non-NixOS machine that has Nix and home-manager:
@@ -53,7 +61,7 @@ home-manager switch --impure --flake github:egorgrodno/nix#neovim-hallmack  # ha
 
 `--impure` is **required**: the profile reads `$USER` and `$HOME` to place itself on whatever account invokes it, and pure evaluation aborts with a message naming the variable. The alternative is to set `mkNeovimHome`'s `username` and `homeDirectory` explicitly in `flake.nix`.
 
-The profile is self-contained: the neovim module bundles its own runtime tools and language servers (`ripgrep`, `fd`, `nodejs`, the LSP servers). Packer installs plugins on first launch, so `:PackerSync` **must** be run once after the first `nvim` start.
+The profile is self-contained: the neovim module bundles its own runtime tools and language servers (`ripgrep`, `fd`, `nodejs`, the LSP servers). Its plugins are not: Packer fetches them, so `:PackerSync` **must** be run once after the first `nvim` start.
 
 ## Hosts
 
