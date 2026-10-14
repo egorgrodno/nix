@@ -20,6 +20,23 @@ let
   # screen and the session agree on what "active" looks like.
   activeBorder = "${hyprColor theme.blue "ff"} ${hyprColor theme.cyan "ff"} 45deg";
 
+  # Hyprland's directional keys: focus, move, and the resize submap.
+  dirs =
+    if config.base.keyboard.layout == "hallmack" then
+      {
+        l = "G";
+        d = "A";
+        u = "E";
+        r = "O";
+      }
+    else
+      {
+        l = "H";
+        d = "J";
+        u = "K";
+        r = "L";
+      };
+
   # tuigreet writes ANSI to a pty, which a bare Wayland compositor cannot hand
   # it, so the greeter runs inside foot.
   greeterTerminal =
@@ -830,21 +847,6 @@ in
 
           bind =
             let
-              dirs =
-                if config.base.keyboard.layout == "hallmack" then
-                  {
-                    l = "G";
-                    d = "A";
-                    u = "E";
-                    r = "O";
-                  }
-                else
-                  {
-                    l = "H";
-                    d = "J";
-                    u = "K";
-                    r = "L";
-                  };
               splitKey = if config.base.keyboard.layout == "hallmack" then "L" else "E";
             in
             [
@@ -1068,10 +1070,10 @@ in
           # Percentages, not pixels: Hyprland rejects a grow delta larger than
           # the window itself, which a fixed step hits on short splits.
           submap = resize
-          binde = , G, resizeactive, -10% 0
-          binde = , A, resizeactive, 0 10%
-          binde = , E, resizeactive, 0 -10%
-          binde = , O, resizeactive, 10% 0
+          binde = , ${dirs.l}, resizeactive, -10% 0
+          binde = , ${dirs.d}, resizeactive, 0 10%
+          binde = , ${dirs.u}, resizeactive, 0 -10%
+          binde = , ${dirs.r}, resizeactive, 10% 0
           binde = , left, resizeactive, -10% 0
           binde = , down, resizeactive, 0 10%
           binde = , up, resizeactive, 0 -10%
