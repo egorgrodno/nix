@@ -41,4 +41,12 @@ in
     '')
   ]
   ++ (if isDesktop then desktopPackages else [ ]);
+
+  # Hosts stay out of the flake: ~/.ssh/config.local is untracked, and ssh skips
+  # an Include that matches no file.
+  programs.ssh = {
+    enable = true;
+    enableDefaultConfig = false;
+    includes = [ "config.local" ];
+  };
 }

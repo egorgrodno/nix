@@ -42,7 +42,21 @@ EOF
 
 The git module (`modules/git/hm.nix`) includes this file automatically.
 
-### 4. Install neovim plugins
+### 4. Add SSH hosts
+
+SSH hosts are not stored in the flake either. The generated `~/.ssh/config` includes `~/.ssh/config.local`, and ssh skips the include while the file is absent:
+
+```bash
+mkdir -p -m 700 ~/.ssh
+cat >> ~/.ssh/config.local << 'EOF'
+Host example
+    HostName example.com
+    User you
+EOF
+chmod 600 ~/.ssh/config.local
+```
+
+### 5. Install neovim plugins
 
 Packer fetches the plugins outside the Nix store and installs none by itself, so each user **must** sync them once, then restart `nvim`:
 
