@@ -179,7 +179,14 @@
     in
     {
       formatter.${system} = treefmtEval.config.build.wrapper;
-      checks.${system}.formatting = treefmtEval.config.build.check self;
+
+      # Run from a NixOS ISO: `nix run github:egorgrodno/nix#<name>`.
+      packages.${system}.repair-boot = pkgs.callPackage ./pkgs/repair-boot { };
+      # The packages are listed so their build-time shellcheck runs here too.
+      checks.${system} = {
+        formatting = treefmtEval.config.build.check self;
+      }
+      // self.packages.${system};
 
       # Portable editor profiles for non-NixOS machines
       homeConfigurations = {

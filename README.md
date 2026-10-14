@@ -64,6 +64,23 @@ Packer fetches the plugins outside the Nix store and installs none by itself, so
 nvim +PackerSync
 ```
 
+## Repair the boot menu
+
+A Windows update can remove GRUB's firmware entry. Boot a NixOS ISO in UEFI mode, connect to the network, and run:
+
+```bash
+sudo nix --extra-experimental-features 'nix-command flakes' run github:egorgrodno/nix#repair-boot
+```
+
+It mounts `NIXROOT` and `NIXBOOT`, reinstalls the bootloader from the installed generation without rebuilding, and lists the firmware entries. Offline, the same by hand:
+
+```bash
+sudo -i
+mount /dev/disk/by-label/NIXROOT /mnt
+mount -o umask=077 /dev/disk/by-label/NIXBOOT /mnt/boot
+nixos-enter --root /mnt -c 'NIXOS_INSTALL_BOOTLOADER=1 /nix/var/nix/profiles/system/bin/switch-to-configuration boot'
+```
+
 ## Standalone Neovim
 
 The `neovim-qwerty` and `neovim-hallmack` home-manager profiles install this neovim configuration, together with git, on any non-NixOS machine that has Nix and home-manager:

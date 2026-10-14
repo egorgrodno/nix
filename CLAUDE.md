@@ -56,6 +56,7 @@ users/<name>.nix                           # identity + optional homeModules
 - `modules/` — Feature modules. Each owns both its NixOS and home-manager configuration, applying `hm.nix` to every user through `forAllUsers`.
 - `profiles/` — Home-manager profiles attached to a single user. See `profiles/README.md`.
 - `users/` — One file per user: `name`, `homedir`, `stateVersion`, optional `homeModules`. A host lists them by name in `host.nix`; the flake imports them into `specialArgs.users`.
+- `pkgs/` — Flake packages, one directory each: a `writeShellApplication` in `default.nix` and its script beside it. `checks` builds them, so shellcheck runs under `nix flake check`. `repair-boot` runs as root from a NixOS ISO.
 - `lib/` — Pure helper functions, not modules: each file takes `lib` and returns a value, and is used with `import ../../lib/<name>.nix lib`. Nothing here reads `config` or sets an option.
 - `home.nix` — Generates each `home-manager.users.*` entry: identity plus that user's `homeModules`.
 
