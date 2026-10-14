@@ -38,7 +38,6 @@
     HandleLidSwitchExternalPower = "lock";
   };
 
-  networking.hostName = "thinkpad";
   networking.useDHCP = lib.mkDefault true;
 
   services.openssh = {
@@ -49,6 +48,4 @@
       KbdInteractiveAuthentication = false;
     };
   };
-
-  system.stateVersion = "26.05";
 }

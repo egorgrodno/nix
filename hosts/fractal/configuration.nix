@@ -73,7 +73,6 @@ in
 
   time.hardwareClockInLocalTime = true;
 
-  networking.hostName = "fractal";
   networking.useDHCP = lib.mkDefault true;
 
   services.openssh = {
@@ -84,6 +83,4 @@ in
       KbdInteractiveAuthentication = false;
     };
   };
-
-  system.stateVersion = "24.11";
 }

@@ -143,6 +143,39 @@
         ./home.nix
       ];
 
+      # host.nix is data the installer writes, so the hostname and stateVersion
+      # come from it and the directory name rather than from configuration.nix.
+      mkHost =
+        name:
+        let
+          host = import ./hosts/${name}/host.nix;
+          users = map (u: import ./users/${u}.nix) host.users;
+        in
+        lib.nixosSystem {
+          inherit system pkgs;
+
+          specialArgs = {
+            inherit
+              inputs
+              theme
+              fontPackages
+              users
+              ;
+            forAllUsers = mkForAllUsers users;
+          };
+
+          modules =
+            nixosConfigurationModules
+            ++ homeConfigurationModules
+            ++ [
+              ./hosts/${name}/configuration.nix
+              {
+                networking.hostName = name;
+                system.stateVersion = host.stateVersion;
+              }
+            ];
+        };
+
     in
     {
       formatter.${system} = treefmtEval.config.build.wrapper;
@@ -154,61 +187,9 @@
         neovim-hallmack = mkNeovimHome { layout = "hallmack"; };
       };
 
-      nixosConfigurations = {
-        fractal =
-          let
-            users = [
-              (import ./users/egor.nix)
-              (import ./users/forge.nix)
-            ];
-          in
-          lib.nixosSystem {
-            inherit system pkgs;
-
-            specialArgs = {
-              inherit
-                inputs
-                theme
-                fontPackages
-                users
-                ;
-              forAllUsers = mkForAllUsers users;
-            };
-
-            modules =
-              nixosConfigurationModules
-              ++ homeConfigurationModules
-              ++ [
-                ./hosts/fractal/configuration.nix
-              ];
-          };
-
-        thinkpad =
-          let
-            users = [ (import ./users/egor.nix) ];
-          in
-          lib.nixosSystem {
-            inherit system pkgs;
-
-            # Kept identical to fractal's, so a module argument added later cannot
-            # break one host while the other still evaluates.
-            specialArgs = {
-              inherit
-                inputs
-                theme
-                fontPackages
-                users
-                ;
-              forAllUsers = mkForAllUsers users;
-            };
-
-            modules =
-              nixosConfigurationModules
-              ++ homeConfigurationModules
-              ++ [
-                ./hosts/thinkpad/configuration.nix
-              ];
-          };
-      };
+      # One configuration per directory in hosts/, named after it.
+      nixosConfigurations = lib.mapAttrs (name: _: mkHost name) (
+        lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./hosts)
+      );
     };
 }

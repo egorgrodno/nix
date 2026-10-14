@@ -44,14 +44,14 @@ A host **must** import exactly one. Each pulls in the foundation plus the aspect
 
 ## Wiring a host
 
-`hosts/<host>/configuration.nix` imports the role. The flake imports only the host file and assembles its `users` and `specialArgs`; role selection **must not** live in the flake. `fractal` and `thinkpad` both import `role-desktop-config.nix`.
+`hosts/<host>/configuration.nix` imports the role. The flake finds the host by its directory, imports only `configuration.nix`, and builds `users` and `specialArgs` from `host.nix`; role selection **must not** live in the flake. `fractal` and `thinkpad` both import `role-desktop-config.nix`.
 
 ## Adding a host
 
-1. Write `hosts/<host>/configuration.nix` and `hardware-configuration.nix`.
+1. Create `hosts/<host>/` with `host.nix` (`users`, `stateVersion`), `configuration.nix`, and `hardware-configuration.nix`.
 2. Import a top-level role, or a new one that imports `role-base-config.nix`.
 3. Set `base.keyboard.layout` and `my.desktop.primaryScreen`.
-4. Register under `nixosConfigurations` in `flake.nix` with a `users` list.
+4. `git add` the directory: the flake sees only tracked files.
 
 ## Adding an aspect role
 
