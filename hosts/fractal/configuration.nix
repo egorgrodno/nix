@@ -71,6 +71,16 @@ in
     useOSProber = true;
   };
 
+  # Sized to RAM so any workload fits the hibernation image. systemd records the
+  # file's location in the HibernateLocation EFI variable and the systemd initrd
+  # resumes from it, so neither `resume=` nor `resume_offset=` is set.
+  swapDevices = [
+    {
+      device = "/var/lib/swapfile";
+      size = 32 * 1024;
+    }
+  ];
+
   time.hardwareClockInLocalTime = true;
 
   networking.useDHCP = lib.mkDefault true;

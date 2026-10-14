@@ -30,7 +30,7 @@ Single-concern bundles, imported by a top-level role or directly by a host.
 | `role-nextcloud-client.nix` | Nextcloud client and a per-user sync service. |
 | `role-vm-host.nix` | VirtualBox host; blacklists the KVM modules, adds users to `vboxusers`. |
 | `role-docker.nix` | Docker, with `dockerd` left down at boot; adds `admin` users to `docker`. |
-| `role-laptop.nix` | TLP, and suspend on lid close (lock only on external power). |
+| `role-laptop.nix` | TLP, and `suspend-then-hibernate` on lid close. |
 
 ## Top-level roles
 

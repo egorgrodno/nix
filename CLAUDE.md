@@ -79,6 +79,8 @@ users = [
 
 `roles/role-desktop-config.nix` imports `modules/desktop/`: Hyprland on Wayland, with Waybar, greetd/tuigreet, pipewire, dunst, GTK/cursor theming, and XDG MIME associations. The wallpaper is runtime state — `waypaper` sets it, Hyprland restores it with `waypaper --restore`.
 
+**Idle.** hypridle dims at 3 minutes, locks and blanks at 5, and runs `suspend-then-hibernate` at 15, which hibernates 5 minutes later. A host **must** declare swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
+
 **Hardware belongs to the host.** The module enables `hardware.graphics` and sets `NIXOS_OZONE_WL`; the video driver, VA-API backend, and vendor session variables are the host's. Screens likewise:
 
 | `my.desktop` option | Meaning |

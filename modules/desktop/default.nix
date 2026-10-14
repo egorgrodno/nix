@@ -183,6 +183,22 @@ let
         done
       '';
 
+  # The idle dim. A screen shader rather than brightnessctl, since an external
+  # monitor has no backlight to turn down.
+  dimShader = pkgs.writeText "dim.frag" ''
+    #version 300 es
+    precision mediump float;
+
+    in vec2 v_texcoord;
+    uniform sampler2D tex;
+    out vec4 fragColor;
+
+    void main() {
+      vec4 color = texture(tex, v_texcoord);
+      fragColor = vec4(color.rgb * 0.4, color.a);
+    }
+  '';
+
   # vim must start from an interactive shell: `:suspend` signals its whole
   # process group, and `zsh -c` has no job control to put vim in one of its
   # own, so ^Z stops the shell too and freezes the window. The throwaway
@@ -517,6 +533,16 @@ in
 
     # Paired with the ntfs3g package below; the in-kernel ntfs3 driver loses to it.
     boot.blacklistedKernelModules = [ "ntfs3" ];
+
+    # hypridle's idle suspend hibernates after this delay, which logind refuses
+    # on a host without swap, leaving the machine awake.
+    assertions = [
+      {
+        assertion = config.swapDevices != [ ];
+        message = "The desktop module suspends then hibernates on idle: declare swap at least the size of RAM in `swapDevices`.";
+      }
+    ];
+    systemd.sleep.settings.Sleep.HibernateDelaySec = "5min";
 
     environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
@@ -1305,9 +1331,8 @@ in
         };
       };
 
-      # Idle, suspend and lid handling. `lock_cmd` also answers logind's Lock
-      # signal, which is what the thinkpad lid switch emits on external power,
-      # and `before_sleep_cmd` raises the lock before the machine suspends so a
+      # Idle and suspend handling. `lock_cmd` answers logind's Lock signal, and
+      # `before_sleep_cmd` raises the lock before the machine suspends so a
       # resume never lands on an unlocked desktop.
       services.hypridle = {
         enable = true;
@@ -1317,15 +1342,27 @@ in
             before_sleep_cmd = "loginctl lock-session";
             after_sleep_cmd = "hyprctl dispatch dpms on";
           };
+          # Hibernation follows the suspend after HibernateDelaySec.
           listener = [
             {
-              timeout = 600;
-              on-timeout = "loginctl lock-session";
+              timeout = 180;
+              on-timeout = "hyprctl keyword decoration:screen_shader ${dimShader}";
+              on-resume = "hyprctl keyword decoration:screen_shader '[[EMPTY]]'";
             }
             {
-              timeout = 180;
+              timeout = 300;
+              on-timeout = "loginctl lock-session";
+            }
+            # A few seconds behind the lock, so hyprlock is up before the
+            # outputs go dark.
+            {
+              timeout = 305;
               on-timeout = "hyprctl dispatch dpms off";
               on-resume = "hyprctl dispatch dpms on";
+            }
+            {
+              timeout = 900;
+              on-timeout = "systemctl suspend-then-hibernate";
             }
           ];
         };
