@@ -4,11 +4,22 @@ Nix flakes and home-manager configuration for the `fractal` desktop and the `thi
 
 ## Fresh Install
 
-### 1. Apply the configuration
+### 1. Install
+
+Boot a NixOS ISO in UEFI mode, connect to the network, and run:
 
 ```bash
-sudo nixos-rebuild switch --flake /etc/nixos#<host>   # fractal or thinkpad
+sudo nix --extra-experimental-features 'nix-command flakes' run github:egorgrodno/nix#install
 ```
+
+It asks every question first: a host from `hosts/` to reinstall, or a new one with its layout, form factor, CPU and GPU vendor, screen and users, most of them detected. It then writes and evaluates the host, and only after that asks for the disk:
+
+| Disk mode | Effect |
+|---|---|
+| Wipe a disk | GPT with a 1 GiB `NIXBOOT` ESP and the rest ext4 `NIXROOT`. A disk with Windows on it is refused unless its device path is typed. |
+| Reuse | Reformats `NIXROOT` and keeps `NIXBOOT` as it is. `fractal` **must** use it, since `nvme0n1` also holds Windows' D:. |
+
+Typing the hostname starts the install. It ends by setting each user's password and leaving `/etc/nixos` as a clone owned by the first admin, with the host committed.
 
 ### 2. Run nx-setup
 

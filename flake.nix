@@ -181,7 +181,8 @@
       formatter.${system} = treefmtEval.config.build.wrapper;
 
       packages.${system} = {
-        # Run from a NixOS ISO: `nix run github:egorgrodno/nix#repair-boot`.
+        # Run from a NixOS ISO: `nix run github:egorgrodno/nix#<name>`.
+        install = pkgs.callPackage ./pkgs/install { };
         repair-boot = pkgs.callPackage ./pkgs/repair-boot { };
         # Installed for every user by modules/nixtools.
         nx-setup = pkgs.callPackage ./pkgs/nx-setup { };

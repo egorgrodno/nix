@@ -57,7 +57,7 @@ users/<name>.nix                           # identity + optional homeModules
 - `modules/` — Feature modules. Each owns both its NixOS and home-manager configuration, applying `hm.nix` to every user through `forAllUsers`.
 - `profiles/` — Home-manager profiles attached to a single user. See `profiles/README.md`.
 - `users/` — One file per user: `name`, `homedir`, `stateVersion`, optional `homeModules`. A host lists them by name in `host.nix`; the flake imports them into `specialArgs.users`.
-- `pkgs/` — Flake packages, one directory each: a `writeShellApplication` in `default.nix` and its script beside it. `checks` builds them, so shellcheck runs under `nix flake check`. `repair-boot` runs as root from a NixOS ISO; `nx-setup` reaches every user through `modules/nixtools`.
+- `pkgs/` — Flake packages, one directory each: a `writeShellApplication` in `default.nix` and its script beside it. `checks` builds them, so shellcheck runs under `nix flake check`. `install` and `repair-boot` run as root from a NixOS ISO; `nx-setup` reaches every user through `modules/nixtools`.
 - `lib/` — Pure helper functions, not modules: each file takes `lib` and returns a value, and is used with `import ../../lib/<name>.nix lib`. Nothing here reads `config` or sets an option.
 - `home.nix` — Generates each `home-manager.users.*` entry: identity plus that user's `homeModules`.
 
@@ -96,7 +96,7 @@ users = [
 
 ### Hosts
 
-- `fractal` — AMD/NVIDIA hybrid, NVIDIA PRIME sync, `HDMI-A-2` at `2560x1440@120`; users `egor` and `forge`. Dual-boots Windows, which boots from its own ESP (`WINBOOT`, `nvme1n1`) but keeps its D: (`WINDISKD`) on the NixOS disk, so a reinstall **must not** wipe `nvme0n1`.
+- `fractal` — AMD/NVIDIA hybrid, NVIDIA PRIME sync, `HDMI-A-2` at `2560x1440@120`; users `egor` and `forge`. Dual-boots Windows, which boots from its own ESP (`WINBOOT`, `nvme1n1`) but keeps its D: (`WINDISKD`) on the NixOS disk, so a reinstall **must** use the installer's reuse mode rather than wipe `nvme0n1`.
 - `thinkpad` — AMD, `eDP-1`, qwerty, portable GRUB, `role-laptop.nix`; user `egor`.
 - Both track `nixos-unstable`. `role-base-config.nix` mounts `/` (ext4, `NIXROOT`) and `/boot` (vfat, `NIXBOOT`) by label on every host, so a reinstall must label its partitions to match. `wheel` has passwordless sudo. Both run sshd with password authentication disabled.
 
