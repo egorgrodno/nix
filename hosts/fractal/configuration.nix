@@ -76,8 +76,14 @@ in
   networking.hostName = "fractal";
   networking.useDHCP = lib.mkDefault true;
 
-  services.openssh.enable = true;
-  services.openssh.settings.PasswordAuthentication = false;
+  services.openssh = {
+    enable = true;
+    # Keyboard-interactive goes through PAM, which prompts for the same password.
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+    };
+  };
 
   system.stateVersion = "24.11";
 }

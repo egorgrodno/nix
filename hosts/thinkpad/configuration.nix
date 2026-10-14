@@ -41,5 +41,14 @@
   networking.hostName = "thinkpad";
   networking.useDHCP = lib.mkDefault true;
 
+  services.openssh = {
+    enable = true;
+    # Keyboard-interactive goes through PAM, which prompts for the same password.
+    settings = {
+      PasswordAuthentication = false;
+      KbdInteractiveAuthentication = false;
+    };
+  };
+
   system.stateVersion = "26.05";
 }

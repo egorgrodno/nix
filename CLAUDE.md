@@ -93,7 +93,7 @@ users = [
 
 - `fractal` — AMD/NVIDIA hybrid, NVIDIA PRIME sync, `HDMI-A-2` at `2560x1440@120`; users `egor` and `forge`.
 - `thinkpad` — AMD, `eDP-1`, qwerty, portable GRUB, TLP; user `egor`.
-- Both track `nixos-unstable` and mount `/` (ext4, `NIXROOT`) and `/boot` (vfat, `NIXBOOT`) by label, so a reinstall must label its partitions to match. `wheel` has passwordless sudo. `fractal` disables SSH password authentication.
+- Both track `nixos-unstable` and mount `/` (ext4, `NIXROOT`) and `/boot` (vfat, `NIXBOOT`) by label, so a reinstall must label its partitions to match. `wheel` has passwordless sudo. Both run sshd with password authentication disabled.
 
 ## Documentation conventions
 
