@@ -9,6 +9,7 @@
     (pkgs.writeShellScriptBin "nxc" "nixos-rebuild build --flake /etc/nixos")
     (pkgs.writeShellScriptBin "nxb" "nixos-rebuild boot --flake /etc/nixos")
     (pkgs.writeShellScriptBin "nxt" "nixos-rebuild test --flake /etc/nixos")
+    (pkgs.callPackage ../../pkgs/nx-setup { })
 
     (pkgs.writeShellScriptBin "permfixer" ''
       if [ -z "$1" ]; then

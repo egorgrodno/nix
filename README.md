@@ -10,59 +10,23 @@ Nix flakes and home-manager configuration for the `fractal` desktop and the `thi
 sudo nixos-rebuild switch --flake /etc/nixos#<host>   # fractal or thinkpad
 ```
 
-### 2. Set up Claude Code
+### 2. Run nx-setup
 
-The status line reads its command from `~/.claude/settings.json` and shows token usage through `ccusage`:
-
-```bash
-mkdir -p ~/.claude
-cat > ~/.claude/settings.json << 'EOF'
-{
-  "statusLine": {
-    "type": "command",
-    "command": "npx ccusage statusline --context-low-threshold 50 --context-medium-threshold 85",
-    "padding": 0
-  }
-}
-EOF
-```
-
-### 3. Set up git identity
-
-Git identity is not stored in the flake and **must** be created once per user:
+Each user runs it once after the first login. It prompts for what it needs, skips what is already done, and ends with a summary, so a rerun is safe:
 
 ```bash
-mkdir -p ~/.config/git
-cat > ~/.config/git/config.local << 'EOF'
-[user]
-    name = Your Name
-    email = your@email.com
-EOF
+nx-setup
 ```
 
-The git module (`modules/git/hm.nix`) includes this file automatically.
-
-### 4. Add SSH hosts
-
-SSH hosts are not stored in the flake either. The generated `~/.ssh/config` includes `~/.ssh/config.local`, and ssh skips the include while the file is absent:
-
-```bash
-mkdir -p -m 700 ~/.ssh
-cat >> ~/.ssh/config.local << 'EOF'
-Host example
-    HostName example.com
-    User you
-EOF
-chmod 600 ~/.ssh/config.local
-```
-
-### 5. Install neovim plugins
-
-Packer fetches the plugins outside the Nix store and installs none by itself, so each user **must** sync them once, then restart `nvim`:
-
-```bash
-nvim +PackerSync
-```
+| Step | Effect |
+|---|---|
+| SSH directory | `~/.ssh` at mode 700, and an empty `~/.ssh/config.local` for private hosts, which the generated `~/.ssh/config` includes. |
+| SSH known hosts | Scans `github.com` and `forgejo.home:30143` into `~/.ssh/known_hosts` and prints the fingerprints. |
+| Git identity | `user.name` and `user.email` in `~/.config/git/config.local`, which the git module includes. |
+| GitHub | `gh auth login` with the SSH protocol, which offers to generate `~/.ssh/id_ed25519` and upload it. |
+| Forgejo | `tea login add` for `http://forgejo.home` with a token or a password, then uploads the SSH key. |
+| Neovim | Headless `PackerSync`. |
+| `/etc/nixos` | For its owner only: `origin` fetches from GitHub and pushes to GitHub and Forgejo, and unpushed commits are pushed after a confirmation. |
 
 ## Repair the boot menu
 

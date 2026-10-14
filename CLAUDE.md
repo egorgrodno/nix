@@ -16,6 +16,7 @@ nxc   # nixos-rebuild build --flake /etc/nixos   (build without activating)
 nxb   # nixos-rebuild boot --flake /etc/nixos    (build and add boot entry, no activation)
 nxt   # nixos-rebuild test --flake /etc/nixos    (activate temporarily, no boot entry)
 nxu   # nix flake update --flake /etc/nixos      (update flake.lock)
+nx-setup  # per-user setup after the first boot: logins, identity, plugins; safe to rerun
 ```
 
 `nxe` opens `home.nix` in a kitty window, so it ships with `modules/desktop/` rather than `modules/nixtools/`.
@@ -56,7 +57,7 @@ users/<name>.nix                           # identity + optional homeModules
 - `modules/` — Feature modules. Each owns both its NixOS and home-manager configuration, applying `hm.nix` to every user through `forAllUsers`.
 - `profiles/` — Home-manager profiles attached to a single user. See `profiles/README.md`.
 - `users/` — One file per user: `name`, `homedir`, `stateVersion`, optional `homeModules`. A host lists them by name in `host.nix`; the flake imports them into `specialArgs.users`.
-- `pkgs/` — Flake packages, one directory each: a `writeShellApplication` in `default.nix` and its script beside it. `checks` builds them, so shellcheck runs under `nix flake check`. `repair-boot` runs as root from a NixOS ISO.
+- `pkgs/` — Flake packages, one directory each: a `writeShellApplication` in `default.nix` and its script beside it. `checks` builds them, so shellcheck runs under `nix flake check`. `repair-boot` runs as root from a NixOS ISO; `nx-setup` reaches every user through `modules/nixtools`.
 - `lib/` — Pure helper functions, not modules: each file takes `lib` and returns a value, and is used with `import ../../lib/<name>.nix lib`. Nothing here reads `config` or sets an option.
 - `home.nix` — Generates each `home-manager.users.*` entry: identity plus that user's `homeModules`.
 

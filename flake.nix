@@ -180,8 +180,12 @@
     {
       formatter.${system} = treefmtEval.config.build.wrapper;
 
-      # Run from a NixOS ISO: `nix run github:egorgrodno/nix#<name>`.
-      packages.${system}.repair-boot = pkgs.callPackage ./pkgs/repair-boot { };
+      packages.${system} = {
+        # Run from a NixOS ISO: `nix run github:egorgrodno/nix#repair-boot`.
+        repair-boot = pkgs.callPackage ./pkgs/repair-boot { };
+        # Installed for every user by modules/nixtools.
+        nx-setup = pkgs.callPackage ./pkgs/nx-setup { };
+      };
       # The packages are listed so their build-time shellcheck runs here too.
       checks.${system} = {
         formatting = treefmtEval.config.build.check self;
