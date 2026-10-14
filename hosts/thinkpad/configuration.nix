@@ -8,12 +8,14 @@
     # ../../roles/role-vm-host.nix
   ];
 
+  base.keyboard = {
+    layout = "qwerty";
+    swapCapsEscape = true;
+  };
+
   my.desktop.primaryScreen = "eDP-1";
 
-  # Intel integrated graphics; no discrete GPU on this machine.
-  hardware.graphics.extraPackages = [ pkgs.intel-media-driver ];
-
-  # Wifi and Bluetooth firmware, and the Intel microcode the hardware file wires up.
+  # Wifi and Bluetooth firmware, and the AMD microcode the hardware file wires up.
   hardware.enableRedistributableFirmware = true;
 
   boot.loader = {
@@ -21,24 +23,15 @@
     grub = {
       enable = true;
       device = "nodev";
-      useOSProber = true;
+      useOSProber = false;
       efiSupport = true;
       efiInstallAsRemovable = true;
     };
   };
 
-  environment.systemPackages = [ pkgs.postgresql ];
-
-  services.postgresql = {
-    enable = true;
-    package = pkgs.postgresql_14;
-    dataDir = "/data/postgresql";
-  };
-
   # Laptop power handling. TLP owns the CPU frequency governor, so this host must
   # not set `powerManagement.cpuFreqGovernor` — the two fight over the same knob.
   services.tlp.enable = true;
-  services.thermald.enable = true;
 
   services.logind.settings.Login = {
     HandleLidSwitch = "suspend";
@@ -48,5 +41,5 @@
   networking.hostName = "thinkpad";
   networking.useDHCP = lib.mkDefault true;
 
-  system.stateVersion = "21.11";
+  system.stateVersion = "26.05";
 }

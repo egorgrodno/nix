@@ -7,7 +7,7 @@ Nix flakes and home-manager configuration for the `fractal` desktop and the `thi
 ### 1. Apply the configuration
 
 ```bash
-sudo nixos-rebuild switch --flake /etc/nixos#fractal
+sudo nixos-rebuild switch --flake /etc/nixos#<host>   # fractal or thinkpad
 ```
 
 ### 2. Set up Claude Code

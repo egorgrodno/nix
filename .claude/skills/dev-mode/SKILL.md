@@ -107,7 +107,7 @@ Never skip step 4. A port that looks right and a port that regenerates the file 
 
 ### Conditional branches
 
-`modules/neovim/lua-config.nix` carries nine `${if config.base.keyboard.layout == "hallmack" then … else …}` blocks, and the two renderings differ by roughly 780 lines. `fractal` renders the **hallmack** branch, so the qwerty branch never appears in a local diff — yet both ship, as `homeConfigurations.neovim-qwerty` and `homeConfigurations.neovim-hallmack`.
+`modules/neovim/lua-config.nix` carries nine `${if config.base.keyboard.layout == "hallmack" then … else …}` blocks, and the two renderings differ by roughly 780 lines. A host renders only its own layout's branch, **hallmack** on `fractal` and **qwerty** on `thinkpad`, so the other never appears in a local diff — yet both ship, as `homeConfigurations.neovim-qwerty` and `homeConfigurations.neovim-hallmack`.
 
 An edit to a keymap inside one of those blocks must be made in the correct branch, and often in both. Render each one directly, without a rebuild:
 
