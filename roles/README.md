@@ -19,7 +19,7 @@ Roles receive `specialArgs` (`users`, `forAllUsers`, `theme`, `fontPackages`, `i
 
 ## Aspect roles
 
-Single-concern bundles, imported by top-level roles rather than by hosts.
+Single-concern bundles, imported by a top-level role or directly by a host.
 
 | Role | What it turns on |
 |---|---|
@@ -30,6 +30,7 @@ Single-concern bundles, imported by top-level roles rather than by hosts.
 | `role-nextcloud-client.nix` | Nextcloud client and a per-user sync service. |
 | `role-vm-host.nix` | VirtualBox host; blacklists the KVM modules, adds users to `vboxusers`. |
 | `role-docker.nix` | Docker, with `dockerd` left down at boot; adds `admin` users to `docker`. |
+| `role-laptop.nix` | TLP, and suspend on lid close (lock only on external power). |
 
 ## Top-level roles
 
@@ -55,4 +56,4 @@ A host **must** import exactly one. Each pulls in the foundation plus the aspect
 
 ## Adding an aspect role
 
-A module at `roles/role-<name>.nix` that imports the feature modules it needs or sets their options. It **must** be added to the `imports` of every top-level role that should include it.
+A module at `roles/role-<name>.nix` that imports the feature modules it needs or sets their options. It **must** be added to the `imports` of every top-level role or host that should include it.

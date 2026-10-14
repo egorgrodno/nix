@@ -4,6 +4,7 @@
   imports = [
     ./hardware-configuration.nix
     ../../roles/role-desktop-config.nix
+    ../../roles/role-laptop.nix
     # ../../roles/role-nextcloud-client.nix
     # ../../roles/role-vm-host.nix
   ];
@@ -27,15 +28,6 @@
       efiSupport = true;
       efiInstallAsRemovable = true;
     };
-  };
-
-  # Laptop power handling. TLP owns the CPU frequency governor, so this host must
-  # not set `powerManagement.cpuFreqGovernor` — the two fight over the same knob.
-  services.tlp.enable = true;
-
-  services.logind.settings.Login = {
-    HandleLidSwitch = "suspend";
-    HandleLidSwitchExternalPower = "lock";
   };
 
   networking.useDHCP = lib.mkDefault true;
