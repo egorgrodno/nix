@@ -777,12 +777,11 @@ in
           input = {
             repeat_delay = 300;
             repeat_rate = 30;
-            kb_layout = "us,ru";
-            kb_options =
-              if config.base.keyboard.swapCapsEscape then
-                "grp:win_space_toggle,caps:swapescape"
-              else
-                "grp:win_space_toggle";
+            kb_layout = if config.base.keyboard.layout == "hallmack" then "us" else "us,ru";
+            kb_options = concatStringsSep "," (
+              optional (config.base.keyboard.layout != "hallmack") "grp:win_space_toggle"
+              ++ optional config.base.keyboard.swapCapsEscape "caps:swapescape"
+            );
             follow_mouse = 1;
             # Hyprland applies these to every pointer, the touchpad included;
             # scoping them to the mouse would take a per-device section, whose
