@@ -21,12 +21,16 @@
 
   boot.loader = {
     efi.canTouchEfiVariables = false;
+    timeout = 0;
     grub = {
       enable = true;
       device = "nodev";
       useOSProber = false;
       efiSupport = true;
       efiInstallAsRemovable = true;
+      # `menu` skips the key check when the timeout is zero; `hidden` still
+      # opens the menu while Shift is held.
+      timeoutStyle = "hidden";
     };
   };
 
