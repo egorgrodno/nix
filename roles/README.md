@@ -15,7 +15,7 @@ Roles receive `specialArgs` (`users`, `forAllUsers`, `theme`, `fontPackages`, `i
 
 | Role | Purpose |
 |---|---|
-| `role-base-config.nix` | Declares the `base.*` contract — `isNixosSystem`, `isDesktop`, `isHeadless`, `keyboard.layout` (`qwerty`\|`hallmack`, **required**), `keyboard.swapCapsEscape`. Asserts exactly one of `isDesktop`/`isHeadless`, and forwards `keyboardLayout` and `isDesktop` to home-manager. Every top-level role **must** import it. |
+| `role-base-config.nix` | Declares the `base.*` contract — `isNixosSystem`, `isDesktop`, `isHeadless`, `keyboard.layout` (`qwerty`\|`hallmack`, **required**), `keyboard.swapCapsEscape`. Asserts exactly one of `isDesktop`/`isHeadless`, and forwards `keyboardLayout` and `isDesktop` to home-manager. Mounts `/` and `/boot` by the `NIXROOT` and `NIXBOOT` labels. Every top-level role **must** import it. |
 
 ## Aspect roles
 
@@ -48,7 +48,7 @@ A host **must** import exactly one. Each pulls in the foundation plus the aspect
 
 ## Adding a host
 
-1. Create `hosts/<host>/` with `host.nix` (`users`, `stateVersion`), `configuration.nix`, and `hardware-configuration.nix`.
+1. Create `hosts/<host>/` with `host.nix` (`users`, `stateVersion`), `configuration.nix`, and `hardware-configuration.nix` without `fileSystems`.
 2. Import a top-level role, or a new one that imports `role-base-config.nix`.
 3. Set `base.keyboard.layout` and `my.desktop.primaryScreen`.
 4. `git add` the directory: the flake sees only tracked files.

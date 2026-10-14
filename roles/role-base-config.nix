@@ -46,6 +46,22 @@ in
   config = {
     boot.tmp.cleanOnBoot = true;
 
+    # Every host is partitioned to these labels, which is what lets the installer
+    # and repair-boot mount any of them without asking.
+    fileSystems."/" = {
+      device = "/dev/disk/by-label/NIXROOT";
+      fsType = "ext4";
+    };
+
+    fileSystems."/boot" = {
+      device = "/dev/disk/by-label/NIXBOOT";
+      fsType = "vfat";
+      options = [
+        "fmask=0077"
+        "dmask=0077"
+      ];
+    };
+
     assertions = [
       {
         assertion = cfg.isDesktop != cfg.isHeadless;
