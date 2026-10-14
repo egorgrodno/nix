@@ -733,6 +733,9 @@ in
         };
       };
 
+      # The Print bind saves here, and grimblast fails rather than create it.
+      systemd.user.tmpfiles.rules = [ "d %h/Screenshots 0755 - - -" ];
+
       wayland.windowManager.hyprland = {
         enable = true;
         configType = "hyprlang";
