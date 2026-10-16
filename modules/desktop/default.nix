@@ -523,6 +523,31 @@ in
           --urgency normal --hint string:synchronous:my_scale
       '')
 
+      # Saves an area capture and copies its path. With `--edit`, Satty opens
+      # it first and saves over it, so the path is valid however Satty is
+      # left, edited or not. The path then takes the clipboard unless Satty's
+      # own copy already put the image there.
+      (writeShellScriptBin "screenshot" ''
+        FILE="$HOME/Screenshots/$(date +%Y%m%d_%H%M%S).png"
+        COPIED="$XDG_RUNTIME_DIR/screenshot-$$"
+
+        # A cancelled selection exits non-zero and writes no file.
+        grimblast --freeze save area "$FILE" || exit 0
+
+        if [ "$1" = --edit ]; then
+          satty --filename "$FILE" --output-filename "$FILE" \
+            --copy-command "wl-copy && touch '$COPIED'"
+
+          if [ -e "$COPIED" ]; then
+            rm "$COPIED"
+            exit 0
+          fi
+        fi
+
+        printf '%s' "$FILE" | wl-copy
+        notify-send "Screenshot path copied" "$FILE" --urgency low --hint string:synchronous:my_screenshot
+      '')
+
       wl-clipboard
       cliphist
     ];
@@ -759,8 +784,27 @@ in
         };
       };
 
-      # The Print bind saves here, and grimblast fails rather than create it.
+      # Both Print binds save here, and grimblast fails rather than create it.
       systemd.user.tmpfiles.rules = [ "d %h/Screenshots 0755 - - -" ];
+
+      programs.satty = {
+        enable = true;
+        settings = {
+          # Without a command Satty copies through the GTK clipboard, which
+          # empties when it exits.
+          general.copy-command = "wl-copy";
+          font.family = theme.fontUI;
+          color-palette.palette = with theme; [
+            red
+            yellow
+            green
+            cyan
+            blue
+            magenta
+            foreground.main
+          ];
+        };
+      };
 
       wayland.windowManager.hyprland = {
         enable = true;
@@ -927,7 +971,8 @@ in
               "$mod SHIFT, minus, movetoworkspacesilent, special:magic"
 
               # Screenshot
-              ", Print, exec, DEFAULT_TARGET_DIR=$HOME/Screenshots grimblast --freeze save area"
+              ", Print, exec, screenshot --edit"
+              "SHIFT, Print, exec, screenshot"
 
               # Audio (with notify). The unshifted pair steps by 5% inside
               # `--limit 1.0`. Holding SHIFT deliberately escapes that limit:
@@ -996,6 +1041,7 @@ in
 
             # One piece of content, sized by its own aspect ratio.
             ++ map viewer [
+              "com.gabm.satty"
               "org.kde.okular"
               "vlc"
             ]
