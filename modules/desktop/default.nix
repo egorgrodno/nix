@@ -199,6 +199,59 @@ let
     }
   '';
 
+  # Minutes of idle before each step, per power profile. Hibernation follows
+  # the suspend after HibernateDelaySec.
+  idleMinutes = {
+    performance = {
+      dim = 10;
+      lock = 15;
+      suspend = 20;
+    };
+    balanced = {
+      dim = 3;
+      lock = 5;
+      suspend = 5;
+    };
+    power-saver = {
+      dim = 1;
+      lock = 2;
+      suspend = 2;
+    };
+  };
+
+  # In seconds. A suspend in the lock's minute trails it by 5 s, so hyprlock
+  # is up before the outputs go dark.
+  idleTimeouts = mapAttrs (_: m: {
+    dim = m.dim * 60;
+    lock = m.lock * 60;
+    suspend = m.suspend * 60 + (if m.suspend == m.lock then 5 else 0);
+  }) idleMinutes;
+
+  # hypridle owns org.freedesktop.ScreenSaver, so restarting it on a profile
+  # change would drop every app's idle inhibit. It runs every profile's
+  # listeners instead, and each runs its step once the step is due under the
+  # active profile: the first field of last_pwr, missing on a host without TLP.
+  # A step that a profile change moved into the past runs at the next listener
+  # for it.
+  idleStep =
+    let
+      due = t: "dim=${toString t.dim} lock=${toString t.lock} suspend=${toString t.suspend}";
+    in
+    pkgs.writeShellScript "idle-step" ''
+      read -r pwr _ 2>/dev/null </run/tlp/last_pwr
+      case $pwr in
+        1) ${due idleTimeouts.balanced} ;;
+        2) ${due idleTimeouts.power-saver} ;;
+        *) ${due idleTimeouts.performance} ;;
+      esac
+
+      case $1 in
+        dim) [ "$2" -ge "$dim" ] && hyprctl keyword decoration:screen_shader ${dimShader} ;;
+        lock) [ "$2" -ge "$lock" ] && loginctl lock-session ;;
+        suspend) [ "$2" -ge "$suspend" ] && systemctl suspend-then-hibernate ;;
+      esac
+    '';
+
   # vim must start from an interactive shell: `:suspend` signals its whole
   # process group, and `zsh -c` has no job control to put vim in one of its
   # own, so ^Z stops the shell too and freezes the window. The throwaway
@@ -1110,6 +1163,11 @@ in
                 suppress_event = "maximize";
               }
               {
+                name = "fullscreen-idle-inhibit";
+                "match:class" = ".*";
+                idle_inhibit = "fullscreen";
+              }
+              {
                 name = "fix-xwayland-drags";
                 "match:class" = "^$";
                 "match:float" = true;
@@ -1388,29 +1446,22 @@ in
             before_sleep_cmd = "loginctl lock-session";
             after_sleep_cmd = "hyprctl dispatch dpms on";
           };
-          # Hibernation follows the suspend after HibernateDelaySec.
-          listener = [
-            {
-              timeout = 180;
-              on-timeout = "hyprctl keyword decoration:screen_shader ${dimShader}";
-              on-resume = "hyprctl keyword decoration:screen_shader '[[EMPTY]]'";
-            }
-            {
-              timeout = 300;
-              on-timeout = "loginctl lock-session";
-            }
-            # A few seconds behind the lock, so hyprlock is up before the
-            # outputs go dark.
-            {
-              timeout = 305;
-              on-timeout = "hyprctl dispatch dpms off";
-              on-resume = "hyprctl dispatch dpms on";
-            }
-            {
-              timeout = 900;
-              on-timeout = "systemctl suspend-then-hibernate";
-            }
-          ];
+          # One listener per distinct step and threshold. The suspend turns the
+          # screen off.
+          listener = unique (
+            concatLists (
+              mapAttrsToList (
+                _:
+                mapAttrsToList (
+                  step: timeout: {
+                    inherit timeout;
+                    on-timeout = "${idleStep} ${step} ${toString timeout}";
+                    on-resume = "hyprctl keyword decoration:screen_shader '[[EMPTY]]'";
+                  }
+                )
+              ) idleTimeouts
+            )
+          );
         };
       };
 

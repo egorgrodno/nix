@@ -80,7 +80,13 @@ users = [
 
 `roles/role-desktop-config.nix` imports `modules/desktop/`: Hyprland on Wayland, with Waybar, greetd/tuigreet, pipewire, dunst, GTK/cursor theming, and XDG MIME associations. The wallpaper is runtime state — `waypaper` sets it, Hyprland restores it with `waypaper --restore`.
 
-**Idle.** hypridle dims at 3 minutes, locks and blanks at 5, and runs `suspend-then-hibernate` at 15, which hibernates 10 minutes later. A host **must** declare swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
+**Idle.** hypridle dims, locks, and runs `suspend-then-hibernate` after the minutes of idle below, by the profile TLP last applied; a host without TLP takes the performance row. The suspend turns the screen off, and trails a lock in the same minute by 5 s. One hypridle runs every profile's listeners, since a restart would drop the D-Bus idle inhibits it holds. A listener runs its step once the step is due under the active profile, so a profile change mid-idle can delay a step to the performance row but never skip it. A fullscreen window inhibits idle. A host **must** declare swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
+
+| Profile | Dim | Lock | Suspend | Hibernate |
+|---|---|---|---|---|
+| performance | 10 | 15 | 20 | 30 |
+| balanced | 3 | 5 | 5 | 15 |
+| power-saver | 1 | 2 | 2 | 7 |
 
 **Hardware belongs to the host.** The module enables `hardware.graphics` and sets `NIXOS_OZONE_WL`; the video driver, VA-API backend, and vendor session variables are the host's. Screens likewise:
 
