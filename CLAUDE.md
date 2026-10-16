@@ -80,7 +80,7 @@ users = [
 
 `roles/role-desktop-config.nix` imports `modules/desktop/`: Hyprland on Wayland, with Waybar, greetd/tuigreet, pipewire, dunst, GTK/cursor theming, and XDG MIME associations. The wallpaper is runtime state — `waypaper` sets it, Hyprland restores it with `waypaper --restore`.
 
-**Idle.** hypridle dims at 3 minutes, locks and blanks at 5, and runs `suspend-then-hibernate` at 15, which hibernates 5 minutes later. A host **must** declare swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
+**Idle.** hypridle dims at 3 minutes, locks and blanks at 5, and runs `suspend-then-hibernate` at 15, which hibernates 10 minutes later. A host **must** declare swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
 
 **Hardware belongs to the host.** The module enables `hardware.graphics` and sets `NIXOS_OZONE_WL`; the video driver, VA-API backend, and vendor session variables are the host's. Screens likewise:
 
@@ -89,6 +89,14 @@ users = [
 | `primaryScreen` | Connector name; defaults to `eDP-1`. Always emitted first, at `0x0`. |
 | `primaryMode` | `2560x1440@120`, or `preferred` / `highres` / `highrr`. |
 | `extraMonitors` | Hyprland strings for the remaining outputs, appended after the primary. |
+
+### Laptop role
+
+`roles/role-laptop.nix` enables `modules/power/` and sends lid close to `suspend-then-hibernate`.
+
+**Profiles.** TLP applies `performance`, `balanced` and `power-saver` but never picks one (`TLP_AUTO_SWITCH=0`). `power-profile-sync` picks on every power_supply event, every minute, and after each TLP start: performance on AC, balanced on battery, power-saver at or below 20%. A choice made through tlp-pd holds until the next plug event. Power-saver hibernates 5 minutes after suspend; an `ExecStartPre` on `systemd-suspend-then-hibernate.service` writes that drop-in at suspend time.
+
+**Charge limit.** `charge-limit on|off` holds the battery between 75% and 80%, on unless `/var/lib/charge-limit/off` exists. A polkit rule lets the active session start `charge-limit@on` and `charge-limit@off`, so it needs no sudo.
 
 ### Theme
 

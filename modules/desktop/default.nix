@@ -567,7 +567,7 @@ in
         message = "The desktop module suspends then hibernates on idle: declare swap at least the size of RAM in `swapDevices`.";
       }
     ];
-    systemd.sleep.settings.Sleep.HibernateDelaySec = "5min";
+    systemd.sleep.settings.Sleep.HibernateDelaySec = "10min";
 
     environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
