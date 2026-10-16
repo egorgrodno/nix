@@ -687,7 +687,7 @@ in
             gappsWrapperArgs+=(--set GDK_BACKEND wayland,x11)
           '';
         }))
-        vlc
+        showtime
 
         (writeShellScriptBin "cps" "2>/dev/null 1>/dev/null kitty -d $PWD & disown")
         nxe
@@ -707,12 +707,12 @@ in
           # Okular splits its associations per format; the main
           # org.kde.okular.desktop entry declares only okular-archive.
           "application/pdf" = "okularApplication_pdf.desktop";
-          "video/x-matroska" = "vlc.desktop";
-          "video/mp4" = "vlc.desktop";
-          "video/webm" = "vlc.desktop";
-          "video/ogg" = "vlc.desktop";
-          "video/quicktime" = "vlc.desktop";
-          "video/x-msvideo" = "vlc.desktop";
+          "video/x-matroska" = "org.gnome.Showtime.desktop";
+          "video/mp4" = "org.gnome.Showtime.desktop";
+          "video/webm" = "org.gnome.Showtime.desktop";
+          "video/ogg" = "org.gnome.Showtime.desktop";
+          "video/quicktime" = "org.gnome.Showtime.desktop";
+          "video/x-msvideo" = "org.gnome.Showtime.desktop";
           "image/png" = "viewnior.desktop";
           "image/gif" = "viewnior.desktop";
           "image/heic" = "viewnior.desktop";
@@ -1096,7 +1096,7 @@ in
             ++ map viewer [
               "com.gabm.satty"
               "org.kde.okular"
-              "vlc"
+              "org.gnome.Showtime"
             ]
 
             # viewnior opens at GTK's 480x300 default whatever the image, and
