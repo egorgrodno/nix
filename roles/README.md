@@ -24,7 +24,7 @@ Single-concern bundles, imported by a top-level role or directly by a host.
 | Role | What it turns on |
 |---|---|
 | `role-locale-config.nix` | `Europe/Amsterdam`, `en_US.UTF-8`. |
-| `role-network-config.nix` | NetworkManager and the firewall. |
+| `role-network-config.nix` | NetworkManager with its OpenVPN plugin, and the firewall. |
 | `role-print.nix` | CUPS (`brlaser`) and Avahi mDNS. |
 | `role-devtools.nix` | `git`, `direnv`, `less`, `neovim`, `devtools`, `ripgrep`, `nixtools`, `extools`, `claude`. |
 | `role-nextcloud-client.nix` | Nextcloud client and a per-user sync service. |

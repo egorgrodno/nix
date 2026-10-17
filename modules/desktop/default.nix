@@ -689,7 +689,6 @@ in
         engrampa
         p7zip
         unrar
-        networkmanager-openvpn
         networkmanagerapplet
         obs-studio
         pavucontrol
