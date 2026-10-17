@@ -58,6 +58,7 @@ Any name not in `list` falls back to `~/.config/<name>`.
 | `kitty` | `pkill -USR1 kitty`. All windows, live. |
 | `dunst` | `dunstctl reload` |
 | `hypridle` | `systemctl --user restart hypridle` |
+| `quickshell` | `systemctl --user restart quickshell`. It reloads on save by itself, but only once restarted after `on`, and a text-rendering change needs a restart regardless. |
 | `hyprlock`, `wofi`, `wlogout` | No signal — config is read at launch, so just launch it again. |
 | `nvim`, `zsh` | No signal — new instances pick it up (`exec zsh` for the current shell). |
 
@@ -71,6 +72,7 @@ This is the part that matters — dev mode is scratch space, and nothing survive
 |---|---|
 | `.config/waybar/config` | `modules/waybar/default.nix` — `settings` (line ~51) |
 | `.config/waybar/style.css` | `modules/waybar/default.nix` — `style` (line ~172) |
+| `.config/quickshell/*.qml` | `modules/quickshell/`, the same name; `Theme.qml` and `Programs.qml` from its `default.nix` |
 | `.config/hypr/hyprland.conf` | `modules/desktop/default.nix` — `wayland.windowManager.hyprland` (~492) |
 | `.config/hypr/hyprlock.conf` | `modules/desktop/default.nix` — `programs.hyprlock` (~912) |
 | `.config/hypr/hypridle.conf` | `modules/desktop/default.nix` — `services.hypridle` (~969) |

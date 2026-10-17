@@ -44,6 +44,9 @@ reload_of() {
   waybar) echo 'pkill -u $USER -USR2 waybar' ;;
   hyprland) echo "hyprctl reload" ;;
   hypridle) echo "systemctl --user restart hypridle" ;;
+  # Quickshell watches the files it loaded, not the copies `on` puts in their
+  # place, so it needs a restart before it reloads on save.
+  quickshell) echo "systemctl --user restart quickshell" ;;
   kitty) echo "pkill -USR1 kitty" ;;
   dunst) echo "dunstctl reload" ;;
   *) echo "" ;;
