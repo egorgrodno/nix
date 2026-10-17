@@ -140,6 +140,9 @@ in
       # is back to powersave.
       settings = {
         TLP_AUTO_SWITCH = 0;
+        # Radios come back as they were at shutdown, so the bar's Bluetooth
+        # off survives a reboot. TLP masks systemd-rfkill, which would do this.
+        RESTORE_DEVICE_STATE_ON_STARTUP = 1;
         CPU_SCALING_GOVERNOR_ON_AC = "performance";
         CPU_SCALING_GOVERNOR_ON_BAT = "powersave";
         CPU_ENERGY_PERF_POLICY_ON_AC = "performance";

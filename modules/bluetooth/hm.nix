@@ -5,10 +5,14 @@
     bluez
     bluez-tools
 
+    # As the bar's switch: off soft-blocks every Bluetooth radio. BlueZ powers
+    # an adapter the unblock brings back, so bton powers only one already there.
     (writeShellScriptBin "bton" ''
-      systemctl is-active --quiet bluetooth.service || systemctl start bluetooth.service
-      bluetoothctl -- power on
+      rfkill unblock bluetooth
+      if [ -n "$(ls /sys/class/bluetooth 2>/dev/null)" ]; then
+        bluetoothctl -- power on
+      fi
     '')
-    (writeShellScriptBin "btoff" "bluetoothctl -- power off")
+    (writeShellScriptBin "btoff" "rfkill block bluetooth")
   ];
 }

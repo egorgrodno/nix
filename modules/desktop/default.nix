@@ -131,8 +131,8 @@ let
   # Centre of each module a window docks under, in px from the screen's right
   # edge, measured off the bar: Hyprland cannot read its layout.
   barModuleCentre = {
-    network = 902;
-    volume = 332;
+    network = 940;
+    volume = 370;
   };
 
   # Floats a window under the bar module that opens it, centred on the module

@@ -174,6 +174,8 @@ PanelWindow {
             Segment {
                 Volume {}
 
+                BluetoothToggle {}
+
                 Tray {}
             }
 
