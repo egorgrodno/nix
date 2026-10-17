@@ -17,6 +17,8 @@ Singleton {
     property string diskTooltip
     // True once a sample has found no device to read.
     property bool offline: false
+    // True from the first network sample on.
+    property bool sampled: false
     // Rates as `rate` formats them, and the last minute of them in bytes per
     // second, oldest first.
     property string up
@@ -85,6 +87,7 @@ Singleton {
     }
 
     function sampleNetwork() {
+        sampled = true;
         if (!networkDevice) {
             counters = null;
             offline = true;

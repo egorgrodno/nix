@@ -133,29 +133,25 @@ let
   outerGap = 10;
 
   # Centre of each module a window docks to, in px from the screen's right
-  # edge, measured off its bar: Hyprland cannot read the layout. Network is on
-  # the bottom bar, volume on the top.
+  # edge, measured off the top bar: Hyprland cannot read the layout.
   barModuleCentre = {
-    network = 496;
     volume = 280;
   };
 
-  # Floats a window against the bar module that opens it, under the top bar or
-  # over the bottom one, centred on the module unless that would take it past
-  # the outer gap on the right.
+  # Floats a window under the top bar, centred on the module that opens it
+  # unless that would take it past the outer gap on the right.
   dockToBarModule =
     {
       fromRight,
       width,
       height,
-      bottom ? false,
     }:
     {
       float = "yes";
       pin = "yes";
-      move = "(monitor_w-${toString (lib.max (fromRight + width / 2) (width + outerGap))}) ${
-        if bottom then "(monitor_h-${toString (barHeight + height)})" else toString barHeight
-      }";
+      move = "(monitor_w-${
+        toString (lib.max (fromRight + width / 2) (width + outerGap))
+      }) ${toString barHeight}";
       size = "${toString width} ${toString height}";
     };
 
@@ -900,6 +896,8 @@ in
           exec-once = [
             "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
             "${pkgs.waypaper}/bin/waypaper --restore"
+            # NetworkManager's secret agent, which asks for VPN, 802.1X and
+            # changed Wi-Fi secrets. Quickshell hides its tray icon.
             "${waitForSni} && ${pkgs.networkmanagerapplet}/bin/nm-applet"
             "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
             "${pkgs.wl-clipboard}/bin/wl-paste --watch ${clipboardPersistCb}"
@@ -1108,6 +1106,7 @@ in
             ++ map utility [
               ".blueman-manager-wrapped"
               "galculator"
+              "nm-connection-editor"
               "waypaper"
             ]
 
@@ -1154,18 +1153,6 @@ in
                 "match:class" = "^(Slack)$";
                 workspace = "3 silent";
               }
-              (
-                {
-                  name = "nm-float-pin";
-                  "match:class" = "^(nm-connection-editor)$";
-                }
-                // dockToBarModule {
-                  fromRight = barModuleCentre.network;
-                  width = 400;
-                  height = 400;
-                  bottom = true;
-                }
-              )
               (
                 {
                   name = "pwvucontrol-float-pin";

@@ -4,11 +4,13 @@ import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 
 // Newest item first, passive items hidden, and no module at all when nothing
-// is left. Each icon lights on hover rather than the module.
+// is left. Each icon lights on hover rather than the module. nm-applet runs
+// only as NetworkManager's secret agent, so its icon is hidden too: the
+// network module stands in for it.
 Pill {
     id: tray
 
-    readonly property var items: SystemTray.items.values.filter(i => i.status !== Status.Passive).reverse()
+    readonly property var items: SystemTray.items.values.filter(i => i.status !== Status.Passive && i.id !== "nm-applet").reverse()
 
     visible: items.length > 0
     hoverable: false
