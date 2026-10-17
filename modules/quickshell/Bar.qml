@@ -3,8 +3,8 @@ import Quickshell
 import Quickshell.Hyprland
 
 // Segments of related modules inside the strip the bar reserves, their outer
-// edges in line with the windows' gaps: the window title, the workspaces and
-// network. The rest is on the bottom bar.
+// edges in line with the windows' gaps: the window title, the workspaces,
+// network and the notification bell. The rest is on the bottom bar.
 PanelWindow {
     id: bar
 
@@ -73,6 +73,11 @@ PanelWindow {
                 visible: Stats.sampled
 
                 Network {}
+            }
+
+            // In the corner the popups stack under, so its panel opens there.
+            Segment {
+                Bell {}
             }
         }
     }

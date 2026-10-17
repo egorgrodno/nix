@@ -997,6 +997,7 @@ in
               "$mod SHIFT, R, exec, systemctl --user restart quickshell"
               "$mod, grave, exec, quickshell ipc call notifications dismiss"
               "$mod SHIFT, grave, exec, quickshell ipc call notifications dismissAll"
+              "$mod CTRL, grave, exec, quickshell ipc call notifications toggle"
               "$mod SHIFT, S, exec, hypr-monitor-scale"
               "$mod, R, submap, resize"
               "$mod, 0, exec, wlogout"

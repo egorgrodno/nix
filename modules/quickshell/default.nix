@@ -80,6 +80,7 @@ let
         readonly property string pcmanfm: "${lib.getExe pkgs.pcmanfm}"
         readonly property string pwvucontrol: "${lib.getExe pkgs.pwvucontrol}"
         readonly property string rfkill: "${lib.getExe' pkgs.util-linux "rfkill"}"
+        readonly property string rm: "${lib.getExe' pkgs.coreutils "rm"}"
         readonly property string systemctl: "${lib.getExe' config.systemd.package "systemctl"}"
         readonly property string wlogout: "${lib.getExe pkgs.wlogout}"
         readonly property string xdgOpen: "${lib.getExe' pkgs.xdg-utils "xdg-open"}"

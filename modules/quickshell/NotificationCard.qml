@@ -8,14 +8,19 @@ import Quickshell.Widgets
 // a meter for a `value` hint, and a button per action. A click invokes the
 // default action, or dismisses where there is none; a right-click dismisses,
 // as does a drag right past a third of the width. Hovering holds the timer.
+// The panel shows each card's age, and slides in only those that arrive while
+// it is open.
 Item {
     id: card
 
     required property var modelData
     readonly property var entry: modelData
     property bool expanded: false
+    property bool showTime: false
+    property bool slideIn: true
+    property color fill: Theme.alpha(Theme.backgroundMain, 0.97)
     // Set once created, so the card slides out of the bar as it fades in.
-    property bool arrived: false
+    property bool arrived: !slideIn
     readonly property var defaultAction: entry.actions.find(a => a.identifier === "default") ?? null
     // An app icon given as a file is usually a picture, as notify-send -i
     // passes one.
@@ -29,15 +34,21 @@ Item {
         if (defaultAction)
             defaultAction.invoke();
         else
-            entry.notification?.dismiss();
+            entry.dismiss();
     }
 
     width: ListView.view.width
     height: box.height
 
     Component.onCompleted: arrived = true
+    // A card that goes while hovered, as the panel closes, would otherwise
+    // leave the entry's timer held should it pop up again.
+    Component.onDestruction: if (hover.hovered)
+        entry.hovered = false
 
     HoverHandler {
+        id: hover
+
         onHoveredChanged: card.entry.hovered = hovered
     }
 
@@ -47,7 +58,7 @@ Item {
         acceptedButtons: Qt.LeftButton | Qt.RightButton
         onTapped: (eventPoint, button) => {
             if (button === Qt.RightButton)
-                card.entry.notification?.dismiss();
+                card.entry.dismiss();
             else
                 card.activate();
         }
@@ -62,7 +73,7 @@ Item {
             if (active)
                 return;
             if (card.x > card.width / 3)
-                card.entry.notification?.dismiss();
+                card.entry.dismiss();
             else
                 springBack.start();
         }
@@ -85,7 +96,7 @@ Item {
         height: content.implicitHeight + 2 * 16
         y: card.arrived ? 0 : -Theme.slide
         opacity: card.arrived ? 1 : 0
-        color: Theme.alpha(Theme.backgroundMain, 0.97)
+        color: card.fill
         border.color: card.entry.urgency === NotificationUrgency.Critical ? Theme.red : Qt.rgba(1, 1, 1, 0.08)
         border.width: 1
         radius: Theme.radius
@@ -133,12 +144,30 @@ Item {
                 color: "transparent"
 
                 Image {
+                    id: image
+
                     anchors.fill: parent
                     source: card.picture
                     sourceSize.width: 96
                     sourceSize.height: 96
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
+
+                    // An `image-data` image dies with its notification, so the
+                    // first card to show one saves it for the history.
+                    onStatusChanged: {
+                        const entry = card.entry;
+                        const source = entry.imageSource;
+                        if (status !== Image.Ready || !source.startsWith("image://qsimage/") || entry.imageFile !== "")
+                            return;
+                        const path = Quickshell.statePath(`notifications/${Math.round(entry.time)}-${Math.random().toString(36).slice(2, 8)}.png`);
+                        grabToImage(result => {
+                            if (entry.imageSource === source && entry.imageFile === "" && result.saveToFile(path)) {
+                                entry.imageFile = path;
+                                Notifications.save();
+                            }
+                        }, Qt.size(96, 96));
+                    }
                 }
             }
 
@@ -167,7 +196,7 @@ Item {
                             id: appName
 
                             width: parent.width - (card.icon !== "" ? 16 + parent.spacing : 0)
-                            text: card.entry.appName
+                            text: card.showTime ? `${card.entry.appName} · ${Notifications.ageOf(card.entry.time)}` : card.entry.appName
                             elide: Text.ElideRight
                         }
                     }
