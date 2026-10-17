@@ -179,10 +179,22 @@ let
   manager = floatRule "manager" { size = "monitor_w*0.47 monitor_h*0.62"; };
   utility = floatRule "utility" { size = "monitor_w*0.23 monitor_h*0.35"; };
 
-  # The content sets the shape, so none is imposed. `max_size` would clamp it,
-  # but it takes pixels only and any ceiling would be wrong on one of the hosts.
+  # The content sets the shape, so none is imposed beyond `fitWorkArea`.
   viewer = floatRule "viewer" { };
   dialog = floatRule "dialog" { };
+
+  # The size a client asks for, cut to the work area: GTK's file chooser
+  # restores one saved at another scale. It must lead the rules, so any `size`
+  # after it overrides it. Every class matches because a static rule never sees
+  # `match:float`, and Hyprland reads `size` only for floats and pseudotiles.
+  # `max_size` would not hold, since float placement undoes its clamp.
+  fitWorkArea = {
+    name = "fit-work-area";
+    "match:class" = ".*";
+    size = "min(window_w,monitor_w-${toString (2 * outerGap)}) min(window_h,monitor_h-${
+      toString (2 * (barHeight + outerGap))
+    })";
+  };
 
   # wlogout bakes its icons in an off-palette lavender. The shapes live in the
   # alpha channel, so `-colorize` repaints them without touching the mask.
@@ -1125,9 +1137,10 @@ in
             # wins a property, so every hand-written rule below stays an override
             # — notably the two that dock to a bar module, which would
             # otherwise be re-centred by their kind.
+            [ fitWorkArea ]
 
             # Browse a collection, act once, close.
-            map manager [
+            ++ map manager [
               "engrampa"
               "pcmanfm"
               "transmission-gtk"
