@@ -128,17 +128,21 @@ let
   # reserves as its exclusive zone.
   barHeight = 51;
 
+  # Between the windows and the screen's edges or the bars. The bars' segments
+  # line up with it at the sides.
+  outerGap = 10;
+
   # Centre of each module a window docks to, in px from the screen's right
   # edge, measured off its bar: Hyprland cannot read the layout. Network is on
   # the bottom bar, volume on the top.
   barModuleCentre = {
-    network = 506;
-    volume = 370;
+    network = 496;
+    volume = 360;
   };
 
   # Floats a window against the bar module that opens it, under the top bar or
   # over the bottom one, centred on the module unless that would take it past
-  # the 20 px outer gap on the right.
+  # the outer gap on the right.
   dockToBarModule =
     {
       fromRight,
@@ -149,7 +153,7 @@ let
     {
       float = "yes";
       pin = "yes";
-      move = "(monitor_w-${toString (lib.max (fromRight + width / 2) (width + 20))}) ${
+      move = "(monitor_w-${toString (lib.max (fromRight + width / 2) (width + outerGap))}) ${
         if bottom then "(monitor_h-${toString (barHeight + height)})" else toString barHeight
       }";
       size = "${toString width} ${toString height}";
@@ -344,7 +348,7 @@ in
     my.zsh.enable = true;
     my.quickshell = {
       enable = true;
-      inherit barHeight;
+      inherit barHeight outerGap;
     };
 
     # Enabled for the libinput udev rules only. The `mouse` and `touchpad`
@@ -906,7 +910,7 @@ in
 
           general = {
             gaps_in = 5;
-            gaps_out = 20;
+            gaps_out = outerGap;
             border_size = 2;
             "col.active_border" = activeBorder;
             "col.inactive_border" = hyprColor theme.foreground.dark "aa";

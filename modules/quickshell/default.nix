@@ -50,6 +50,8 @@ let
 
         // Also the exclusive zone.
         readonly property int barHeight: ${toString cfg.barHeight}
+        // The windows' outer gap, which the segments line up with at the sides.
+        readonly property int outerGap: ${toString cfg.outerGap}
         readonly property int radius: 8
 
         function alpha(color, a) {
@@ -98,6 +100,11 @@ in
     barHeight = lib.mkOption {
       type = lib.types.int;
       description = "Height of each bar, top and bottom, in logical pixels, which it also reserves as its exclusive zone.";
+    };
+
+    outerGap = lib.mkOption {
+      type = lib.types.int;
+      description = "Hyprland's outer gap in logical pixels, which the bars' segments line up with at the sides.";
     };
   };
 

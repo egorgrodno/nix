@@ -28,8 +28,8 @@ PanelWindow {
             fill: parent
             topMargin: 6
             bottomMargin: 6
-            leftMargin: 20
-            rightMargin: 20
+            leftMargin: Theme.outerGap
+            rightMargin: Theme.outerGap
         }
 
         // A hidden segment hides its modules too, so each one that can empty

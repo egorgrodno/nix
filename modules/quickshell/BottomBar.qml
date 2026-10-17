@@ -21,8 +21,8 @@ PanelWindow {
             fill: parent
             topMargin: 6
             bottomMargin: 6
-            leftMargin: 20
-            rightMargin: 20
+            leftMargin: Theme.outerGap
+            rightMargin: Theme.outerGap
         }
 
         Segment {
