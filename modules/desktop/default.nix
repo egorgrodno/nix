@@ -137,7 +137,7 @@ let
   # the bottom bar, volume on the top.
   barModuleCentre = {
     network = 496;
-    volume = 360;
+    volume = 280;
   };
 
   # Floats a window against the bar module that opens it, under the top bar or

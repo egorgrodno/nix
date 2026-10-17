@@ -69,6 +69,16 @@ PanelWindow {
             height: parent.height
             spacing: 8
 
+            // First, so a new icon grows into the room beside the workspaces
+            // and moves no other module.
+            Segment {
+                visible: tray.items.length > 0
+
+                Tray {
+                    id: tray
+                }
+            }
+
             Segment {
                 visible: UPower.displayDevice.isLaptopBattery
 
@@ -79,8 +89,6 @@ PanelWindow {
                 Volume {}
 
                 BluetoothToggle {}
-
-                Tray {}
             }
 
             Segment {
