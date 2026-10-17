@@ -4,13 +4,14 @@ import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 
 // Newest item first, passive items hidden, and no module at all when nothing
-// is left.
+// is left. Each icon lights on hover rather than the module.
 Pill {
     id: tray
 
     readonly property var items: SystemTray.items.values.filter(i => i.status !== Status.Passive).reverse()
 
     visible: items.length > 0
+    hoverable: false
 
     Repeater {
         model: ScriptModel {
@@ -26,32 +27,56 @@ Pill {
             height: tray.height - 10
             anchors.verticalCenter: parent.verticalCenter
 
+            // Inset from the segment as a module's fill is, and reaching halfway
+            // into the gap on either side, so neighbours' fills meet.
+            Item {
+                id: area
+
+                x: -4
+                y: 4 - entry.y
+                width: entry.width + 8
+                height: tray.height - 8
+
+                Rectangle {
+                    anchors.fill: parent
+                    radius: Theme.radius - 4
+                    color: mouse.containsMouse ? tray.hoverFill : "transparent"
+
+                    Behavior on color {
+                        ColorAnimation {
+                            duration: 150
+                            easing.type: Easing.OutQuad
+                        }
+                    }
+                }
+
+                MouseArea {
+                    id: mouse
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
+                    onPressed: event => {
+                        tip.dismiss();
+                        if (event.button === Qt.MiddleButton)
+                            entry.modelData.secondaryActivate();
+                        else if (event.button === Qt.RightButton || entry.modelData.onlyMenu) {
+                            if (entry.modelData.hasMenu) {
+                                menu.anchor.rect.x = area.x + event.x;
+                                menu.anchor.rect.y = area.y + event.y;
+                                menu.open();
+                            }
+                        } else
+                            entry.modelData.activate();
+                    }
+                    onWheel: event => entry.modelData.scroll(event.angleDelta.y > 0 ? 1 : -1, false)
+                }
+            }
+
             IconImage {
                 anchors.centerIn: parent
                 implicitSize: 24
                 source: entry.modelData.icon
-            }
-
-            MouseArea {
-                id: mouse
-
-                anchors.fill: parent
-                hoverEnabled: true
-                acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
-                onPressed: event => {
-                    tip.dismiss();
-                    if (event.button === Qt.MiddleButton)
-                        entry.modelData.secondaryActivate();
-                    else if (event.button === Qt.RightButton || entry.modelData.onlyMenu) {
-                        if (entry.modelData.hasMenu) {
-                            menu.anchor.rect.x = event.x;
-                            menu.anchor.rect.y = event.y;
-                            menu.open();
-                        }
-                    } else
-                        entry.modelData.activate();
-                }
-                onWheel: event => entry.modelData.scroll(event.angleDelta.y > 0 ? 1 : -1, false)
             }
 
             // At the pointer, as GTK's popup_at_pointer places it.
@@ -72,7 +97,7 @@ Pill {
                 target: entry
                 text: entry.modelData.tooltipTitle || entry.modelData.title
                 hovered: mouse.containsMouse
-                pointerX: mouse.mouseX
+                pointerX: area.x + mouse.mouseX
             }
         }
     }
