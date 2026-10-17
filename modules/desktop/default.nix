@@ -135,7 +135,8 @@ let
   # Centre of each module a window docks to, in px from the screen's right
   # edge, measured off the bottom bar: Hyprland cannot read the layout.
   barModuleCentre = {
-    volume = 280;
+    # The battery segment sits between volume and the corner on a laptop.
+    volume = if config.base.isLaptop then 348 else 242;
   };
 
   # Floats a window over the bottom bar, centred on the module that opens it

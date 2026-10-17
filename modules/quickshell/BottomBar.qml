@@ -3,8 +3,8 @@ import Quickshell
 import Quickshell.Services.UPower
 
 // Along the bottom edge, in a strip as tall as the top bar's: cpu, ram and disk
-// in the left corner, and the tray, battery, volume, clock and power in the
-// right.
+// in the left corner, and the tray, bluetooth, volume, battery, clock and power
+// in the right.
 PanelWindow {
     required property ShellScreen modelData
 
@@ -122,15 +122,15 @@ PanelWindow {
             }
 
             Segment {
-                visible: UPower.displayDevice.isLaptopBattery
+                BluetoothToggle {}
 
-                Battery {}
+                Volume {}
             }
 
             Segment {
-                Volume {}
+                visible: UPower.displayDevice.isLaptopBattery
 
-                BluetoothToggle {}
+                Battery {}
             }
 
             Segment {
