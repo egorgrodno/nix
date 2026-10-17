@@ -29,45 +29,6 @@ Panel {
         WifiJoin.clear();
     }
 
-    // A small button, lit while `lit` is set, as a confirmation waits.
-    component Action: Rectangle {
-        id: action
-
-        property alias text: label.text
-        property color hoverFill: Qt.rgba(1, 1, 1, 0.12)
-        property bool lit: false
-
-        signal clicked
-
-        width: label.implicitWidth + 20
-        height: 28
-        radius: Theme.radius - 4
-        color: lit || actionMouse.containsMouse ? hoverFill : Qt.rgba(1, 1, 1, 0.06)
-
-        Behavior on color {
-            ColorAnimation {
-                duration: 150
-                easing.type: Easing.OutQuad
-            }
-        }
-
-        BarText {
-            id: label
-
-            anchors.centerIn: parent
-            color: action.enabled ? "#ffffff" : Theme.foregroundMuted
-            font.pixelSize: 14
-        }
-
-        MouseArea {
-            id: actionMouse
-
-            anchors.fill: parent
-            hoverEnabled: true
-            onClicked: action.clicked()
-        }
-    }
-
     // A title over a muted line, with a control on the right. A clickable one
     // takes clicks across the whole row.
     component Labelled: Item {
@@ -256,21 +217,21 @@ Panel {
                     font.pixelSize: 14
                 }
 
-                Action {
+                TextButton {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: side.acting && row.connecting
                     text: "Stop"
                     onClicked: row.modelData.device.disconnect()
                 }
 
-                Action {
+                TextButton {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: side.acting && row.modelData.connected
                     text: "Disconnect"
                     onClicked: row.modelData.disconnect()
                 }
 
-                Action {
+                TextButton {
                     anchors.verticalCenter: parent.verticalCenter
                     visible: side.acting && row.modelData.known
                     text: row.armed ? "Forget?" : "Forget"
@@ -331,7 +292,7 @@ Panel {
                 }
             }
 
-            Action {
+            TextButton {
                 id: connectButton
 
                 enabled: password.text.length >= 8
@@ -461,7 +422,7 @@ Panel {
             return w.hasLink ? "Disconnected" : "Cable unplugged";
         }
 
-        Action {
+        TextButton {
             visible: panel.wired !== null && (panel.wired.connected || panel.wired.network !== null)
             text: panel.wired?.connected ? "Disconnect" : "Connect"
             onClicked: panel.wired.connected ? panel.wired.disconnect() : panel.wired.network.connect()
