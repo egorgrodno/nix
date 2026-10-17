@@ -124,11 +124,27 @@ let
     echo $! > "$pid_file"
   '';
 
-  # Waybar's reserved strip: configured height 30, grown to 51 by padding.
+  # The bar's strip, reserved as its exclusive zone. Quickshell is built to it;
+  # Waybar comes to it from a configured 30 grown by padding.
   barHeight = 51;
 
-  # Floats a window under the Waybar module that opens it. fromRight is that
-  # module's centre, measured off the bar — Hyprland cannot read Waybar.
+  # Centre of each module a window docks under, in px from the screen's right
+  # edge, measured off the selected bar: Hyprland cannot read either one. The
+  # rows agree while Quickshell reproduces Waybar's layout.
+  barModuleCentre =
+    {
+      waybar = {
+        network = 907;
+        volume = 460;
+      };
+      quickshell = {
+        network = 907;
+        volume = 460;
+      };
+    }
+    .${cfg.bar};
+
+  # Floats a window under the bar module that opens it.
   underBarModule =
     {
       fromRight,
@@ -287,6 +303,15 @@ in
   options.my.desktop = {
     enable = mkEnableOption "Wayland Hyprland desktop environment";
 
+    bar = mkOption {
+      type = types.enum [
+        "waybar"
+        "quickshell"
+      ];
+      default = "waybar";
+      description = "Status bar on every screen. Its systemd user unit carries the same name.";
+    };
+
     primaryScreen = mkOption {
       type = types.str;
       default = "eDP-1";
@@ -324,12 +349,17 @@ in
     ../bluetooth
     ../zsh
     ../waybar
+    ../quickshell
   ];
 
   config = mkIf cfg.enable {
     my.bluetooth.enable = true;
     my.zsh.enable = true;
-    my.waybar.enable = true;
+    my.waybar.enable = cfg.bar == "waybar";
+    my.quickshell = {
+      enable = cfg.bar == "quickshell";
+      inherit barHeight;
+    };
 
     # Enabled for the libinput udev rules only. The `mouse` and `touchpad`
     # option trees are gated on `services.xserver.enable` in nixpkgs, so they
@@ -987,7 +1017,7 @@ in
               "$mod, ${splitKey}, layoutmsg, togglesplit"
               "$mod, M, exec, pwvucontrol"
               "$mod, W, exec, pcmanfm"
-              "$mod SHIFT, R, exec, systemctl --user restart waybar"
+              "$mod SHIFT, R, exec, systemctl --user restart ${cfg.bar}"
               "$mod SHIFT, S, exec, hypr-monitor-scale"
               "$mod, R, submap, resize"
               "$mod, 0, exec, wlogout"
@@ -1075,7 +1105,7 @@ in
           windowrule =
             # Generated rules lead. Apply order is list order and the last match
             # wins a property, so every hand-written rule below stays an override
-            # — notably the two that dock under a Waybar module, which would
+            # — notably the two that dock under a bar module, which would
             # otherwise be re-centred by their kind.
 
             # Browse a collection, act once, close.
@@ -1141,7 +1171,7 @@ in
                   "match:class" = "^(nm-connection-editor)$";
                 }
                 // underBarModule {
-                  fromRight = 907;
+                  fromRight = barModuleCentre.network;
                   width = 400;
                   height = 400;
                 }
@@ -1152,7 +1182,7 @@ in
                   "match:class" = "^(com\\.saivert\\.pwvucontrol)$";
                 }
                 // underBarModule {
-                  fromRight = 460;
+                  fromRight = barModuleCentre.volume;
                   width = 800;
                   height = 500;
                 }

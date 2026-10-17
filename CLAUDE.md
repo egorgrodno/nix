@@ -78,7 +78,9 @@ users = [
 
 ### Desktop role
 
-`roles/role-desktop-config.nix` imports `modules/desktop/`: Hyprland on Wayland, with Waybar, greetd/tuigreet, pipewire, dunst, GTK/cursor theming, and XDG MIME associations. The wallpaper is runtime state — `waypaper` sets it, Hyprland restores it with `waypaper --restore`.
+`roles/role-desktop-config.nix` imports `modules/desktop/`: Hyprland on Wayland, with a bar, greetd/tuigreet, pipewire, dunst, GTK/cursor theming, and XDG MIME associations. The wallpaper is runtime state — `waypaper` sets it, Hyprland restores it with `waypaper --restore`.
+
+**Bar.** `my.desktop.bar` selects `waybar` (default) or `quickshell`; its systemd user unit has the same name, which `$mod SHIFT R` restarts. `barHeight` in `modules/desktop/` is the strip either bar reserves, and a window docked under a bar module takes offsets measured off the selected bar. `modules/quickshell/` keeps its QML beside the module and generates `Theme.qml` from `theme` and `barHeight`, and `Programs.qml` with store paths, since the user service has no useful PATH.
 
 **Idle.** hypridle dims, locks, and runs `suspend-then-hibernate` after the minutes of idle below, by the profile TLP last applied; a host without TLP takes the performance row. The suspend turns the screen off, and trails a lock in the same minute by 5 s. One hypridle runs every profile's listeners, since a restart would drop the D-Bus idle inhibits it holds. A listener runs its step once the step is due under the active profile, so a profile change mid-idle can delay a step to the performance row but never skip it. A fullscreen window inhibits idle. A host **must** declare swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
 
