@@ -3,8 +3,8 @@ import Quickshell
 import Quickshell.Hyprland
 
 // The screen's workspaces by number over a dot per window, up to four, and the
-// focused one marked along the bottom edge. Waybar's "active" is the focused
-// one, so a workspace showing on another screen is not marked.
+// focused one marked along the bottom edge. A workspace showing on another
+// screen is not marked.
 Row {
     id: workspaces
 

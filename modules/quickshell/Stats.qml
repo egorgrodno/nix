@@ -5,8 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Networking
 
-// Waybar's cpu, memory, disk and network figures, sampled once for every bar
-// on Waybar's intervals and with its arithmetic.
+// The cpu, memory, disk and network figures, sampled once for every bar.
 Singleton {
     id: root
 
@@ -36,7 +35,7 @@ Singleton {
     property var cpuTimes: []
     property var counters: null
 
-    // Waybar's binary sizes: one decimal, and a lowercase k.
+    // Binary sizes to one decimal, with a lowercase k.
     function size(bytes) {
         const units = ["", "ki", "Mi", "Gi", "Ti", "Pi"];
         let i = 0;
@@ -45,7 +44,7 @@ Singleton {
         return `${bytes.toFixed(1)}${units[i]}B`;
     }
 
-    // The network script's units, decimal and in bytes despite the b.
+    // Decimal units, in bytes despite the b.
     function rate(bytes) {
         for (const [unit, divisor] of [["Gb/s", 1e9], ["Mb/s", 1e6], ["Kb/s", 1e3]])
             if (bytes >= divisor)
@@ -154,7 +153,7 @@ Singleton {
         blockAllReads: true
     }
 
-    // Waybar takes its first cpu reading 100 ms after the baseline.
+    // The first cpu figure, 100 ms after the baseline rather than one interval.
     Timer {
         interval: 100
         running: true

@@ -124,24 +124,16 @@ let
     echo $! > "$pid_file"
   '';
 
-  # The bar's strip, reserved as its exclusive zone. Quickshell is built to it;
-  # Waybar comes to it from a configured 30 grown by padding.
+  # The bar's strip, which Quickshell is built to and reserves as its exclusive
+  # zone.
   barHeight = 51;
 
   # Centre of each module a window docks under, in px from the screen's right
-  # edge, measured off the selected bar: Hyprland cannot read either one.
-  barModuleCentre =
-    {
-      waybar = {
-        network = 907;
-        volume = 460;
-      };
-      quickshell = {
-        network = 902;
-        volume = 332;
-      };
-    }
-    .${cfg.bar};
+  # edge, measured off the bar: Hyprland cannot read its layout.
+  barModuleCentre = {
+    network = 902;
+    volume = 332;
+  };
 
   # Floats a window under the bar module that opens it, centred on the module
   # unless that would take it past the 20 px outer gap on the right.
@@ -305,15 +297,6 @@ in
   options.my.desktop = {
     enable = mkEnableOption "Wayland Hyprland desktop environment";
 
-    bar = mkOption {
-      type = types.enum [
-        "waybar"
-        "quickshell"
-      ];
-      default = "waybar";
-      description = "Status bar on every screen. Its systemd user unit carries the same name.";
-    };
-
     primaryScreen = mkOption {
       type = types.str;
       default = "eDP-1";
@@ -350,16 +333,14 @@ in
   imports = [
     ../bluetooth
     ../zsh
-    ../waybar
     ../quickshell
   ];
 
   config = mkIf cfg.enable {
     my.bluetooth.enable = true;
     my.zsh.enable = true;
-    my.waybar.enable = cfg.bar == "waybar";
     my.quickshell = {
-      enable = cfg.bar == "quickshell";
+      enable = true;
       inherit barHeight;
     };
 
@@ -1019,7 +1000,7 @@ in
               "$mod, ${splitKey}, layoutmsg, togglesplit"
               "$mod, M, exec, pwvucontrol"
               "$mod, W, exec, pcmanfm"
-              "$mod SHIFT, R, exec, systemctl --user restart ${cfg.bar}"
+              "$mod SHIFT, R, exec, systemctl --user restart quickshell"
               "$mod SHIFT, S, exec, hypr-monitor-scale"
               "$mod, R, submap, resize"
               "$mod, 0, exec, wlogout"

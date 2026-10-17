@@ -108,9 +108,9 @@ in
 
       xdg.configFile = configFiles;
 
-      # Waybar's unit, which this one stands in for: tray applets order after
-      # tray.target, and without `ConditionEnvironment` the bar starts against
-      # a missing compositor and burns through the start limit.
+      # Tray applets order after tray.target, which pulls the bar in. Without
+      # `ConditionEnvironment` the bar starts against a missing compositor and
+      # burns through the start limit.
       systemd.user.services.quickshell = {
         Unit = {
           ConditionEnvironment = "WAYLAND_DISPLAY";
@@ -121,7 +121,7 @@ in
           X-Restart-Triggers = lib.mapAttrsToList (_: f: "${f.source}") configFiles;
         };
         # GTK's palette, font and icon theme, so tray icons and their menus
-        # look as they did under Waybar.
+        # match the GTK applications.
         Service.Environment = [ "QT_QPA_PLATFORMTHEME=gtk3" ];
         Install.WantedBy = [ "tray.target" ];
       };

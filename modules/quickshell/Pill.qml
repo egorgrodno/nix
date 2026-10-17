@@ -10,7 +10,7 @@ Item {
     property string tooltip
     // Built in the tooltip in place of the text.
     property Component tooltipContent: null
-    // Waybar lights a module on hover only where a click acts on it.
+    // Lit on hover only where a click acts on the module.
     property bool hoverable: true
     // Lit regardless, as while its popup is open.
     property bool lit: false

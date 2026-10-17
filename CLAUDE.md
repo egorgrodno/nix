@@ -78,9 +78,9 @@ users = [
 
 ### Desktop role
 
-`roles/role-desktop-config.nix` imports `modules/desktop/`: Hyprland on Wayland, with a bar, greetd/tuigreet, pipewire, dunst, GTK/cursor theming, and XDG MIME associations. The wallpaper is runtime state — `waypaper` sets it, Hyprland restores it with `waypaper --restore`.
+`roles/role-desktop-config.nix` imports `modules/desktop/`: Hyprland on Wayland, with a Quickshell bar, greetd/tuigreet, pipewire, dunst, GTK/cursor theming, and XDG MIME associations. The wallpaper is runtime state — `waypaper` sets it, Hyprland restores it with `waypaper --restore`.
 
-**Bar.** `my.desktop.bar` selects `waybar` (default) or `quickshell`; its systemd user unit has the same name, which `$mod SHIFT R` restarts. `barHeight` in `modules/desktop/` is the strip either bar reserves. A window docked under a bar module centres on it, by offsets measured off the selected bar, unless that would cross the 20 px outer gap. `modules/quickshell/` keeps its QML beside the module and generates `Theme.qml` from `theme` and `barHeight`, and `Programs.qml` with store paths, since the user service has no useful PATH. Quickshell reports reloads through the notification daemon rather than its own popup.
+**Bar.** Quickshell runs as the `quickshell` systemd user unit, which `$mod SHIFT R` restarts. `barHeight` in `modules/desktop/` is the strip it reserves. A window docked under a bar module centres on it, by offsets measured off the bar, unless that would cross the 20 px outer gap. `modules/quickshell/` keeps its QML beside the module and generates `Theme.qml` from `theme` and `barHeight`, and `Programs.qml` with store paths, since the user service has no useful PATH. Quickshell reports reloads through the notification daemon rather than its own popup.
 
 **Quickshell's look.** Segments of related modules sit inside the strip, their outer edges on the windows' outer gap. Figures take fixed-width `fontMono` slots, so a changing reading never shifts the modules beside it. Meters are grey, and colour marks state: blue for focus, yellow and red for warnings, green for charging.
 

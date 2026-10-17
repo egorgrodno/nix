@@ -12,8 +12,8 @@ Pill {
     readonly property int level: Math.round((sink?.audio.volume ?? 0) * 100)
     readonly property bool muted: sink?.audio.muted ?? false
 
-    // Waybar matches the sink against these port names in order, and only a
-    // name with icons of its own changes the glyph from the default speaker.
+    // The sink is matched against these port names in order, and only a name
+    // with icons of its own changes the glyph from the default speaker.
     readonly property var ports: ["headphone", "speaker", "hdmi", "headset", "hands-free", "portable", "car", "hifi", "phone"]
     readonly property var icons: ({
             headset: [" ", " ", " "],

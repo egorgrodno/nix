@@ -16,7 +16,7 @@ note() { printf '%s\n' "$*" >&2; }
 # name -> home-relative paths it owns (file or directory)
 paths_of() {
   case "$1" in
-  waybar) echo ".config/waybar" ;;
+  quickshell) echo ".config/quickshell" ;;
   hyprland) echo ".config/hypr/hyprland.conf" ;;
   hyprlock) echo ".config/hypr/hyprlock.conf" ;;
   hypridle) echo ".config/hypr/hypridle.conf" ;;
@@ -40,9 +40,6 @@ paths_of() {
 # name -> command that makes the running program re-read its config
 reload_of() {
   case "$1" in
-  # home-manager's waybar unit has a broken ExecReload (bare `kill`), so signal
-  # the process directly — this is what home-manager's own onChange hook does.
-  waybar) echo 'pkill -u $USER -USR2 waybar' ;;
   hyprland) echo "hyprctl reload" ;;
   hypridle) echo "systemctl --user restart hypridle" ;;
   # Quickshell watches the files it loaded, not the copies `on` puts in their
@@ -370,8 +367,8 @@ cmd_verify() {
 
 cmd_list() {
   echo "known targets:"
-  for name in waybar hyprland hyprlock hypridle kitty dunst wofi wlogout nvim zsh git gtk vifm ripgrep less mimeapps udiskie; do
-    printf '  %-9s %s\n' "$name" "$(paths_of "$name")"
+  for name in quickshell hyprland hyprlock hypridle kitty dunst wofi wlogout nvim zsh git gtk vifm ripgrep less mimeapps udiskie; do
+    printf '  %-10s %s\n' "$name" "$(paths_of "$name")"
   done
   echo "any other name falls back to .config/<name>"
 }

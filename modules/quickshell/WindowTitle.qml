@@ -2,9 +2,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Hyprland
 
-// The last focused window of the workspace on this screen, as Waybar's
-// `separate-outputs` shows it. Hyprland reports that title only per workspace,
-// so the workspaces are re-read on every event that can change it.
+// The last focused window of the workspace on this screen. Hyprland reports
+// that title only per workspace, so the workspaces are re-read on every event
+// that can change it.
 Item {
     id: root
 
@@ -67,7 +67,7 @@ Item {
         onPressed: tip.dismiss()
     }
 
-    // Hangs from the text rather than the module, as Waybar's does.
+    // Hangs from the text rather than the module.
     Tooltip {
         id: tip
 

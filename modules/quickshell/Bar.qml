@@ -160,7 +160,6 @@ PanelWindow {
                         value: Stats.disk / 100
                     }
 
-                    // The stylesheet's intent; Waybar's disk module never sets the class.
                     Figure {
                         id: diskFigure
 

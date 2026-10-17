@@ -4,7 +4,7 @@ import Quickshell.Services.SystemTray
 import Quickshell.Widgets
 
 // Newest item first, passive items hidden, and no module at all when nothing
-// is left, as Waybar's tray with `reverse-direction` behaves.
+// is left.
 Pill {
     id: tray
 

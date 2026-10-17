@@ -4,10 +4,11 @@ description: >
   Iterate on a program's configuration live, without a nixos-rebuild. Swaps
   home-manager's read-only store symlinks in ~/.config for writable copies, reloads
   the program on change, then ports the edits back into the Nix source and relocks.
-  Trigger on "dev mode", "live edit", "tweak the waybar style", "iterate on the
-  hyprland config", "try some colors", or any request to see a config change quickly
-  instead of rebuilding. Covers waybar, hyprland, hyprlock, kitty, wofi, wlogout,
-  dunst, nvim, zsh, gtk and anything else home-manager writes into ~/.config.
+  Trigger on "dev mode", "live edit", "tweak the bar", "iterate on the quickshell
+  QML", "iterate on the hyprland config", "try some colors", or any request to see a
+  config change quickly instead of rebuilding. Covers quickshell, hyprland, hyprlock,
+  kitty, wofi, wlogout, dunst, nvim, zsh, gtk and anything else home-manager writes
+  into ~/.config.
 ---
 
 # Dev mode for home-manager configs
@@ -19,13 +20,13 @@ Home-manager links every config in `~/.config` to a read-only `/nix/store` path,
 ## The loop
 
 ```bash
-devmode.sh on waybar          # store symlinks -> writable copies
-$EDITOR ~/.config/waybar/style.css
-devmode.sh reload waybar      # or: devmode.sh watch waybar  (reloads on every save)
-devmode.sh diff waybar        # what changed, as a unified diff
+devmode.sh on quickshell      # store symlinks -> writable copies
+devmode.sh reload quickshell  # once: Quickshell then reloads on every save
+$EDITOR ~/.config/quickshell/Bar.qml
+devmode.sh diff quickshell    # what changed, as a unified diff
 # ... Claude ports the diff into the Nix source — see "Porting the edits back" ...
-devmode.sh verify waybar      # proves the source now regenerates the edited file
-devmode.sh off waybar         # restore the symlinks
+devmode.sh verify quickshell  # proves the source now regenerates the edited file
+devmode.sh off quickshell     # restore the symlinks
 nxs                           # make it real
 ```
 
@@ -53,7 +54,6 @@ Any name not in `list` falls back to `~/.config/<name>`.
 
 | Program | How it picks up a change |
 |---|---|
-| `waybar` | `pkill -USR2 waybar`. Reloads in place; the bar does not blink. |
 | `hyprland` | `hyprctl reload` |
 | `kitty` | `pkill -USR1 kitty`. All windows, live. |
 | `dunst` | `dunstctl reload` |
@@ -62,7 +62,7 @@ Any name not in `list` falls back to `~/.config/<name>`.
 | `hyprlock`, `wofi`, `wlogout` | No signal — config is read at launch, so just launch it again. |
 | `nvim`, `zsh` | No signal — new instances pick it up (`exec zsh` for the current shell). |
 
-A syntax error in a live waybar style leaves the bar unstyled until the next good reload; it does not crash. A broken `hyprland.conf` is rejected by `hyprctl reload` with the error printed, leaving the running config intact.
+A QML error on save leaves the running bar in place and posts a critical "Quickshell failed to reload" notice with the error. A broken `hyprland.conf` is rejected by `hyprctl reload` with the error printed, leaving the running config intact.
 
 ## Porting the edits back
 
@@ -70,8 +70,6 @@ This is the part that matters — dev mode is scratch space, and nothing survive
 
 | Live file | Nix source |
 |---|---|
-| `.config/waybar/config` | `modules/waybar/default.nix` — `settings` (line ~51) |
-| `.config/waybar/style.css` | `modules/waybar/default.nix` — `style` (line ~172) |
 | `.config/quickshell/*.qml` | `modules/quickshell/`, the same name; `Theme.qml` and `Programs.qml` from its `default.nix` |
 | `.config/hypr/hyprland.conf` | `modules/desktop/default.nix` — `wayland.windowManager.hyprland` (~492) |
 | `.config/hypr/hyprlock.conf` | `modules/desktop/default.nix` — `programs.hyprlock` (~912) |
@@ -102,9 +100,9 @@ Never skip step 4. A port that looks right and a port that regenerates the file 
 
 ### What flattening destroys
 
-- **Interpolated store paths.** `"on-click" = "${pkgs.wlogout}/bin/wlogout"` renders as `"on-click": "/nix/store/6rkhi5…-wlogout-1.2.2/bin/wlogout"`. Porting that back verbatim pins a store path that dies at the next garbage collection. Restore the `${pkgs.…}` form.
+- **Interpolated store paths.** `wlogout: "${lib.getExe pkgs.wlogout}"` in `Programs.qml` renders as `wlogout: "/nix/store/6rkhi5…-wlogout-1.2.2/bin/wlogout"`. Porting that back verbatim pins a store path that dies at the next garbage collection. Restore the `${pkgs.…}` form.
 - **Theme colors.** A hex value in a diff is almost always a `theme.*` reference rendered out — `#16191D` is `theme.background.main`, `#61AFEF` is `theme.blue`. A literal undoes the theme routing. If the color is genuinely new, add it to `theme` in `flake.nix`.
-- **Attrsets rendered as text.** Kitty, waybar and hyprland configs come from Nix attrsets. `font_size 12.0` is `programs.kitty.settings.font_size = 12.0`, not a string to paste into a text block.
+- **Attrsets rendered as text.** Kitty, hyprland and dunst configs come from Nix attrsets. `font_size 12.0` is `programs.kitty.settings.font_size = 12.0`, not a string to paste into a text block.
 - **Resolved conditionals.** The live file contains one branch. The others are invisible in the diff and are the easiest thing to break — see below.
 
 ### Conditional branches
@@ -129,7 +127,7 @@ The same applies to any option gated on `isDesktop`, `keyboardLayout`, or the ho
 Home-manager's activation refuses to clobber a file it does not own. With a config unlocked and edited, `nxs` aborts at `checkLinkTargets`:
 
 ```
-Existing file '/home/egor/.config/waybar/style.css' would be clobbered
+Existing file '/home/egor/.config/quickshell/Bar.qml' would be clobbered
 ```
 
 Nothing is lost — activation stops before touching anything. Run `devmode.sh off --all` and rebuild again.

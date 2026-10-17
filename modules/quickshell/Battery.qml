@@ -10,7 +10,7 @@ Pill {
 
     readonly property UPowerDevice device: UPower.displayDevice
     readonly property int capacity: Math.round(device.percentage * 100)
-    // Waybar's status names. A battery held below full on AC is "Plugged".
+    // A battery held below full on AC is "Plugged".
     readonly property string status: {
         switch (device.state) {
         case UPowerDeviceState.Charging:
@@ -24,7 +24,7 @@ Pill {
         }
     }
     // UPower's own estimate can stay at zero for minutes after a plug event, so
-    // the time comes from the battery's sysfs figures, as Waybar computed it.
+    // the time comes from the battery's sysfs figures.
     readonly property string sysfs: {
         const laptop = UPower.devices.values.find(d => d.isLaptopBattery);
         return laptop ? `/sys/class/power_supply/${laptop.nativePath}` : "";
@@ -123,7 +123,6 @@ Pill {
         blockAllReads: true
     }
 
-    // Waybar's interval.
     Timer {
         interval: 60000
         running: battery.visible
