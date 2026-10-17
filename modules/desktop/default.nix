@@ -133,12 +133,12 @@ let
   outerGap = 10;
 
   # Centre of each module a window docks to, in px from the screen's right
-  # edge, measured off the top bar: Hyprland cannot read the layout.
+  # edge, measured off the bottom bar: Hyprland cannot read the layout.
   barModuleCentre = {
     volume = 280;
   };
 
-  # Floats a window under the top bar, centred on the module that opens it
+  # Floats a window over the bottom bar, centred on the module that opens it
   # unless that would take it past the outer gap on the right.
   dockToBarModule =
     {
@@ -151,7 +151,7 @@ let
       pin = "yes";
       move = "(monitor_w-${
         toString (lib.max (fromRight + width / 2) (width + outerGap))
-      }) ${toString barHeight}";
+      }) (monitor_h-${toString (barHeight + height)})";
       size = "${toString width} ${toString height}";
     };
 

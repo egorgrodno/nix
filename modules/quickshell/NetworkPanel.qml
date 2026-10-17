@@ -3,7 +3,7 @@ import QtQuick.Controls.Basic
 import Quickshell
 import Quickshell.Networking as Nm
 
-// Over the network module: the connection, Wi-Fi and the networks in range,
+// Under the network module: the connection, Wi-Fi and the networks in range,
 // Ethernet, and a switch per VPN profile.
 Panel {
     id: panel

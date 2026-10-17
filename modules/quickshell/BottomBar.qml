@@ -1,9 +1,10 @@
 import QtQuick
 import Quickshell
+import Quickshell.Services.UPower
 
-// The instruments, in a strip along the bottom edge as tall as the top bar's,
-// which leaves the top bar room to centre the workspaces. Network takes the
-// left corner, the rest the right.
+// Along the bottom edge, in a strip as tall as the top bar's: cpu, ram and disk
+// in the left corner, and the tray, battery, volume, clock and power in the
+// right.
 PanelWindow {
     required property ShellScreen modelData
 
@@ -27,14 +28,6 @@ PanelWindow {
         }
 
         Segment {
-            visible: Stats.sampled
-
-            Network {}
-        }
-
-        Segment {
-            anchors.right: parent.right
-
             Pill {
                 hoverable: false
                 tooltip: Stats.cpuTooltip
@@ -108,6 +101,42 @@ PanelWindow {
                     text: `${Stats.disk}%`
                     color: Stats.disk >= 90 ? Theme.red : "#ffffff"
                 }
+            }
+        }
+
+        Row {
+            anchors.right: parent.right
+            height: parent.height
+            spacing: 8
+
+            // A hidden segment hides its modules too, so each one that can
+            // empty takes its modules' condition rather than following them.
+            // The tray leads, so a new icon grows into the empty middle and
+            // moves no other module.
+            Segment {
+                visible: tray.items.length > 0
+
+                Tray {
+                    id: tray
+                }
+            }
+
+            Segment {
+                visible: UPower.displayDevice.isLaptopBattery
+
+                Battery {}
+            }
+
+            Segment {
+                Volume {}
+
+                BluetoothToggle {}
+            }
+
+            Segment {
+                Clock {}
+
+                Power {}
             }
         }
     }

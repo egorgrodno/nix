@@ -1,10 +1,10 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
-import Quickshell.Services.UPower
 
 // Segments of related modules inside the strip the bar reserves, their outer
-// edges in line with the windows' gaps. The instruments are on the bottom bar.
+// edges in line with the windows' gaps: the window title, the workspaces and
+// network. The rest is on the bottom bar.
 PanelWindow {
     id: bar
 
@@ -69,32 +69,10 @@ PanelWindow {
             height: parent.height
             spacing: 8
 
-            // First, so a new icon grows into the room beside the workspaces
-            // and moves no other module.
             Segment {
-                visible: tray.items.length > 0
+                visible: Stats.sampled
 
-                Tray {
-                    id: tray
-                }
-            }
-
-            Segment {
-                visible: UPower.displayDevice.isLaptopBattery
-
-                Battery {}
-            }
-
-            Segment {
-                Volume {}
-
-                BluetoothToggle {}
-            }
-
-            Segment {
-                Clock {}
-
-                Power {}
+                Network {}
             }
         }
     }

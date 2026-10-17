@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.UPower
 
-// Under the battery module: the charge, the power profile, the backlight and
+// Over the battery module: the charge, the power profile, the backlight and
 // the charge limit.
 Panel {
     id: panel

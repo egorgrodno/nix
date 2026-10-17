@@ -11,6 +11,10 @@ Pill {
     id: tray
 
     readonly property var items: SystemTray.items.values.filter(i => i.status !== Status.Passive && i.id !== "nm-applet").reverse()
+    readonly property bool upward: {
+        const anchors = QsWindow.window?.anchors;
+        return anchors?.bottom === true && anchors?.top !== true;
+    }
 
     visible: items.length > 0
     hoverable: false
@@ -81,7 +85,8 @@ Pill {
                 source: entry.modelData.icon
             }
 
-            // At the pointer, as GTK's popup_at_pointer places it.
+            // At the pointer, as GTK's popup_at_pointer places it, and upward on a
+            // bar along the bottom edge.
             QsMenuAnchor {
                 id: menu
 
@@ -89,8 +94,8 @@ Pill {
                 anchor.item: entry
                 anchor.rect.width: 1
                 anchor.rect.height: 1
-                anchor.edges: Edges.Bottom | Edges.Right
-                anchor.gravity: Edges.Bottom | Edges.Right
+                anchor.edges: (tray.upward ? Edges.Top : Edges.Bottom) | Edges.Right
+                anchor.gravity: (tray.upward ? Edges.Top : Edges.Bottom) | Edges.Right
             }
 
             Tooltip {
