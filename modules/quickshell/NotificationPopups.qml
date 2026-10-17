@@ -1,15 +1,21 @@
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 import Quickshell.Wayland
 
 // The popups, on the focused screen, top right under the top bar, newest on
 // top, taking input only on the cards. On `overlay`, the only layer Hyprland
 // draws over a fullscreen window, and ordered beneath the panels there by a
 // layer rule. A card leaves sliding right, and the rest ease into its place.
+// The window takes the keyboard only while a reply field has it, until Enter,
+// Escape or a click outside.
 PanelWindow {
     id: popups
 
+    readonly property bool typing: Notifications.replying?.popup ?? false
+
     screen: Notifications.screen
+    focusable: typing
     // Mapped imperatively, so the window outlives the last card's exit.
     visible: false
     anchors {
@@ -42,6 +48,12 @@ PanelWindow {
                 unmap.restart();
             }
         }
+    }
+
+    HyprlandFocusGrab {
+        active: popups.typing
+        windows: [popups]
+        onCleared: Notifications.replying = null
     }
 
     Timer {

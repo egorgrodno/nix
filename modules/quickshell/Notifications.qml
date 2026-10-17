@@ -26,6 +26,8 @@ Singleton {
     readonly property var unseen: entries.filter(e => e.time > seenAt)
     // While it is open, new notifications land in it rather than popping up.
     property bool panelOpen: false
+    // The entry whose reply field has the keyboard, one at a time.
+    property Entry replying: null
     // Open panels, registered by Panel.qml: one on the popups' screen holds
     // their timers, since it covers them.
     property var panels: []
@@ -76,6 +78,7 @@ Singleton {
     function panelOpened() {
         panelOpen = true;
         seenAt = Date.now();
+        replying = null;
         for (const entry of popups.slice())
             entry.endPopup();
     }
@@ -125,6 +128,8 @@ Singleton {
         property real expireTimeout: -1
         property bool hovered
         readonly property var actions: notification?.actions ?? []
+        readonly property bool hasInlineReply: notification?.hasInlineReply ?? false
+        readonly property string replyPlaceholder: notification?.inlineReplyPlaceholder ?? ""
         // In ms; 0 never expires.
         readonly property int timeout: {
             if (urgency === NotificationUrgency.Critical || expireTimeout === 0)
@@ -202,7 +207,7 @@ Singleton {
 
         readonly property Timer timer: Timer {
             interval: entry.timeout
-            running: entry.popup && entry.timeout > 0 && !entry.hovered && !root.held
+            running: entry.popup && entry.timeout > 0 && !entry.hovered && root.replying !== entry && !root.held
             onTriggered: entry.endPopup()
         }
 
@@ -256,6 +261,7 @@ Singleton {
         bodyHyperlinksSupported: true
         imageSupported: true
         persistenceSupported: true
+        inlineReplySupported: true
 
         onNotification: notification => {
             notification.tracked = true;

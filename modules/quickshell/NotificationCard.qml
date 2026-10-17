@@ -5,9 +5,10 @@ import Quickshell.Widgets
 
 // A notification: the app's icon and name, the summary, and the body clipped
 // to three lines with an expander for the rest; an image at the leading side,
-// a meter for a `value` hint, and a button per action. A click invokes the
-// default action, or dismisses where there is none; a right-click dismisses,
-// as does a drag right past a third of the width. Hovering holds the timer.
+// a meter for a `value` hint, a button per action, and a reply field where the
+// sender takes one. A click invokes the default action, or dismisses where
+// there is none; a right-click dismisses, as does a drag right past a third of
+// the width. Hovering holds the timer, as replying does.
 // The panel shows each card's age, without the app's name and icon under a
 // group's header, and slides in only those that arrive while it is open.
 Item {
@@ -23,6 +24,7 @@ Item {
     // Set once created, so the card slides out of the bar as it fades in.
     property bool arrived: !slideIn
     readonly property var defaultAction: entry.actions.find(a => a.identifier === "default") ?? null
+    readonly property bool replying: Notifications.replying === entry
     // An app icon given as a file is usually a picture, as notify-send -i
     // passes one.
     readonly property bool iconIsFile: entry.appIcon.startsWith("/") || entry.appIcon.startsWith("file://")
@@ -38,14 +40,34 @@ Item {
             entry.dismiss();
     }
 
+    // Which closes the notification, unless it is resident.
+    function send() {
+        if (field.text === "")
+            return;
+        entry.notification?.sendInlineReply(field.text);
+        field.text = "";
+        Notifications.replying = null;
+    }
+
     width: ListView.view.width
     height: box.height
 
     Component.onCompleted: arrived = true
-    // A card that goes while hovered, as the panel closes, would otherwise
-    // leave the entry's timer held should it pop up again.
-    Component.onDestruction: if (hover.hovered)
-        entry.hovered = false
+    // A card that goes while hovered or replying, as the panel closes, would
+    // otherwise leave the entry's timer held should it pop up again.
+    Component.onDestruction: {
+        if (hover.hovered)
+            entry.hovered = false;
+        if (replying)
+            Notifications.replying = null;
+    }
+    // Back to the card, so that in the panel Escape still reaches it.
+    onReplyingChanged: {
+        if (replying)
+            field.forceActiveFocus();
+        else if (field.activeFocus)
+            card.forceActiveFocus();
+    }
 
     HoverHandler {
         id: hover
@@ -280,6 +302,81 @@ Item {
 
                             text: modelData.text
                             onClicked: modelData.invoke()
+                        }
+                    }
+                }
+
+                Item {
+                    width: parent.width
+                    height: reply.height + 8
+                    visible: card.entry.hasInlineReply
+
+                    Rectangle {
+                        id: reply
+
+                        y: 8
+                        width: parent.width
+                        height: 32
+                        radius: Theme.radius - 4
+                        color: Qt.rgba(1, 1, 1, 0.06)
+                        border.color: card.replying ? Theme.blue : "transparent"
+                        border.width: 1
+
+                        TextInput {
+                            id: field
+
+                            anchors.left: parent.left
+                            anchors.leftMargin: 10
+                            anchors.right: sendButton.left
+                            anchors.rightMargin: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            clip: true
+                            color: "#ffffff"
+                            selectionColor: Theme.blue
+                            selectByMouse: true
+                            font.family: Theme.fontUI
+                            font.pixelSize: 14
+                            font.hintingPreference: Font.PreferFullHinting
+                            renderType: Text.CurveRendering
+                            Keys.onReturnPressed: card.send()
+                            Keys.onEnterPressed: card.send()
+                            Keys.onEscapePressed: Notifications.replying = null
+
+                            BarText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: field.text === ""
+                                text: card.entry.replyPlaceholder !== "" ? card.entry.replyPlaceholder : "Reply"
+                                color: Theme.foregroundMuted
+                                font.pixelSize: 14
+                            }
+                        }
+
+                        // The click that starts a reply, which the card's own
+                        // tap would otherwise take; the field takes those after.
+                        MouseArea {
+                            anchors.fill: parent
+                            enabled: !card.replying
+                            cursorShape: Qt.IBeamCursor
+                            onClicked: Notifications.replying = card.entry
+                        }
+
+                        BarText {
+                            id: sendButton
+
+                            anchors.right: parent.right
+                            anchors.rightMargin: 10
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: "\u{F048A}"
+                            color: field.text !== "" && sendMouse.containsMouse ? "#ffffff" : Theme.foregroundMuted
+
+                            MouseArea {
+                                id: sendMouse
+
+                                anchors.fill: parent
+                                anchors.margins: -6
+                                hoverEnabled: true
+                                onClicked: card.send()
+                            }
                         }
                     }
                 }
