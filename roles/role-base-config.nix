@@ -7,6 +7,8 @@ let
 
 in
 {
+  imports = [ ./role-laptop.nix ];
+
   options.base = {
     isNixosSystem = mkOption {
       type = types.bool;
@@ -24,6 +26,12 @@ in
       type = types.bool;
       default = false;
       description = "Whether the configuration is being evaluated on a headless system";
+    };
+
+    isLaptop = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether the machine is a laptop: turns on `role-laptop.nix` and pins the chassis hostnamed reports";
     };
 
     keyboard = {
@@ -68,6 +76,11 @@ in
         message = "Either 'isDesktop' or 'isHeadless' must be enabled";
       }
     ];
+
+    # Read by tools that act only on a laptop, such as dev mode's inhibitor.
+    environment.etc."machine-info" = mkIf (cfg.isLaptop || cfg.isDesktop) {
+      text = "CHASSIS=${if cfg.isLaptop then "laptop" else "desktop"}\n";
+    };
 
     home-manager.extraSpecialArgs = {
       keyboardLayout = cfg.keyboard.layout;

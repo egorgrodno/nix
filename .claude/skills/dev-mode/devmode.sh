@@ -5,6 +5,7 @@ set -euo pipefail
 
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}/nix-devmode"
 EDITS="$STATE/edits"
+INHIBIT="$STATE/inhibit.pid"
 
 die() {
   printf 'devmode: %s\n' "$*" >&2
@@ -110,6 +111,35 @@ active_names() {
   find "$STATE" -maxdepth 1 -name '*.tsv' -printf '%f\n' 2>/dev/null | sed 's/\.tsv$//' | sort
 }
 
+# On a laptop, idle, sleep and the lid switch stay off while anything is
+# unlocked, so the screen stays up for screenshots and a suspend cannot cut a
+# session short. base.isLaptop pins the chassis hostnamed reports.
+inhibitor_held() {
+  local pid
+  pid=$(cat "$INHIBIT" 2>/dev/null) || return 1
+  [ -n "$pid" ] && grep -qa systemd-inhibit "/proc/$pid/cmdline" 2>/dev/null
+}
+
+inhibit() {
+  [ "$(hostnamectl chassis 2>/dev/null)" = laptop ] || return 0
+  inhibitor_held && return 0
+  # A session of its own, so releasing its process group ends the sleep too.
+  setsid systemd-inhibit --what=idle:sleep:handle-lid-switch --mode=block \
+    --who="dev mode" --why="configs unlocked for live editing" \
+    sleep infinity </dev/null >/dev/null 2>&1 &
+  echo $! >"$INHIBIT"
+  note "holding off idle, sleep and the lid switch until the last program is relocked"
+}
+
+release() {
+  [ -z "$(active_names)" ] || return 0
+  if inhibitor_held; then
+    kill -- "-$(cat "$INHIBIT")" 2>/dev/null || true
+    note "released the idle, sleep and lid switch inhibitor"
+  fi
+  rm -f "$INHIBIT"
+}
+
 cmd_on() {
   [ $# -gt 0 ] || die "usage: devmode on <program>..."
   mkdir -p "$STATE"
@@ -150,6 +180,7 @@ cmd_on() {
       note "$name: edit, then $(manual_of "$name")"
     fi
   done
+  [ -z "$(active_names)" ] || inhibit
   note ""
   note "Run '$0 off --all' before nixos-rebuild; activation aborts on files it does not own."
 }
@@ -164,6 +195,7 @@ cmd_off() {
   fi
   [ ${#names[@]} -gt 0 ] || {
     note "nothing in dev mode"
+    release
     return 0
   }
   local name s file origin rel cur target base relhm
@@ -200,11 +232,13 @@ cmd_off() {
     done <"$s"
     rm -f "$s"
   done
+  release
 }
 
 cmd_status() {
   local names
   mapfile -t names < <(active_names)
+  if inhibitor_held; then echo "inhibiting idle, sleep and the lid switch (pid $(cat "$INHIBIT"))"; fi
   [ ${#names[@]} -gt 0 ] || {
     echo "nothing in dev mode"
     return 0

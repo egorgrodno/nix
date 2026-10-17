@@ -104,7 +104,7 @@ users = [
 
 ### Laptop role
 
-`roles/role-laptop.nix` enables `modules/power/` and sends lid close to `suspend-then-hibernate`.
+`base.isLaptop` turns on `roles/role-laptop.nix`, which enables `modules/power/` and sends lid close to `suspend-then-hibernate`. The flag also pins `hostnamectl chassis` to `laptop`, by which dev mode holds off idle, sleep and the lid switch while anything is unlocked.
 
 **Profiles.** TLP applies `performance`, `balanced` and `power-saver` but never picks one (`TLP_AUTO_SWITCH=0`). `power-profile-sync` picks on every power_supply event, every minute, and after each TLP start: performance on AC, balanced on battery, power-saver at or below 20%. A choice made through tlp-pd holds until the next plug event. Power-saver hibernates 5 minutes after suspend; an `ExecStartPre` on `systemd-suspend-then-hibernate.service` writes that drop-in at suspend time.
 
@@ -119,7 +119,7 @@ users = [
 ### Hosts
 
 - `fractal` — AMD/NVIDIA hybrid, NVIDIA PRIME sync, `HDMI-A-2` at `2560x1440@120`; users `egor` and `forge`. Dual-boots Windows, which boots from its own ESP (`WINBOOT`, `nvme1n1`) but keeps its D: (`WINDISKD`) on the NixOS disk, so a reinstall **must** use the installer's reuse mode rather than wipe `nvme0n1`.
-- `thinkpad` — AMD, `eDP-1`, qwerty, portable GRUB, `role-laptop.nix`; user `egor`.
+- `thinkpad` — AMD, `eDP-1`, qwerty, portable GRUB, `base.isLaptop`; user `egor`.
 - Both track `nixos-unstable`. `role-base-config.nix` mounts `/` (ext4, `NIXROOT`) and `/boot` (vfat, `NIXBOOT`) by label on every host, so a reinstall must label its partitions to match. `wheel` has passwordless sudo. Both run sshd with password authentication disabled.
 
 ## Documentation conventions

@@ -4,10 +4,11 @@
   imports = [
     ./hardware-configuration.nix
     ../../roles/role-desktop-config.nix
-    ../../roles/role-laptop.nix
     # ../../roles/role-nextcloud-client.nix
     # ../../roles/role-vm-host.nix
   ];
+
+  base.isLaptop = true;
 
   base.keyboard = {
     layout = "qwerty";

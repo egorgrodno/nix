@@ -35,9 +35,9 @@ nxs                           # make it real
 
 | Command | Effect |
 |---|---|
-| `on <program>...` | Unlock. Records each store origin in `~/.local/state/nix-devmode/<program>.tsv`. |
-| `off <program>...` / `off --all` | Save edits, restore the symlinks, drop the state. |
-| `status` | Which programs are unlocked and which files are edited. |
+| `on <program>...` | Unlock. Records each store origin in `~/.local/state/nix-devmode/<program>.tsv`. On a laptop, also holds off idle, sleep and the lid switch. |
+| `off <program>...` / `off --all` | Save edits, restore the symlinks, drop the state. Releases the inhibitor once nothing is unlocked. |
+| `status` | Which programs are unlocked, which files are edited, and whether the inhibitor is held. |
 | `diff [program]` | Unified diff, store original against live file. The input to porting back. |
 | `verify [program]` | Regenerate each file from the Nix source and compare to the live copy. Exit 0 only when the source reproduces the edits byte for byte. |
 | `reload <program>` | Signal the program to re-read its config. |
@@ -138,6 +138,7 @@ The subtler case: if an unlocked file happens to be byte-identical to the store 
 
 ## Notes
 
+- **Inhibitor.** A laptop is a host whose `hostnamectl chassis` reads `laptop`, which `base.isLaptop` pins. There `on` starts a `systemd-inhibit` against idle, sleep and the lid switch, so the screen stays up for screenshots and a suspend cannot strand a session; its PID is in `~/.local/state/nix-devmode/inhibit.pid`. Other hosts get none.
 - `on` only touches symlinks whose immediate target matches `/nix/store/*-home-manager-files/*`. Restoring anything else — a fully resolved store path, for instance — makes the next activation treat the file as foreign and abort.
 - Runtime state is out of scope. The wallpaper is set by `waypaper`, not by a config file.
 - System-level files under `/etc` are not home-manager's and are not covered.
