@@ -1,8 +1,9 @@
 import QtQuick
 import Quickshell
 
-// Under the module, centred on where the pointer came to rest, after half a
-// second's hover, as GTK places a tooltip.
+// Under the module, or over it on a bar along the bottom edge, centred on where
+// the pointer came to rest, after half a second's hover, as GTK places a
+// tooltip.
 PopupWindow {
     id: tip
 
@@ -14,6 +15,10 @@ PopupWindow {
     // Pointer x in the target, read when the tooltip opens.
     property real pointerX
     property real openedAt
+    readonly property bool upward: {
+        const anchors = target.QsWindow.window?.anchors;
+        return anchors?.bottom === true && anchors?.top !== true;
+    }
 
     // Hides it until the pointer leaves and comes back, as a click does in GTK.
     function dismiss() {
@@ -23,10 +28,11 @@ PopupWindow {
 
     anchor.item: target
     anchor.rect.x: openedAt
+    anchor.rect.y: upward ? -4 : 0
     anchor.rect.width: 1
-    anchor.rect.height: target.height + 4
-    anchor.edges: Edges.Bottom
-    anchor.gravity: Edges.Bottom
+    anchor.rect.height: upward ? 1 : target.height + 4
+    anchor.edges: upward ? Edges.Top : Edges.Bottom
+    anchor.gravity: upward ? Edges.Top : Edges.Bottom
     anchor.adjustment: PopupAdjustment.SlideX
     implicitWidth: box.implicitWidth
     implicitHeight: box.implicitHeight

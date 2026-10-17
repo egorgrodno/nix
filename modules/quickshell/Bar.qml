@@ -4,7 +4,7 @@ import Quickshell.Hyprland
 import Quickshell.Services.UPower
 
 // Segments of related modules inside the strip the bar reserves, their outer
-// edges in line with the windows' gaps.
+// edges in line with the windows' gaps. The instruments are on the bottom bar.
 PanelWindow {
     id: bar
 
@@ -20,23 +20,6 @@ PanelWindow {
     implicitHeight: Theme.barHeight
     exclusiveZone: Theme.barHeight
     color: "transparent"
-
-    component Segment: Rectangle {
-        default property alias content: row.data
-
-        implicitWidth: row.implicitWidth
-        height: parent.height
-        radius: Theme.radius
-        color: Theme.alpha(Theme.backgroundMain, 0.94)
-        border.width: 1
-        border.color: Qt.rgba(1, 1, 1, 0.06)
-
-        Row {
-            id: row
-
-            height: parent.height
-        }
-    }
 
     Item {
         id: content
@@ -90,85 +73,6 @@ PanelWindow {
                 visible: UPower.displayDevice.isLaptopBattery
 
                 Battery {}
-            }
-
-            Segment {
-                Network {}
-
-                Pill {
-                    hoverable: false
-                    tooltip: Stats.cpuTooltip
-                    tooltipContent: Component {
-                        CoreChart {}
-                    }
-
-                    Caption {
-                        anchors.baseline: cpuFigure.baseline
-                        text: "cpu"
-                    }
-
-                    CoreBars {
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-
-                    Figure {
-                        id: cpuFigure
-
-                        anchors.verticalCenter: parent.verticalCenter
-                        widest: "100%"
-                        text: `${Stats.cpu}%`
-                    }
-                }
-
-                Pill {
-                    hoverable: false
-                    tooltip: Stats.memoryTooltip
-
-                    Caption {
-                        anchors.baseline: ramFigure.baseline
-                        text: "ram"
-                    }
-
-                    Meter {
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: Stats.memory / 100
-                    }
-
-                    Figure {
-                        id: ramFigure
-
-                        anchors.verticalCenter: parent.verticalCenter
-                        widest: "100%"
-                        text: `${Stats.memory}%`
-                    }
-                }
-
-                Pill {
-                    tooltip: Stats.diskTooltip
-                    onClicked: button => {
-                        if (button === Qt.LeftButton)
-                            Quickshell.execDetached([Programs.pcmanfm, "/"]);
-                    }
-
-                    Caption {
-                        anchors.baseline: diskFigure.baseline
-                        text: "disk"
-                    }
-
-                    Meter {
-                        anchors.verticalCenter: parent.verticalCenter
-                        value: Stats.disk / 100
-                    }
-
-                    Figure {
-                        id: diskFigure
-
-                        anchors.verticalCenter: parent.verticalCenter
-                        widest: "100%"
-                        text: `${Stats.disk}%`
-                        color: Stats.disk >= 90 ? Theme.red : "#ffffff"
-                    }
-                }
             }
 
             Segment {

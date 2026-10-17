@@ -97,7 +97,7 @@ in
 
     barHeight = lib.mkOption {
       type = lib.types.int;
-      description = "Height of the bar in logical pixels, which it also reserves as its exclusive zone.";
+      description = "Height of each bar, top and bottom, in logical pixels, which it also reserves as its exclusive zone.";
     };
   };
 

@@ -124,31 +124,34 @@ let
     echo $! > "$pid_file"
   '';
 
-  # The bar's strip, which Quickshell is built to and reserves as its exclusive
-  # zone.
+  # The strip of each bar, top and bottom, which Quickshell is built to and
+  # reserves as its exclusive zone.
   barHeight = 51;
 
-  # Centre of each module a window docks under, in px from the screen's right
-  # edge, measured off the bar: Hyprland cannot read its layout.
+  # Centre of each module a window docks to, in px from the screen's right
+  # edge, measured off its bar: Hyprland cannot read the layout. Network is on
+  # the bottom bar, volume on the top.
   barModuleCentre = {
-    network = 940;
+    network = 506;
     volume = 370;
   };
 
-  # Floats a window under the bar module that opens it, centred on the module
-  # unless that would take it past the 20 px outer gap on the right.
-  underBarModule =
+  # Floats a window against the bar module that opens it, under the top bar or
+  # over the bottom one, centred on the module unless that would take it past
+  # the 20 px outer gap on the right.
+  dockToBarModule =
     {
       fromRight,
       width,
       height,
+      bottom ? false,
     }:
     {
       float = "yes";
       pin = "yes";
-      move = "(monitor_w-${
-        toString (lib.max (fromRight + width / 2) (width + 20))
-      }) ${toString barHeight}";
+      move = "(monitor_w-${toString (lib.max (fromRight + width / 2) (width + 20))}) ${
+        if bottom then "(monitor_h-${toString (barHeight + height)})" else toString barHeight
+      }";
       size = "${toString width} ${toString height}";
     };
 
@@ -1088,7 +1091,7 @@ in
           windowrule =
             # Generated rules lead. Apply order is list order and the last match
             # wins a property, so every hand-written rule below stays an override
-            # — notably the two that dock under a bar module, which would
+            # — notably the two that dock to a bar module, which would
             # otherwise be re-centred by their kind.
 
             # Browse a collection, act once, close.
@@ -1153,10 +1156,11 @@ in
                   name = "nm-float-pin";
                   "match:class" = "^(nm-connection-editor)$";
                 }
-                // underBarModule {
+                // dockToBarModule {
                   fromRight = barModuleCentre.network;
                   width = 400;
                   height = 400;
+                  bottom = true;
                 }
               )
               (
@@ -1164,7 +1168,7 @@ in
                   name = "pwvucontrol-float-pin";
                   "match:class" = "^(com\\.saivert\\.pwvucontrol)$";
                 }
-                // underBarModule {
+                // dockToBarModule {
                   fromRight = barModuleCentre.volume;
                   width = 800;
                   height = 500;

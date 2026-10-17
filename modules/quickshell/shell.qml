@@ -10,6 +10,12 @@ ShellRoot {
         Bar {}
     }
 
+    Variants {
+        model: Quickshell.screens
+
+        BottomBar {}
+    }
+
     // Once for the shell, not per screen.
     PowerSaverDim {}
 
