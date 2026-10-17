@@ -69,6 +69,7 @@ let
         readonly property string brightnessctl: "${lib.getExe pkgs.brightnessctl}"
         readonly property string df: "${lib.getExe' pkgs.coreutils "df"}"
         readonly property string nmConnectionEditor: "${lib.getExe' pkgs.networkmanagerapplet "nm-connection-editor"}"
+        readonly property string notifySend: "${lib.getExe' pkgs.libnotify "notify-send"}"
         readonly property string pcmanfm: "${lib.getExe pkgs.pcmanfm}"
         readonly property string pwvucontrol: "${lib.getExe pkgs.pwvucontrol}"
         readonly property string systemctl: "${lib.getExe' config.systemd.package "systemctl"}"
