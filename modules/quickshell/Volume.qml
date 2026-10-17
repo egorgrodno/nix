@@ -22,15 +22,13 @@ Pill {
             car: [" ", " ", " "],
             default: ["", "", ""]
         })
-    readonly property string icon: {
+    // The sink's own icons, or null for the default speaker's.
+    readonly property var portIcons: {
         const name = [sink?.name, sink?.properties["device.icon-name"], sink?.properties["device.form-factor"]].join(" ").toLowerCase();
-        const set = icons[ports.find(p => name.includes(p))];
-        if (!set && muted)
-            return "";
-        return (set ?? icons.default)[Math.min(Math.trunc(level / 33), 2)];
+        return icons[ports.find(p => name.includes(p))] ?? null;
     }
+    readonly property string icon: !portIcons && muted ? "\uEEE8" : (portIcons ?? icons.default)[Math.min(Math.trunc(level / 33), 2)]
 
-    text: `${source?.audio.muted ? "󰍭" : ""}    ${icon}  ${level}%`
     tooltip: sink?.description ?? ""
     onClicked: button => {
         if (button === Qt.LeftButton)
@@ -42,6 +40,50 @@ Pill {
         const target = Math.max(0, Math.min(100, level + 5 * steps));
         if (target !== level)
             sink.audio.volume += (target - level) / 100;
+    }
+
+    // Each glyph gets a slot as wide as the widest it can show, so a level or
+    // mute change never resizes the module. FontMetrics gives these glyphs one
+    // advance, so hidden Texts measure them, as wide as their widest line.
+    BarText {
+        id: micGlyphs
+
+        visible: false
+        text: "\u{F036D}\n\uEC1C"
+    }
+
+    BarText {
+        id: speakerGlyphs
+
+        visible: false
+        text: (volume.portIcons ?? volume.icons.default.concat(["\uEEE8"])).join("\n")
+    }
+
+    BarText {
+        anchors.verticalCenter: parent.verticalCenter
+        width: micGlyphs.implicitWidth + 4
+        text: volume.source?.audio.muted ? "\u{F036D}" : "\u{EC1C}"
+        color: volume.source?.audio.muted ? Theme.red : Theme.foregroundMuted
+    }
+
+    BarText {
+        anchors.verticalCenter: parent.verticalCenter
+        width: speakerGlyphs.implicitWidth
+        text: volume.icon
+    }
+
+    Meter {
+        anchors.verticalCenter: parent.verticalCenter
+        graded: false
+        value: volume.level / 100
+        fill: volume.muted ? Theme.foregroundDark : Theme.foregroundMuted
+    }
+
+    Figure {
+        anchors.verticalCenter: parent.verticalCenter
+        widest: "100%"
+        text: `${volume.level}%`
+        color: volume.muted ? Theme.foregroundMuted : "#ffffff"
     }
 
     PwObjectTracker {

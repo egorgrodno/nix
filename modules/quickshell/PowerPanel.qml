@@ -34,7 +34,10 @@ PopupWindow {
     grabFocus: true
     visible: true
 
-    Component.onCompleted: module.sample()
+    Component.onCompleted: {
+        module.sample();
+        module.readLimits();
+    }
 
     // A wheel notch moves it by wheelStep. The Slider's own wheel handling
     // rounds a touchpad's fractions of a step away.
@@ -56,14 +59,14 @@ PopupWindow {
         background: Rectangle {
             y: (slider.height - height) / 2
             width: slider.availableWidth
-            height: 6
-            radius: 3
-            color: Theme.backgroundLight
+            height: 4
+            radius: 2
+            color: Qt.rgba(1, 1, 1, 0.12)
 
             Rectangle {
                 width: slider.handle.x + slider.handle.width / 2
                 height: parent.height
-                radius: 3
+                radius: 2
                 color: Theme.blue
             }
         }
@@ -71,9 +74,9 @@ PopupWindow {
         handle: Rectangle {
             x: slider.visualPosition * (slider.availableWidth - width)
             y: (slider.height - height) / 2
-            width: 18
-            height: 18
-            radius: 9
+            width: 6
+            height: 20
+            radius: 2
             color: slider.pressed || slider.hovered ? Theme.foregroundLight : Theme.foregroundMain
         }
 
@@ -96,11 +99,10 @@ PopupWindow {
 
         implicitWidth: 360
         implicitHeight: content.implicitHeight + 2 * 20
-        color: Theme.backgroundMain
-        border.color: Theme.blue
-        border.width: 2
+        color: Theme.alpha(Theme.backgroundMain, 0.97)
+        border.color: Qt.rgba(1, 1, 1, 0.08)
+        border.width: 1
         radius: Theme.radius
-        opacity: 0.95
         focus: true
         Keys.onEscapePressed: panel.visible = false
 
@@ -113,11 +115,35 @@ PopupWindow {
             spacing: 20
 
             Column {
-                spacing: 4
+                width: content.width
+                spacing: 8
 
-                BarText {
-                    text: panel.module.text
-                    font.pixelSize: 24
+                Figure {
+                    text: `${panel.module.capacity}%`
+                    font.pixelSize: 32
+                }
+
+                // The charge, and the band the charge limit holds it in.
+                Rectangle {
+                    width: parent.width
+                    height: 8
+                    radius: 2
+                    color: Qt.rgba(1, 1, 1, 0.1)
+
+                    Rectangle {
+                        width: parent.width * Math.min(1, panel.module.capacity / 100)
+                        height: parent.height
+                        radius: 2
+                        color: panel.module.status === "Charging" ? Theme.green : panel.module.capacity <= 10 ? Theme.red : panel.module.capacity <= 20 ? Theme.yellow : Theme.foregroundMain
+                    }
+
+                    Rectangle {
+                        visible: panel.module.chargeEnd < 100
+                        x: parent.width * panel.module.chargeStart / 100
+                        width: parent.width * (panel.module.chargeEnd - panel.module.chargeStart) / 100
+                        height: parent.height
+                        color: Theme.alpha(Theme.blue, 0.6)
+                    }
                 }
 
                 BarText {
@@ -175,7 +201,7 @@ PopupWindow {
                         width: (content.width - profiles.spacing * (profiles.model.length - 1)) / profiles.model.length
                         height: 64
                         radius: Theme.radius
-                        color: active ? Theme.blue : mouse.containsMouse ? Theme.backgroundLight : Theme.alpha(Theme.backgroundLight, 0.8)
+                        color: active ? Theme.blue : mouse.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
 
                         Behavior on color {
                             ColorAnimation {
@@ -236,21 +262,14 @@ PopupWindow {
                     onPicked: value => Backlight.setPercent(value)
                 }
 
-                BarText {
+                // As wide as 100%, so the slider keeps its length.
+                Figure {
                     id: percent
 
                     anchors.verticalCenter: parent.verticalCenter
-                    // As wide as 100%, so the slider keeps its length.
-                    width: widest.advanceWidth
                     horizontalAlignment: Text.AlignRight
+                    widest: "100%"
                     text: `${Backlight.percent}%`
-
-                    TextMetrics {
-                        id: widest
-
-                        font: percent.font
-                        text: "100%"
-                    }
                 }
             }
 
@@ -302,12 +321,8 @@ PopupWindow {
                         text: "Charge limit"
                     }
 
-                    // The thresholds the firmware holds, whatever the state file says.
                     BarText {
-                        readonly property int start: parseInt(limitStart.text())
-                        readonly property int end: parseInt(limitEnd.text())
-
-                        text: end < 100 ? `Stops at ${end}%, resumes below ${start}%` : "Charges to 100%"
+                        text: panel.module.chargeEnd < 100 ? `Stops at ${panel.module.chargeEnd}%, resumes below ${panel.module.chargeStart}%` : "Charges to 100%"
                         color: Theme.foregroundMuted
                         font.pixelSize: 14
                     }
@@ -320,8 +335,8 @@ PopupWindow {
                     anchors.verticalCenter: parent.verticalCenter
                     width: 44
                     height: 24
-                    radius: height / 2
-                    color: panel.limited ? Theme.blue : toggleMouse.containsMouse ? Theme.foregroundDark : Theme.backgroundLight
+                    radius: 6
+                    color: panel.limited ? Theme.blue : toggleMouse.containsMouse ? Theme.foregroundDark : Qt.rgba(1, 1, 1, 0.12)
 
                     Behavior on color {
                         ColorAnimation {
@@ -335,7 +350,7 @@ PopupWindow {
                         y: 3
                         width: 18
                         height: 18
-                        radius: 9
+                        radius: 4
                         color: panel.limited ? Theme.backgroundMain : Theme.foregroundMuted
 
                         Behavior on x {
@@ -377,27 +392,12 @@ PopupWindow {
         printErrors: false
     }
 
-    FileView {
-        id: limitStart
-
-        path: `${panel.module.sysfs}/charge_control_start_threshold`
-        blockAllReads: true
-    }
-
-    FileView {
-        id: limitEnd
-
-        path: `${panel.module.sysfs}/charge_control_end_threshold`
-        blockAllReads: true
-    }
-
     Process {
         id: limiter
 
         onExited: {
             limitOff.reload();
-            limitStart.reload();
-            limitEnd.reload();
+            panel.module.readLimits();
             panel.limitBusy = false;
         }
     }

@@ -50,7 +50,7 @@ let
 
         // Also the exclusive zone.
         readonly property int barHeight: ${toString cfg.barHeight}
-        readonly property int radius: 20
+        readonly property int radius: 8
 
         function alpha(color, a) {
             return Qt.rgba(color.r, color.g, color.b, a);

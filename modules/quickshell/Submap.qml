@@ -8,9 +8,9 @@ Pill {
     property string name
 
     visible: name !== ""
-    fill: "transparent"
     hoverable: false
     text: name
+    textColor: Theme.yellow
     tooltip: name
 
     Connections {

@@ -16,7 +16,16 @@ Singleton {
     property string memoryTooltip
     property int disk
     property string diskTooltip
-    property string network
+    // True once a sample has found no device to read.
+    property bool offline: false
+    // Rates as `rate` formats them, and the last minute of them in bytes per
+    // second, oldest first.
+    property string up
+    property string down
+    property var upHistory: []
+    property var downHistory: []
+    // Per core, in /proc/stat order.
+    property var cores: []
 
     // NetworkManager gives wired the lower route metric.
     readonly property NetworkDevice networkDevice: {
@@ -56,6 +65,7 @@ Singleton {
         if (cpuTimes.length === times.length) {
             const usage = times.map((t, i) => Math.trunc(100 * (1 - (t.idle - cpuTimes[i].idle) / Math.max(1, t.total - cpuTimes[i].total))));
             cpu = usage[0];
+            cores = usage.slice(1);
             cpuTooltip = [`Total: ${usage[0]}%`].concat(usage.slice(1).map((u, i) => `Core${i}: ${u}%`)).join("\n");
         }
         cpuTimes = times;
@@ -78,9 +88,10 @@ Singleton {
     function sampleNetwork() {
         if (!networkDevice) {
             counters = null;
-            network = "⚠ No network";
+            offline = true;
             return;
         }
+        offline = false;
         rx.reload();
         tx.reload();
         const now = {
@@ -94,7 +105,12 @@ Singleton {
         }
         if (counters) {
             const seconds = (now.at - counters.at) / 1000;
-            network = `󰜷 ${rate((now.tx - counters.tx) / seconds)}  󰜮 ${rate((now.rx - counters.rx) / seconds)}`;
+            const upRate = (now.tx - counters.tx) / seconds;
+            const downRate = (now.rx - counters.rx) / seconds;
+            up = rate(upRate);
+            down = rate(downRate);
+            upHistory = upHistory.concat([upRate]).slice(-30);
+            downHistory = downHistory.concat([downRate]).slice(-30);
         }
         counters = now;
     }
@@ -103,7 +119,10 @@ Singleton {
     // its rate shows on the next tick.
     onNetworkDeviceChanged: {
         counters = null;
-        network = "";
+        up = "";
+        down = "";
+        upHistory = [];
+        downHistory = [];
         Qt.callLater(sampleNetwork);
     }
 
@@ -162,7 +181,7 @@ Singleton {
     }
 
     // Not on start: NetworkManager's devices arrive just after, and sampling
-    // before them would flash "No network".
+    // before them would flash the offline state.
     Timer {
         interval: 2000
         running: true

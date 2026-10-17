@@ -35,7 +35,6 @@ Pill {
         const minutes = Math.floor(seconds % 3600 / 60);
         return hours === 0 && minutes === 0 ? "" : `${hours} h ${minutes} min`;
     }
-    readonly property string icon: ["", "", "", "", ""][Math.min(Math.trunc(capacity / 20), 4)]
 
     function sample() {
         energyNow.reload();
@@ -50,17 +49,44 @@ Pill {
             retry.restart();
     }
 
+    // The thresholds the firmware holds, whatever the state file says.
+    readonly property int chargeStart: parseInt(limitStart.text())
+    readonly property int chargeEnd: parseInt(limitEnd.text())
+
+    function readLimits() {
+        limitStart.reload();
+        limitEnd.reload();
+    }
+
     visible: device.isLaptopBattery
-    text: status === "Charging" || status === "Plugged" ? ` ${capacity}%` : `${icon} ${capacity}%`
-    // Lit while its panel is open, as on hover.
-    fill: panel.active ? hoverFill : Theme.alpha(Theme.backgroundLight, 0.8)
+    lit: panel.active
+    onStatusChanged: sample()
+    // Once the paths follow it.
+    onSysfsChanged: Qt.callLater(sample)
     onClicked: button => {
         if (button === Qt.LeftButton)
             panel.active = !panel.active;
     }
-    onStatusChanged: sample()
-    // Once the paths follow it.
-    onSysfsChanged: Qt.callLater(sample)
+
+    Gauge {
+        anchors.verticalCenter: parent.verticalCenter
+        value: battery.capacity / 100
+        fill: battery.status === "Charging" ? Theme.green : battery.capacity <= 10 ? Theme.red : battery.capacity <= 20 ? Theme.yellow : Theme.foregroundMain
+        limit: battery.chargeEnd < 100 ? battery.chargeEnd / 100 : 1
+    }
+
+    BarText {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: battery.status !== "Discharging"
+        text: "\uF1E6"
+        color: battery.status === "Charging" ? Theme.green : Theme.foregroundMuted
+    }
+
+    Figure {
+        anchors.verticalCenter: parent.verticalCenter
+        widest: "100%"
+        text: `${battery.capacity}%`
+    }
 
     FileView {
         id: energyNow
@@ -83,12 +109,29 @@ Pill {
         blockAllReads: true
     }
 
+    FileView {
+        id: limitStart
+
+        path: battery.sysfs ? `${battery.sysfs}/charge_control_start_threshold` : ""
+        blockAllReads: true
+    }
+
+    FileView {
+        id: limitEnd
+
+        path: battery.sysfs ? `${battery.sysfs}/charge_control_end_threshold` : ""
+        blockAllReads: true
+    }
+
     // Waybar's interval.
     Timer {
         interval: 60000
         running: battery.visible
         repeat: true
-        onTriggered: battery.sample()
+        onTriggered: {
+            battery.sample();
+            battery.readLimits();
+        }
     }
 
     Timer {

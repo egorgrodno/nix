@@ -129,8 +129,7 @@ let
   barHeight = 51;
 
   # Centre of each module a window docks under, in px from the screen's right
-  # edge, measured off the selected bar: Hyprland cannot read either one. The
-  # rows agree while Quickshell reproduces Waybar's layout.
+  # edge, measured off the selected bar: Hyprland cannot read either one.
   barModuleCentre =
     {
       waybar = {
@@ -138,13 +137,14 @@ let
         volume = 460;
       };
       quickshell = {
-        network = 907;
-        volume = 460;
+        network = 902;
+        volume = 332;
       };
     }
     .${cfg.bar};
 
-  # Floats a window under the bar module that opens it.
+  # Floats a window under the bar module that opens it, centred on the module
+  # unless that would take it past the 20 px outer gap on the right.
   underBarModule =
     {
       fromRight,
@@ -154,7 +154,9 @@ let
     {
       float = "yes";
       pin = "yes";
-      move = "(monitor_w-${toString (fromRight + width / 2)}) ${toString barHeight}";
+      move = "(monitor_w-${
+        toString (lib.max (fromRight + width / 2) (width + 20))
+      }) ${toString barHeight}";
       size = "${toString width} ${toString height}";
     };
 

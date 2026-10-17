@@ -1,7 +1,10 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Services.UPower
 
+// Segments of related modules inside the strip the bar reserves, their outer
+// edges in line with the windows' gaps.
 PanelWindow {
     id: bar
 
@@ -16,37 +19,57 @@ PanelWindow {
     }
     implicitHeight: Theme.barHeight
     exclusiveZone: Theme.barHeight
-    color: Theme.alpha(Theme.backgroundMain, 0.3)
+    color: "transparent"
+
+    component Segment: Rectangle {
+        default property alias content: row.data
+
+        implicitWidth: row.implicitWidth
+        height: parent.height
+        radius: Theme.radius
+        color: Theme.alpha(Theme.backgroundMain, 0.94)
+        border.width: 1
+        border.color: Qt.rgba(1, 1, 1, 0.06)
+
+        Row {
+            id: row
+
+            height: parent.height
+        }
+    }
 
     Item {
         id: content
 
         anchors {
             fill: parent
-            topMargin: 8
-            bottomMargin: 8
+            topMargin: 6
+            bottomMargin: 6
             leftMargin: 20
             rightMargin: 20
         }
 
-        WindowTitle {
+        // A hidden segment hides its modules too, so each one that can empty
+        // takes its modules' condition rather than following them.
+        Segment {
             id: title
 
-            monitor: bar.monitor
-            maxWidth: right.x - 12 - centre.width - 12
+            visible: windowTitle.title !== ""
+
+            WindowTitle {
+                id: windowTitle
+
+                monitor: bar.monitor
+                maxWidth: right.x - 8 - centre.width - 8
+            }
         }
 
         // Centred on the bar unless that would crowd a side, as GTK places a
-        // box's centre widget. Each side keeps the 12 px margin of its module
-        // nearest the centre.
-        Row {
+        // box's centre widget.
+        Segment {
             id: centre
 
-            x: Math.max(title.visible ? title.width + 12 : 0, Math.min((content.width - width) / 2, right.x - 12 - width))
-            height: parent.height
-            leftPadding: 6
-            rightPadding: 6
-            spacing: 12
+            x: Math.max(title.visible ? title.width + 8 : 0, Math.min((content.width - width) / 2, right.x - 8 - width))
 
             Submap {}
 
@@ -61,65 +84,105 @@ PanelWindow {
 
             anchors.right: parent.right
             height: parent.height
-            spacing: 12
+            spacing: 8
 
-            Battery {}
+            Segment {
+                visible: UPower.displayDevice.isLaptopBattery
 
-            Network {}
+                Battery {}
+            }
 
-            // One fill under all three, since two translucent fills meeting on
-            // a fractional pixel leave a seam.
-            Rectangle {
-                implicitWidth: stats.implicitWidth
-                height: parent.height
-                radius: height / 2
-                color: Theme.alpha(Theme.backgroundLight, 0.8)
+            Segment {
+                Network {}
 
-                Row {
-                    id: stats
-
-                    height: parent.height
-
-                    Pill {
-                        fill: "transparent"
-                        hoverable: false
-                        rightPadding: 8
-                        text: `CPU ${Stats.cpu}%`
-                        tooltip: Stats.cpuTooltip
+                Pill {
+                    hoverable: false
+                    tooltip: Stats.cpuTooltip
+                    tooltipContent: Component {
+                        CoreChart {}
                     }
 
-                    Pill {
-                        fill: "transparent"
-                        hoverable: false
-                        leftPadding: 8
-                        rightPadding: 8
-                        text: `RAM ${Stats.memory}%`
-                        tooltip: Stats.memoryTooltip
+                    Caption {
+                        anchors.baseline: cpuFigure.baseline
+                        text: "cpu"
                     }
 
-                    Pill {
-                        fill: Theme.alpha(Theme.backgroundLight, 0)
-                        leftPadding: 8
-                        roundLeft: false
-                        text: `DISK ${Stats.disk}%`
-                        // The stylesheet's intent; Waybar's disk module never sets the class.
-                        textColor: Stats.disk >= 90 ? Theme.red : "#ffffff"
-                        tooltip: Stats.diskTooltip
-                        onClicked: button => {
-                            if (button === Qt.LeftButton)
-                                Quickshell.execDetached([Programs.pcmanfm, "/"]);
-                        }
+                    CoreBars {
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Figure {
+                        id: cpuFigure
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        widest: "100%"
+                        text: `${Stats.cpu}%`
+                    }
+                }
+
+                Pill {
+                    hoverable: false
+                    tooltip: Stats.memoryTooltip
+
+                    Caption {
+                        anchors.baseline: ramFigure.baseline
+                        text: "ram"
+                    }
+
+                    Meter {
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: Stats.memory / 100
+                    }
+
+                    Figure {
+                        id: ramFigure
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        widest: "100%"
+                        text: `${Stats.memory}%`
+                    }
+                }
+
+                Pill {
+                    tooltip: Stats.diskTooltip
+                    onClicked: button => {
+                        if (button === Qt.LeftButton)
+                            Quickshell.execDetached([Programs.pcmanfm, "/"]);
+                    }
+
+                    Caption {
+                        anchors.baseline: diskFigure.baseline
+                        text: "disk"
+                    }
+
+                    Meter {
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: Stats.disk / 100
+                    }
+
+                    // The stylesheet's intent; Waybar's disk module never sets the class.
+                    Figure {
+                        id: diskFigure
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        widest: "100%"
+                        text: `${Stats.disk}%`
+                        color: Stats.disk >= 90 ? Theme.red : "#ffffff"
                     }
                 }
             }
 
-            Volume {}
+            Segment {
+                Volume {}
 
-            Tray {}
+                Tray {}
+            }
 
-            Clock {}
+            Segment {
+                Clock {}
 
-            Power {}
+                Power {}
+            }
         }
     }
 }

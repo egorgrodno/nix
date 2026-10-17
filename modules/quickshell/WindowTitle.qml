@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 import Quickshell
 import Quickshell.Hyprland
 
@@ -58,14 +57,6 @@ Item {
         width: Math.max(0, Math.min(implicitWidth, 50 * metrics.charWidth, root.maxWidth - 32))
         text: root.text
         elide: Text.ElideRight
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            shadowEnabled: true
-            shadowColor: Qt.rgba(0, 0, 0, 0.7)
-            shadowVerticalOffset: 1
-            shadowHorizontalOffset: 0
-            shadowBlur: 0.25
-        }
     }
 
     MouseArea {

@@ -1,13 +1,15 @@
 import QtQuick
 import Quickshell
 
-// A GTK tooltip as Waybar styles it: under the module, centred on where the
-// pointer came to rest, after half a second's hover.
+// Under the module, centred on where the pointer came to rest, after half a
+// second's hover, as GTK places a tooltip.
 PopupWindow {
     id: tip
 
     required property Item target
     property string text
+    // Built in place of the text.
+    property Component content: null
     property bool hovered
     // Pointer x in the target, read when the tooltip opens.
     property real pointerX
@@ -44,14 +46,14 @@ PopupWindow {
         }
     }
 
-    onTextChanged: if (text === "")
+    onTextChanged: if (text === "" && !content)
         dismiss()
 
     Timer {
         id: delay
 
         onTriggered: {
-            if (tip.text === "")
+            if (tip.text === "" && !tip.content)
                 return;
             tip.openedAt = tip.pointerX;
             tip.visible = true;
@@ -62,22 +64,28 @@ PopupWindow {
     Rectangle {
         id: box
 
-        // Border, the GTK theme's padding and Waybar's label padding, summed.
-        implicitWidth: label.implicitWidth + 2 * 16
-        implicitHeight: label.implicitHeight + 2 * 12
-        color: Theme.backgroundMain
-        border.color: Theme.blue
-        border.width: 2
+        implicitWidth: (body.item?.implicitWidth ?? label.implicitWidth) + 2 * 16
+        implicitHeight: (body.item?.implicitHeight ?? label.implicitHeight) + 2 * 12
+        color: Theme.alpha(Theme.backgroundMain, 0.97)
+        border.color: Qt.rgba(1, 1, 1, 0.08)
+        border.width: 1
         radius: Theme.radius
-        opacity: 0.95
 
         BarText {
             id: label
 
             anchors.centerIn: parent
+            visible: !body.item
             text: tip.text
-            lineHeight: 25
+            lineHeight: 24
             lineHeightMode: Text.FixedHeight
+        }
+
+        Loader {
+            id: body
+
+            anchors.centerIn: parent
+            sourceComponent: tip.content
         }
     }
 }
