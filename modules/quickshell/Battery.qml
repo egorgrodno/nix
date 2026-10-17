@@ -94,7 +94,7 @@ Pill {
     Timer {
         id: retry
 
-        interval: 1000
+        interval: 5000
         onTriggered: battery.sample()
     }
 }
