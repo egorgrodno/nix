@@ -34,20 +34,21 @@ PanelWindow {
     }
 
     screen: bar?.screen ?? null
+    // The strip between the bars, reaching over each as far as the box slides,
+    // so the box moves unclipped and the surface never resizes: Hyprland draws
+    // a resize in flight by stretching the last frame. Input is taken only
+    // within the box.
     anchors {
         left: true
-        top: !upward
-        bottom: upward
+        top: true
+        bottom: true
     }
-    // The window reaches over the bar as far as the box slides, so the box moves
-    // unclipped, and takes input only within the box.
     margins {
         top: Theme.barHeight + 4 - Theme.slide
         bottom: Theme.barHeight + 4 - Theme.slide
     }
     exclusionMode: ExclusionMode.Ignore
     implicitWidth: 360
-    implicitHeight: box.height + Theme.slide
     color: "transparent"
     focusable: true
     mask: Region {
@@ -76,57 +77,65 @@ PanelWindow {
         onCleared: panel.close()
     }
 
-    Rectangle {
-        id: box
-
+    // Where the box rests, against the bar with the gap between, its edge on
+    // the bar's side fixed as the box eases to a new height.
+    Item {
         width: parent.width
-        height: column.implicitHeight + 2 * 20
-        // At rest at the window's end away from the bar, starting at the bar's.
-        y: panel.upward ? (panel.open ? 0 : Theme.slide) : (panel.open ? Theme.slide : 0)
-        opacity: panel.open ? 1 : 0
-        color: Theme.alpha(Theme.backgroundMain, 0.97)
-        border.color: Qt.rgba(1, 1, 1, 0.08)
-        border.width: 1
-        radius: Theme.radius
-        clip: true
-        focus: true
-        Keys.onEscapePressed: panel.close()
-        onOpacityChanged: if (!panel.open && opacity === 0)
-            panel.dismissed()
+        height: box.height
+        y: panel.upward ? parent.height - Theme.slide - height : Theme.slide
 
-        // One curve both ways: a Behavior starts before the animation's own
-        // bindings see `open` change, so a curve bound to it takes the previous
-        // transition's.
-        Behavior on y {
-            NumberAnimation {
-                duration: 200
-                easing.type: Easing.OutExpo
+        Rectangle {
+            id: box
+
+            width: parent.width
+            height: column.implicitHeight + 2 * 20
+            // Starting under the bar's edge.
+            y: panel.open ? 0 : panel.upward ? Theme.slide : -Theme.slide
+            opacity: panel.open ? 1 : 0
+            color: Theme.alpha(Theme.backgroundMain, 0.97)
+            border.color: Qt.rgba(1, 1, 1, 0.08)
+            border.width: 1
+            radius: Theme.radius
+            clip: true
+            focus: true
+            Keys.onEscapePressed: panel.close()
+            onOpacityChanged: if (!panel.open && opacity === 0)
+                panel.dismissed()
+
+            // One curve both ways: a Behavior starts before the animation's own
+            // bindings see `open` change, so a curve bound to it takes the
+            // previous transition's.
+            Behavior on y {
+                NumberAnimation {
+                    duration: 200
+                    easing.type: Easing.OutExpo
+                }
             }
-        }
 
-        Behavior on opacity {
-            NumberAnimation {
-                duration: 200
-                easing.type: Easing.OutExpo
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 200
+                    easing.type: Easing.OutExpo
+                }
             }
-        }
 
-        Behavior on height {
-            enabled: panel.settled
+            Behavior on height {
+                enabled: panel.settled
 
-            NumberAnimation {
-                duration: 200
-                easing.type: Easing.OutExpo
+                NumberAnimation {
+                    duration: 200
+                    easing.type: Easing.OutExpo
+                }
             }
-        }
 
-        Column {
-            id: column
+            Column {
+                id: column
 
-            x: 20
-            y: 20
-            width: parent.width - 40
-            spacing: 20
+                x: 20
+                y: 20
+                width: parent.width - 40
+                spacing: 20
+            }
         }
     }
 }
