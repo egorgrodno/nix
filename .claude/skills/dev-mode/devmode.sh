@@ -21,7 +21,6 @@ paths_of() {
   hyprlock) echo ".config/hypr/hyprlock.conf" ;;
   hypridle) echo ".config/hypr/hypridle.conf" ;;
   kitty) echo ".config/kitty" ;;
-  dunst) echo ".config/dunst" ;;
   wofi) echo ".config/wofi" ;;
   wlogout) echo ".config/wlogout" ;;
   nvim) echo ".config/nvim" ;;
@@ -46,7 +45,6 @@ reload_of() {
   # place, so it needs a restart before it reloads on save.
   quickshell) echo "systemctl --user restart quickshell" ;;
   kitty) echo "pkill -USR1 kitty" ;;
-  dunst) echo "dunstctl reload" ;;
   *) echo "" ;;
   esac
 }
@@ -367,7 +365,7 @@ cmd_verify() {
 
 cmd_list() {
   echo "known targets:"
-  for name in quickshell hyprland hyprlock hypridle kitty dunst wofi wlogout nvim zsh git gtk vifm ripgrep less mimeapps udiskie; do
+  for name in quickshell hyprland hyprlock hypridle kitty wofi wlogout nvim zsh git gtk vifm ripgrep less mimeapps udiskie; do
     printf '  %-10s %s\n' "$name" "$(paths_of "$name")"
   done
   echo "any other name falls back to .config/<name>"

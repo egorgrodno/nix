@@ -81,6 +81,7 @@ let
         readonly property string rfkill: "${lib.getExe' pkgs.util-linux "rfkill"}"
         readonly property string systemctl: "${lib.getExe' config.systemd.package "systemctl"}"
         readonly property string wlogout: "${lib.getExe pkgs.wlogout}"
+        readonly property string xdgOpen: "${lib.getExe' pkgs.xdg-utils "xdg-open"}"
     }
   '';
 
@@ -119,6 +120,15 @@ in
       };
 
       xdg.configFile = configFiles;
+
+      # Quickshell is the notification daemon: a notification sent while the
+      # bar is down starts it rather than failing.
+      xdg.dataFile."dbus-1/services/org.freedesktop.Notifications.service".text = ''
+        [D-BUS Service]
+        Name=org.freedesktop.Notifications
+        Exec=${lib.getExe' pkgs.coreutils "false"}
+        SystemdService=quickshell.service
+      '';
 
       # Tray applets order after tray.target, which pulls the bar in. Without
       # `ConditionEnvironment` the bar starts against a missing compositor and

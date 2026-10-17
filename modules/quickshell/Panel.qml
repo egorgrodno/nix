@@ -8,7 +8,8 @@ import Quickshell.Wayland
 // since Hyprland drops a popup's grab whenever another layer surface unmaps, as
 // an expiring notification does. A click outside closes it, through Hyprland's
 // focus grab, as Escape does. It slides out of the bar as it fades in, and
-// back, and eases to a new height when its content changes.
+// back, and eases to a new height when its content changes. On `overlay`,
+// above the notification popups, which it holds while it is open.
 PanelWindow {
     id: panel
 
@@ -52,6 +53,7 @@ PanelWindow {
     mask: Region {
         item: box
     }
+    WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-panel"
 
     // Placed once: a module that changes width while the panel is open would
@@ -61,7 +63,10 @@ PanelWindow {
         margins.left = Math.max(Theme.outerGap, Math.min(x + (module.width - implicitWidth) / 2, bar.width - Theme.outerGap - implicitWidth));
         open = true;
         Qt.callLater(() => settled = true);
+        Notifications.panels = [...Notifications.panels, panel];
     }
+
+    Component.onDestruction: Notifications.panels = Notifications.panels.filter(p => p !== panel)
 
     HyprlandFocusGrab {
         id: grab

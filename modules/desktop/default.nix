@@ -1039,6 +1039,8 @@ in
               "$mod, M, exec, pwvucontrol"
               "$mod, W, exec, pcmanfm"
               "$mod SHIFT, R, exec, systemctl --user restart quickshell"
+              "$mod, grave, exec, quickshell ipc call notifications dismiss"
+              "$mod SHIFT, grave, exec, quickshell ipc call notifications dismissAll"
               "$mod SHIFT, S, exec, hypr-monitor-scale"
               "$mod, R, submap, resize"
               "$mod, 0, exec, wlogout"
@@ -1123,12 +1125,20 @@ in
             ", mouse:276, movewindow"
           ];
 
-          # Quickshell's panels animate themselves, sliding out of the bar.
+          # Quickshell's panels and notification popups animate themselves,
+          # sliding out of the bar. Both sit on `overlay`, where Hyprland draws
+          # a higher `order` first, so the popups go beneath the panels.
           layerrule = [
             {
               name = "quickshell-panel";
               "match:namespace" = "^(quickshell-panel)$";
               no_anim = true;
+            }
+            {
+              name = "quickshell-notifications";
+              "match:namespace" = "^(quickshell-notifications)$";
+              no_anim = true;
+              order = 1;
             }
           ];
 
@@ -1612,45 +1622,6 @@ in
         };
         Service.ExecStart = "${pkgs.wlsunset}/bin/wlsunset -S 07:00 -s 18:30 -T 6500 -t 3500 -d 7200";
         Install.WantedBy = [ "graphical-session.target" ];
-      };
-
-      services.dunst = {
-        enable = true;
-
-        settings = {
-          global = {
-            # `follow` is what takes keyboard/mouse; setting it overrides
-            # `monitor`, which wants an output name or index instead.
-            follow = "keyboard";
-            notification_limit = 5;
-            font = "${theme.fontMono} 12";
-            background = theme.background.light;
-            foreground = theme.foreground.main;
-            width = "(200, 500)";
-            offset = "30x30";
-            padding = 12;
-            horizontal_padding = 14;
-            frame_width = 2;
-          };
-
-          urgency_low = {
-            frame_color = theme.foreground.dark;
-            highlight = theme.blue;
-            timeout = 5;
-          };
-
-          urgency_normal = {
-            frame_color = theme.blue;
-            highlight = theme.blue;
-            timeout = 15;
-          };
-
-          urgency_critical = {
-            frame_color = theme.red;
-            highlight = theme.red;
-            timeout = 0;
-          };
-        };
       };
     });
   };

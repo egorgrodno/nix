@@ -7,7 +7,7 @@ description: >
   Trigger on "dev mode", "live edit", "tweak the bar", "iterate on the quickshell
   QML", "iterate on the hyprland config", "try some colors", or any request to see a
   config change quickly instead of rebuilding. Covers quickshell, hyprland, hyprlock,
-  kitty, wofi, wlogout, dunst, nvim, zsh, gtk and anything else home-manager writes
+  kitty, wofi, wlogout, nvim, zsh, gtk and anything else home-manager writes
   into ~/.config.
 ---
 
@@ -56,7 +56,6 @@ Any name not in `list` falls back to `~/.config/<name>`.
 |---|---|
 | `hyprland` | `hyprctl reload` |
 | `kitty` | `pkill -USR1 kitty`. All windows, live. |
-| `dunst` | `dunstctl reload` |
 | `hypridle` | `systemctl --user restart hypridle` |
 | `quickshell` | `systemctl --user restart quickshell`. It reloads on save by itself, but only once restarted after `on`, and a text-rendering change needs a restart regardless. |
 | `hyprlock`, `wofi`, `wlogout` | No signal — config is read at launch, so just launch it again. |
@@ -77,7 +76,6 @@ This is the part that matters — dev mode is scratch space, and nothing survive
 | `.config/kitty/*` | `modules/desktop/default.nix` — `programs.kitty` (~411) |
 | `.config/wofi/config`, `style.css` | `modules/desktop/default.nix` (~779, ~797) |
 | `.config/wlogout/layout`, `style.css` | `modules/desktop/default.nix` (~854, ~863) |
-| `.config/dunst/dunstrc` | `modules/desktop/default.nix` — `services.dunst` (~1064) |
 | `.config/gtk-3.0/settings.ini`, `gtk-4.0` | `modules/desktop/default.nix` — `gtk` (~1011) |
 | `.config/nvim/init.lua` | `modules/neovim/hm.nix` |
 | `.config/nvim/lua/config.lua` | `modules/neovim/lua-config.nix` |
@@ -102,7 +100,7 @@ Never skip step 4. A port that looks right and a port that regenerates the file 
 
 - **Interpolated store paths.** `wlogout: "${lib.getExe pkgs.wlogout}"` in `Programs.qml` renders as `wlogout: "/nix/store/6rkhi5…-wlogout-1.2.2/bin/wlogout"`. Porting that back verbatim pins a store path that dies at the next garbage collection. Restore the `${pkgs.…}` form.
 - **Theme colors.** A hex value in a diff is almost always a `theme.*` reference rendered out — `#16191D` is `theme.background.main`, `#61AFEF` is `theme.blue`. A literal undoes the theme routing. If the color is genuinely new, add it to `theme` in `flake.nix`.
-- **Attrsets rendered as text.** Kitty, hyprland and dunst configs come from Nix attrsets. `font_size 12.0` is `programs.kitty.settings.font_size = 12.0`, not a string to paste into a text block.
+- **Attrsets rendered as text.** Kitty and hyprland configs come from Nix attrsets. `font_size 12.0` is `programs.kitty.settings.font_size = 12.0`, not a string to paste into a text block.
 - **Resolved conditionals.** The live file contains one branch. The others are invisible in the diff and are the easiest thing to break — see below.
 
 ### Conditional branches
