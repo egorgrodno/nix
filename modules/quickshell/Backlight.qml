@@ -4,8 +4,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// The backlight brightnessctl picks by default, as the brightness keys do.
-// Writes go through brightnessctl, since the sysfs file is root's.
+// The backlight brightnessctl picks by default, as the brightness keys do, and
+// its adaptive backlight management. Both sysfs files are root's, so the level
+// goes through brightnessctl and ABM through a unit the session may start.
 Singleton {
     id: root
 
@@ -15,36 +16,65 @@ Singleton {
     // Raw, as last read or set.
     property int level
     readonly property int percent: max > 0 ? Math.round(level * 100 / max) : 0
-    // A write waiting for the one in flight; a newer value replaces it.
-    property int pending: -1
+    // ABM, 0 for off to 4, as last read or set; -1 where the panel has none.
+    // TLP sets it with each profile, overriding a level set here.
+    property int abm: -1
 
+    // Skips a value with a write in flight, since reading it would undo the write.
     function read() {
-        // A read during a write would undo the level just set.
-        if (device === "" || writer.running || pending >= 0)
+        if (device === "")
             return;
-        current.reload();
-        level = parseInt(current.text());
+        if (!writer.busy) {
+            current.reload();
+            level = parseInt(current.text());
+        }
+        if (!abmWriter.busy) {
+            abmFile.reload();
+            abm = abmFile.loaded ? parseInt(abmFile.text()) : -1;
+        }
     }
 
     function set(raw) {
         if (device === "")
             return;
         level = Math.max(0, Math.min(max, raw));
-        pending = level;
-        if (!writer.running)
-            flush();
+        writer.submit([Programs.brightnessctl, "-q", "-d", device, "set", String(level)]);
     }
 
     function setPercent(percent) {
         set(Math.round(percent * max / 100));
     }
 
-    function flush() {
-        if (pending < 0)
+    function setAbm(value) {
+        if (abm < 0 || value === abm)
             return;
-        writer.command = [Programs.brightnessctl, "-q", "-d", device, "set", String(pending)];
-        pending = -1;
-        writer.running = true;
+        abm = value;
+        abmWriter.submit([Programs.systemctl, "start", `adaptive-backlight@${value}.service`]);
+    }
+
+    // Runs one command at a time. One submitted meanwhile waits, and a newer
+    // one replaces it.
+    component Queue: Process {
+        id: queue
+
+        property var next: null
+        readonly property bool busy: running || next !== null
+
+        function submit(command) {
+            next = command;
+            if (!running)
+                flush();
+        }
+
+        function flush() {
+            if (next === null)
+                return;
+            command = next;
+            next = null;
+            running = true;
+        }
+
+        onExited: Qt.callLater(queue.flush)
     }
 
     // device,class,current,percent,max
@@ -70,9 +100,20 @@ Singleton {
         blockAllReads: true
     }
 
-    Process {
-        id: writer
+    // The backlight's device is the panel's connector.
+    FileView {
+        id: abmFile
 
-        onExited: Qt.callLater(root.flush)
+        path: root.device ? `/sys/class/backlight/${root.device}/device/amdgpu/panel_power_savings` : ""
+        blockAllReads: true
+        printErrors: false
+    }
+
+    Queue {
+        id: writer
+    }
+
+    Queue {
+        id: abmWriter
     }
 }

@@ -101,6 +101,14 @@ let
     '';
   };
 
+  # TLP sets the level with each profile, so one set here holds until the next
+  # profile change. The backlight's device is the panel's connector.
+  adaptiveBacklight = pkgs.writeShellScript "adaptive-backlight" ''
+    for f in /sys/class/backlight/*/device/amdgpu/panel_power_savings; do
+      echo "$1" > "$f"
+    done
+  '';
+
   # systemd-sleep reads its configuration when it starts, so the drop-in is
   # decided here from the profile TLP last applied, whoever chose it. The first
   # field of last_pwr is that profile, 2 for power-saver.
@@ -196,13 +204,21 @@ in
       };
     };
 
-    # An active local session toggles the limit without sudo, through the two
-    # charge-limit@ instances and nothing else.
+    systemd.services."adaptive-backlight@" = {
+      description = "Set adaptive backlight management to level %i";
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = "${adaptiveBacklight} %i";
+      };
+    };
+
+    # An active local session toggles the limit and sets the adaptive backlight
+    # level without sudo, through these instances and nothing else.
     security.polkit.extraConfig = ''
       polkit.addRule(function (action, subject) {
         if (action.id == "org.freedesktop.systemd1.manage-units" &&
             action.lookup("verb") == "start" &&
-            /^charge-limit@(on|off)\.service$/.test(action.lookup("unit")) &&
+            /^(charge-limit@(on|off)|adaptive-backlight@[0-4])\.service$/.test(action.lookup("unit")) &&
             subject.active && subject.local) {
           return polkit.Result.YES;
         }

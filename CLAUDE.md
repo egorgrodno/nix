@@ -82,7 +82,7 @@ users = [
 
 **Bar.** `my.desktop.bar` selects `waybar` (default) or `quickshell`; its systemd user unit has the same name, which `$mod SHIFT R` restarts. `barHeight` in `modules/desktop/` is the strip either bar reserves, and a window docked under a bar module takes offsets measured off the selected bar. `modules/quickshell/` keeps its QML beside the module and generates `Theme.qml` from `theme` and `barHeight`, and `Programs.qml` with store paths, since the user service has no useful PATH.
 
-**Power panel.** Where UPower reports a laptop battery, a click on Quickshell's battery module opens a popup: charge and time to empty or full, profile buttons through tlp-pd, a brightness slider through brightnessctl, and a charge-limit toggle that starts `charge-limit@on|off`. Entering power-saver saves the backlight level and dims to 30%, never brightening; leaving it restores the saved level. The slider overrides at any time. The saved level lives in Quickshell's state directory, so a bar restarted mid-power-saver neither dims again nor forgets it.
+**Power panel.** Where UPower reports a laptop battery, a click on Quickshell's battery module opens a popup: charge and time to empty or full, profile buttons through tlp-pd, a brightness slider through brightnessctl, an adaptive backlight slider, and a charge-limit toggle that starts `charge-limit@on|off`. Entering power-saver saves the backlight level and dims to 30%, never brightening; leaving it restores the saved level. The slider overrides at any time. The saved level lives in Quickshell's state directory, so a bar restarted mid-power-saver neither dims again nor forgets it.
 
 **Idle.** hypridle dims, locks, and runs `suspend-then-hibernate` after the minutes of idle below, by the profile TLP last applied; a host without TLP takes the performance row. The suspend turns the screen off, and trails a lock in the same minute by 5 s. One hypridle runs every profile's listeners, since a restart would drop the D-Bus idle inhibits it holds. A listener runs its step once the step is due under the active profile, so a profile change mid-idle can delay a step to the performance row but never skip it. A fullscreen window inhibits idle. A host **must** declare swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
 
@@ -107,6 +107,8 @@ users = [
 **Profiles.** TLP applies `performance`, `balanced` and `power-saver` but never picks one (`TLP_AUTO_SWITCH=0`). `power-profile-sync` picks on every power_supply event, every minute, and after each TLP start: performance on AC, balanced on battery, power-saver at or below 20%. A choice made through tlp-pd holds until the next plug event. Power-saver hibernates 5 minutes after suspend; an `ExecStartPre` on `systemd-suspend-then-hibernate.service` writes that drop-in at suspend time.
 
 **Charge limit.** `charge-limit on|off` holds the battery between 75% and 80%, on unless `/var/lib/charge-limit/off` exists. A polkit rule lets the active session start `charge-limit@on` and `charge-limit@off`, so it needs no sudo.
+
+**Adaptive backlight.** TLP sets amdgpu's ABM (`panel_power_savings`) with each profile: 0 in performance, 1 in balanced, 3 in power-saver. It lowers the backlight below the level brightnessctl reports and brightens the pixels to make up for it. `adaptive-backlight@<0-4>` sets a level until the next profile change, and the same polkit rule lets the session start it.
 
 ### Theme
 
