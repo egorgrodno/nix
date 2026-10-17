@@ -1,9 +1,10 @@
 import QtQuick
+import Quickshell
 import Quickshell.Io
 import Quickshell.Services.UPower
 
 // Shown only where UPower reports a laptop battery, which also hides it where
-// the UPower daemon does not run at all. Click swaps the charge for the time.
+// the UPower daemon does not run at all. Click opens the power panel.
 Pill {
     id: battery
 
@@ -35,7 +36,6 @@ Pill {
         return hours === 0 && minutes === 0 ? "" : `${hours} h ${minutes} min`;
     }
     readonly property string icon: ["", "", "", "", ""][Math.min(Math.trunc(capacity / 20), 4)]
-    property bool alt: false
 
     function sample() {
         energyNow.reload();
@@ -51,12 +51,12 @@ Pill {
     }
 
     visible: device.isLaptopBattery
-    hoverable: false
-    text: status === "Charging" || status === "Plugged" ? ` ${capacity}%` : alt ? `${time} ${icon}` : `${icon} ${capacity}%`
-    tooltip: time === "" ? status : `${status === "Discharging" ? "Empty" : "Full"} in ${time}`
+    text: status === "Charging" || status === "Plugged" ? ` ${capacity}%` : `${icon} ${capacity}%`
+    // Lit while its panel is open, as on hover.
+    fill: panel.active ? hoverFill : Theme.alpha(Theme.backgroundLight, 0.8)
     onClicked: button => {
         if (button === Qt.LeftButton)
-            alt = !alt;
+            panel.active = !panel.active;
     }
     onStatusChanged: sample()
     // Once the paths follow it.
@@ -96,5 +96,17 @@ Pill {
 
         interval: 5000
         onTriggered: battery.sample()
+    }
+
+    // Built on opening, so a host without a battery never starts the services
+    // it reads.
+    LazyLoader {
+        id: panel
+
+        PowerPanel {
+            module: battery
+            onVisibleChanged: if (!visible)
+                panel.active = false
+        }
     }
 }

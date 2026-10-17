@@ -82,6 +82,8 @@ users = [
 
 **Bar.** `my.desktop.bar` selects `waybar` (default) or `quickshell`; its systemd user unit has the same name, which `$mod SHIFT R` restarts. `barHeight` in `modules/desktop/` is the strip either bar reserves, and a window docked under a bar module takes offsets measured off the selected bar. `modules/quickshell/` keeps its QML beside the module and generates `Theme.qml` from `theme` and `barHeight`, and `Programs.qml` with store paths, since the user service has no useful PATH.
 
+**Power panel.** Where UPower reports a laptop battery, a click on Quickshell's battery module opens a popup: charge and time to empty or full, profile buttons through tlp-pd, a brightness slider through brightnessctl, and a charge-limit toggle that starts `charge-limit@on|off`. Entering power-saver saves the backlight level and dims to 30%, never brightening; leaving it restores the saved level. The slider overrides at any time. The saved level lives in Quickshell's state directory, so a bar restarted mid-power-saver neither dims again nor forgets it.
+
 **Idle.** hypridle dims, locks, and runs `suspend-then-hibernate` after the minutes of idle below, by the profile TLP last applied; a host without TLP takes the performance row. The suspend turns the screen off, and trails a lock in the same minute by 5 s. One hypridle runs every profile's listeners, since a restart would drop the D-Bus idle inhibits it holds. A listener runs its step once the step is due under the active profile, so a profile change mid-idle can delay a step to the performance row but never skip it. A fullscreen window inhibits idle. A host **must** declare swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
 
 | Profile | Dim | Lock | Suspend | Hibernate |

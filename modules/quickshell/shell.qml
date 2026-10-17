@@ -9,4 +9,7 @@ ShellRoot {
 
         Bar {}
     }
+
+    // Once for the shell, not per screen.
+    PowerSaverDim {}
 }
