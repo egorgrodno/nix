@@ -29,6 +29,13 @@
       sleep 1
       echo i2c-SYNA8019:00 | sudo tee $driver/bind >/dev/null
     '')
+    # Reloading the driver resets the Wi-Fi card. ath11k can stop completing
+    # WPA handshakes, associating and then timing out, until then.
+    (pkgs.writeShellScriptBin "wifi-reset" ''
+      sudo modprobe -r ath11k_pci
+      sleep 1
+      sudo modprobe ath11k_pci
+    '')
   ];
 
   boot.loader = {
