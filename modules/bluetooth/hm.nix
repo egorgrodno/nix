@@ -15,4 +15,9 @@
     '')
     (writeShellScriptBin "btoff" "rfkill block bluetooth")
   ];
+
+  # The applet runs only under blueman-manager, for its pairing agent, and the
+  # bar's module already shows Bluetooth. Without its StatusNotifierItem the
+  # applet falls back to GtkStatusIcon, which draws nothing on Wayland.
+  dconf.settings."org/blueman/general".plugin-list = [ "!StatusNotifierItem" ];
 }
