@@ -10,9 +10,10 @@ Panel {
 
     readonly property Nm.WifiDevice wifi: module.wifi
     readonly property Nm.WiredDevice wired: module.wired
-    // Connected first, then known, then by the module's strength steps, so a
-    // wavering signal does not reorder the list under the pointer.
-    readonly property var networks: (wifi?.networks.values ?? []).filter(n => n.name !== "").sort((a, b) => b.connected - a.connected || b.known - a.known || module.bars(b.signalStrength) - module.bars(a.signalStrength) || a.name.localeCompare(b.name))
+    // Connected first, then any whose join just failed, so its password field
+    // shows, then known, then by the module's strength steps, so a wavering
+    // signal does not reorder the list under the pointer.
+    readonly property var networks: (wifi?.networks.values ?? []).filter(n => n.name !== "").sort((a, b) => b.connected - a.connected || (b.name in WifiJoin.failures) - (a.name in WifiJoin.failures) || b.known - a.known || module.bars(b.signalStrength) - module.bars(a.signalStrength) || a.name.localeCompare(b.name))
 
     function openEditor(args) {
         Quickshell.execDetached([Programs.nmConnectionEditor].concat(args));
@@ -22,8 +23,11 @@ Panel {
     // Quickshell lists a network it does not know only while scanning, so the
     // scanner, which the module starts, runs as long as the panel is open.
     Component.onCompleted: Vpn.refresh()
-    Component.onDestruction: if (wifi)
-        wifi.scannerEnabled = false
+    Component.onDestruction: {
+        if (wifi)
+            wifi.scannerEnabled = false;
+        WifiJoin.clear();
+    }
 
     // A small button, lit while `lit` is set, as a confirmation waits.
     component Action: Rectangle {
@@ -125,16 +129,21 @@ Panel {
     }
 
     // A network in range: a click connects, or asks for the password a new WPA
-    // network needs. On hover, a known network offers Forget, which takes a
-    // second click, and the connected one Disconnect too.
+    // network needs. On hover, the connected network offers Disconnect, one
+    // connecting Stop, and a known one Forget, which takes a second click.
     component NetworkRow: Column {
         id: row
 
         required property Nm.WifiNetwork modelData
         required property string glyph
+        // The bar module whose panel reopens if a join fails.
+        property Item origin
         readonly property bool psk: [Nm.WifiSecurityType.WpaPsk, Nm.WifiSecurityType.Wpa2Psk, Nm.WifiSecurityType.Sae].includes(modelData.security)
         readonly property bool open: [Nm.WifiSecurityType.Open, Nm.WifiSecurityType.Owe].includes(modelData.security)
-        property bool asking: false
+        readonly property bool connecting: modelData.state === Nm.ConnectionState.Connecting
+        // Why a join from the panel failed, which forgot the network.
+        readonly property string joinFailure: WifiJoin.failures[modelData.name] ?? ""
+        property bool asking: joinFailure !== ""
         property bool armed: false
         property string failure: ""
 
@@ -158,10 +167,17 @@ Panel {
                 return;
             failure = "";
             asking = false;
-            modelData.connectWithPsk(password.text);
+            if (modelData.known)
+                modelData.connectWithPsk(password.text);
+            else
+                WifiJoin.join(modelData, password.text, origin);
             password.text = "";
         }
 
+        Component.onCompleted: if (asking)
+            password.forceActiveFocus()
+        onJoinFailureChanged: if (joinFailure !== "")
+            asking = true
         onAskingChanged: if (asking)
             password.forceActiveFocus()
 
@@ -215,7 +231,7 @@ Panel {
             Row {
                 id: side
 
-                readonly property bool acting: hover.hovered && (row.modelData.connected || row.modelData.known && !row.modelData.stateChanging)
+                readonly property bool acting: hover.hovered && (row.modelData.connected || row.modelData.known || row.connecting)
 
                 anchors.right: parent.right
                 anchors.rightMargin: 6
@@ -242,6 +258,13 @@ Panel {
 
                 Action {
                     anchors.verticalCenter: parent.verticalCenter
+                    visible: side.acting && row.connecting
+                    text: "Stop"
+                    onClicked: row.modelData.device.disconnect()
+                }
+
+                Action {
+                    anchors.verticalCenter: parent.verticalCenter
                     visible: side.acting && row.modelData.connected
                     text: "Disconnect"
                     onClicked: row.modelData.disconnect()
@@ -249,7 +272,7 @@ Panel {
 
                 Action {
                     anchors.verticalCenter: parent.verticalCenter
-                    visible: side.acting
+                    visible: side.acting && row.modelData.known
                     text: row.armed ? "Forget?" : "Forget"
                     hoverFill: Theme.alpha(Theme.red, 0.5)
                     lit: row.armed
@@ -319,9 +342,9 @@ Panel {
 
         BarText {
             x: 8
-            visible: row.failure !== ""
+            visible: text !== ""
             bottomPadding: 8
-            text: row.failure
+            text: row.failure !== "" ? row.failure : row.joinFailure
             color: Theme.yellow
             font.pixelSize: 14
         }
@@ -410,6 +433,7 @@ Panel {
                     NetworkRow {
                         width: list.width
                         glyph: panel.module.strengthGlyph(modelData.signalStrength)
+                        origin: panel.module
                         onEditorWanted: panel.openEditor(["--create", "--type=802-11-wireless"])
                     }
                 }

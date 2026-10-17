@@ -150,6 +150,16 @@ Pill {
         rate: Stats.down
     }
 
+    // A join from this module's panel failed: reopen it to ask again.
+    Connections {
+        target: WifiJoin
+
+        function onFailed(origin) {
+            if (origin === network && !panel.active)
+                network.openPanel();
+        }
+    }
+
     // Built on opening, so the bar scans for networks only while it is open.
     LazyLoader {
         id: panel
