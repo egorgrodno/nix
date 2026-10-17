@@ -55,7 +55,8 @@ Singleton {
     }
 
     function remove(entry) {
-        entries = entries.filter(e => e !== entry);
+        if (entries.includes(entry))
+            entries = entries.filter(e => e !== entry);
         if (entry.imageFile !== "")
             Quickshell.execDetached([Programs.rm, "-f", entry.imageFile]);
         // Once the card has left, which reads it until then.
@@ -63,8 +64,12 @@ Singleton {
         save();
     }
 
-    function clear() {
-        for (const entry of entries.slice())
+    // Every entry, or those given, out of the list in one change, so a group
+    // in the panel leaves whole rather than card by card.
+    function clear(list) {
+        const gone = list ?? entries.slice();
+        entries = entries.filter(e => !gone.includes(e));
+        for (const entry of gone)
             entry.dismiss();
     }
 

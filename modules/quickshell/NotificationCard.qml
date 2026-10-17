@@ -8,8 +8,8 @@ import Quickshell.Widgets
 // a meter for a `value` hint, and a button per action. A click invokes the
 // default action, or dismisses where there is none; a right-click dismisses,
 // as does a drag right past a third of the width. Hovering holds the timer.
-// The panel shows each card's age, and slides in only those that arrive while
-// it is open.
+// The panel shows each card's age, without the app's name and icon under a
+// group's header, and slides in only those that arrive while it is open.
 Item {
     id: card
 
@@ -17,6 +17,7 @@ Item {
     readonly property var entry: modelData
     property bool expanded: false
     property bool showTime: false
+    property bool showApp: true
     property bool slideIn: true
     property color fill: Theme.alpha(Theme.backgroundMain, 0.97)
     // Set once created, so the card slides out of the bar as it fades in.
@@ -26,7 +27,7 @@ Item {
     // passes one.
     readonly property bool iconIsFile: entry.appIcon.startsWith("/") || entry.appIcon.startsWith("file://")
     readonly property string picture: entry.image !== "" ? entry.image : iconIsFile ? (entry.appIcon.startsWith("/") ? `file://${entry.appIcon}` : entry.appIcon) : ""
-    readonly property string icon: entry.appIcon === "" || iconIsFile ? "" : Quickshell.iconPath(entry.appIcon, true)
+    readonly property string icon: !showApp || entry.appIcon === "" || iconIsFile ? "" : Quickshell.iconPath(entry.appIcon, true)
     // Lines as breaks, and no images, which the server does not advertise.
     readonly property string bodyText: entry.body.replace(/<img\b[^>]*>/gi, "").replace(/\n/g, "<br>")
 
@@ -196,7 +197,7 @@ Item {
                             id: appName
 
                             width: parent.width - (card.icon !== "" ? 16 + parent.spacing : 0)
-                            text: card.showTime ? `${card.entry.appName} · ${Notifications.ageOf(card.entry.time)}` : card.entry.appName
+                            text: !card.showApp ? Notifications.ageOf(card.entry.time) : card.showTime ? `${card.entry.appName} · ${Notifications.ageOf(card.entry.time)}` : card.entry.appName
                             elide: Text.ElideRight
                         }
                     }
