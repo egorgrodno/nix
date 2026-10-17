@@ -681,6 +681,7 @@ in
           '';
         }))
         showtime
+        snapshot
 
         (writeShellScriptBin "cps" "2>/dev/null 1>/dev/null kitty -d $PWD & disown")
         nxe
