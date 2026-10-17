@@ -2,8 +2,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.Pipewire
 
-// The default source's mute state, then the default sink's volume. Scroll
-// steps by 5 up to 100%.
+// The default source's mute state, then the default sink's volume, each glyph
+// red while muted. Scroll steps by 5 up to 100%.
 Pill {
     id: volume
 
@@ -63,13 +63,14 @@ Pill {
         anchors.verticalCenter: parent.verticalCenter
         width: micGlyphs.implicitWidth + 4
         text: volume.source?.audio.muted ? "\u{F036D}" : "\u{EC1C}"
-        color: volume.source?.audio.muted ? Theme.red : Theme.foregroundMuted
+        color: volume.source?.audio.muted ? Theme.red : "#ffffff"
     }
 
     BarText {
         anchors.verticalCenter: parent.verticalCenter
         width: speakerGlyphs.implicitWidth
         text: volume.icon
+        color: volume.muted ? Theme.red : "#ffffff"
     }
 
     Meter {
