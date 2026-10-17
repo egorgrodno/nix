@@ -1,27 +1,24 @@
 import QtQuick
 import QtQuick.Shapes
 
-// The last minute of upload above the midline and download below it, each
-// scaled to its own peak, so a quiet direction still shows its shape.
+// The last minute of a rate, scaled to its own peak, so a quiet direction
+// still shows its shape.
 Shape {
     id: spark
 
-    property var up: []
-    property var down: []
-    // The smallest peak a half scales to, so idle traffic draws flat.
+    property var values: []
+    // The smallest peak it scales to, so idle traffic draws flat.
     property real floor: 8192
     property color color: Theme.foregroundMuted
     readonly property int samples: 30
 
-    // The area between the midline and the rates, above it for sign 1.
-    function area(values, sign) {
+    function area() {
         if (values.length < 2)
             return [];
-        const mid = height / 2;
         const peak = Math.max(floor, ...values);
         const step = width / (samples - 1);
         const start = samples - values.length;
-        return [Qt.point(start * step, mid)].concat(values.map((v, i) => Qt.point((start + i) * step, mid - sign * (mid - 1) * v / peak)), [Qt.point(width, mid)]);
+        return [Qt.point(start * step, height)].concat(values.map((v, i) => Qt.point((start + i) * step, height - (height - 1) * v / peak)), [Qt.point(width, height)]);
     }
 
     width: 40
@@ -34,22 +31,12 @@ Shape {
         strokeWidth: 1
 
         PathPolyline {
-            path: spark.area(spark.up, 1)
-        }
-    }
-
-    ShapePath {
-        fillColor: Theme.alpha(spark.color, 0.35)
-        strokeColor: spark.color
-        strokeWidth: 1
-
-        PathPolyline {
-            path: spark.area(spark.down, -1)
+            path: spark.area()
         }
     }
 
     Rectangle {
-        y: Math.round(parent.height / 2)
+        y: parent.height - 1
         width: parent.width
         height: 1
         color: Qt.rgba(1, 1, 1, 0.12)

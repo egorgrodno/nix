@@ -2,8 +2,8 @@ import QtQuick
 import Quickshell
 import Quickshell.Networking
 
-// The connection, a VPN shield where a VPN profile exists, then upload over
-// download, as rates beside a minute of history. Click opens the network
+// The connection, a VPN shield where a VPN profile exists, then upload and
+// download, each a minute of history beside its rate. Click opens the network
 // panel, right-click nm-connection-editor.
 Pill {
     id: network
@@ -56,6 +56,37 @@ Pill {
             Quickshell.execDetached([Programs.nmConnectionEditor]);
     }
 
+    component Direction: Row {
+        property alias icon: arrow.text
+        property alias values: spark.values
+        property alias rate: figure.text
+
+        anchors.verticalCenter: parent.verticalCenter
+        visible: !Stats.offline
+        spacing: 4
+
+        BarText {
+            id: arrow
+
+            anchors.verticalCenter: parent.verticalCenter
+            color: Theme.foregroundMuted
+            font.pixelSize: 12
+        }
+
+        Spark {
+            id: spark
+
+            anchors.verticalCenter: parent.verticalCenter
+        }
+
+        Figure {
+            id: figure
+
+            anchors.verticalCenter: parent.verticalCenter
+            widest: "999 Kb/s"
+        }
+    }
+
     // Slots as wide as the widest glyph each can show, measured as on the
     // volume module.
     BarText {
@@ -96,48 +127,16 @@ Pill {
         color: network.wifiOff ? Theme.foregroundMuted : Theme.yellow
     }
 
-    Spark {
-        anchors.verticalCenter: parent.verticalCenter
-        visible: !Stats.offline
-        up: Stats.upHistory
-        down: Stats.downHistory
+    Direction {
+        icon: "\u{F0737}"
+        values: Stats.upHistory
+        rate: Stats.up
     }
 
-    Column {
-        anchors.verticalCenter: parent.verticalCenter
-        visible: !Stats.offline
-
-        Repeater {
-            model: [
-                {
-                    icon: "\u{F0737}",
-                    rate: Stats.up
-                },
-                {
-                    icon: "\u{F072E}",
-                    rate: Stats.down
-                }
-            ]
-
-            Row {
-                required property var modelData
-
-                spacing: 4
-
-                BarText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: parent.modelData.icon
-                    color: Theme.foregroundMuted
-                    font.pixelSize: 12
-                }
-
-                Figure {
-                    widest: "999 Kb/s"
-                    text: parent.modelData.rate
-                    font.pixelSize: 13
-                }
-            }
-        }
+    Direction {
+        icon: "\u{F072E}"
+        values: Stats.downHistory
+        rate: Stats.down
     }
 
     // Built on opening, so the bar scans for networks only while it is open.

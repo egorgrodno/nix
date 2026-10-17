@@ -2,7 +2,8 @@ import QtQuick
 import Quickshell
 
 // The instruments, in a strip along the bottom edge as tall as the top bar's,
-// which leaves the top bar room to centre the workspaces.
+// which leaves the top bar room to centre the workspaces. Network takes the
+// left corner, the rest the right.
 PanelWindow {
     required property ShellScreen modelData
 
@@ -26,9 +27,13 @@ PanelWindow {
         }
 
         Segment {
-            anchors.right: parent.right
+            visible: Stats.sampled
 
             Network {}
+        }
+
+        Segment {
+            anchors.right: parent.right
 
             Pill {
                 hoverable: false
