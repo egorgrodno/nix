@@ -159,6 +159,9 @@ in
       description = "Select the power profile for the power source and charge";
       after = [ "tlp.service" ];
       wantedBy = [ "tlp.service" ];
+      # A plug event raises about three uevents, so the default limit of five
+      # starts in 10 s would drop the second of two quick plug events.
+      startLimitIntervalSec = 0;
       serviceConfig = {
         Type = "oneshot";
         ExecStart = lib.getExe powerProfileSync;
