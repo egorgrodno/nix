@@ -19,6 +19,17 @@
   # Wifi and Bluetooth firmware, and the AMD microcode the hardware file wires up.
   hardware.enableRedistributableFirmware = true;
 
+  environment.systemPackages = [
+    # Rebinding the driver resets the touchpad, which recalibrates it. One
+    # touched while it resumes can lose its left click until then.
+    (pkgs.writeShellScriptBin "touchpad-reset" ''
+      driver=/sys/bus/i2c/drivers/i2c_hid_acpi
+      echo i2c-SYNA8019:00 | sudo tee $driver/unbind >/dev/null
+      sleep 1
+      echo i2c-SYNA8019:00 | sudo tee $driver/bind >/dev/null
+    '')
+  ];
+
   boot.loader = {
     efi.canTouchEfiVariables = false;
     timeout = 0;
