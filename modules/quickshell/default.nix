@@ -73,6 +73,7 @@ let
         readonly property string bluemanManager: "${lib.getExe' pkgs.blueman "blueman-manager"}"
         readonly property string brightnessctl: "${lib.getExe pkgs.brightnessctl}"
         readonly property string df: "${lib.getExe' pkgs.coreutils "df"}"
+        readonly property string hyprctl: "${lib.getExe' config.programs.hyprland.package "hyprctl"}"
         readonly property string nmConnectionEditor: "${lib.getExe' pkgs.networkmanagerapplet "nm-connection-editor"}"
         readonly property string nmcli: "${lib.getExe' config.networking.networkmanager.package "nmcli"}"
         readonly property string notifySend: "${lib.getExe' pkgs.libnotify "notify-send"}"

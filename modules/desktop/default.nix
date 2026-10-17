@@ -465,53 +465,8 @@ in
       obsidian
       dconf
       ntfs3g
-      brightnessctl # backs the XF86MonBrightness binds
+      brightnessctl
       playerctl # backs the XF86Audio{Play,Pause,Prev,Next} binds
-
-      (writeShellScriptBin "notify-volume" ''
-        # printf "%d" truncates to an integer; bc would derive its scale from
-        # the operands and yield 25.00, which is not a valid `int` hint.
-        VOLUME=$(wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{ printf "%d", $2 * 100 }')
-
-        if wpctl get-volume @DEFAULT_AUDIO_SINK@ | grep -q "\[MUTED\]"; then
-          notify-send "Volume" "Muted" --urgency low --hint "int:value:$VOLUME" --hint string:synchronous:my_volume
-        else
-          notify-send "Volume" "$VOLUME%" --urgency normal --hint "int:value:$VOLUME" --hint string:synchronous:my_volume
-        fi
-      '')
-
-      (writeShellScriptBin "notify-mic" ''
-        IS_MUTED=$(wpctl get-volume @DEFAULT_AUDIO_SOURCE@ | grep -q "\[MUTED\]" && echo "true" || echo "false")
-
-        if [ "$IS_MUTED" = "true" ]; then
-          notify-send "Microphone" "Muted" --urgency low --hint string:synchronous:my_mic
-        else
-          notify-send "Microphone" "Unmuted 🎤" --urgency normal --hint string:synchronous:my_mic
-        fi
-      '')
-
-      (writeShellScriptBin "notify-caps" ''
-        get_caps_state() {
-          CAPS_LED_PATH=$(find /sys/class/leds/ -name "*capslock" 2>/dev/null | head -n 1)
-          if [ -f "$CAPS_LED_PATH/brightness" ]; then
-            cat "$CAPS_LED_PATH/brightness"
-          else
-            echo 0
-          fi
-        }
-
-        CURRENT_STATE=$(get_caps_state)
-
-        if [ "$CURRENT_STATE" -eq 1 ]; then
-          MESSAGE="Caps Lock is ON ⬆️"
-          ICON="caps-lock-on"
-        else
-          MESSAGE="Caps Lock is OFF ⬇️"
-          ICON="caps-lock-off"
-        fi
-
-        notify-send -i "$ICON" "Keyboard Status" "$MESSAGE" --urgency normal --hint string:synchronous:my_caps
-      '')
 
       # `togglefloating` floats a window at whatever geometry its tile happened
       # to have, which is the geometry being escaped. This lands it where the
@@ -1080,16 +1035,16 @@ in
               ", Print, exec, screenshot --edit"
               "SHIFT, Print, exec, screenshot"
 
-              # Audio (with notify). The unshifted pair steps by 5% inside
+              # Audio, each raising the OSD. The unshifted pair steps by 5% inside
               # `--limit 1.0`. Holding SHIFT deliberately escapes that limit:
               # V climbs past 100%, and C is an absolute assignment that drops
               # straight back to 10% rather than a decrement.
-              "$mod, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && notify-volume"
-              "$mod, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- --limit 1.0 && notify-volume"
-              "$mod SHIFT, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && notify-volume"
-              "$mod SHIFT, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 10% && notify-volume"
-              "$mod, T, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && notify-volume"
-              "$mod, N, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && notify-mic"
+              "$mod, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && quickshell ipc call osd volume"
+              "$mod, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- --limit 1.0 && quickshell ipc call osd volume"
+              "$mod SHIFT, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && quickshell ipc call osd volume"
+              "$mod SHIFT, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 10% && quickshell ipc call osd volume"
+              "$mod, T, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && quickshell ipc call osd volume"
+              "$mod, N, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && quickshell ipc call osd mic"
 
               # Apps
               "$mod, F2, exec, galculator"
@@ -1101,12 +1056,14 @@ in
             ++ map (n: "$mod CTRL, ${toString n}, movetoworkspacesilent, ${toString n}") (lib.range 1 9);
 
           bindel = [
-            ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+"
-            ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-"
-            ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"
-            ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"
-            ", XF86MonBrightnessUp, exec, brightnessctl s 10%+"
-            ", XF86MonBrightnessDown, exec, brightnessctl s 10%-"
+            ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && quickshell ipc call osd volume"
+            ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && quickshell ipc call osd volume"
+            ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && quickshell ipc call osd volume"
+            ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && quickshell ipc call osd mic"
+            # Through the bar's backlight, which holds the 1% floor; brightnessctl
+            # takes only a raw one.
+            ", XF86MonBrightnessUp, exec, quickshell ipc call backlight up"
+            ", XF86MonBrightnessDown, exec, quickshell ipc call backlight down"
           ];
 
           bindl = [
@@ -1117,6 +1074,11 @@ in
 
             "$mod SHIFT, 0, exec, pidof hyprlock || hyprlock"
           ];
+
+          # On release, once the lock has toggled, and passed through, so the
+          # key still reaches the client. Ignoring mods, since the held key's
+          # own Lock is still down on release and would fail an empty mask.
+          bindrni = [ ", Caps_Lock, exec, quickshell ipc call osd caps" ];
 
           bindm = [
             "$mod, mouse:272, movewindow"

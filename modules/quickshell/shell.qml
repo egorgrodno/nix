@@ -19,8 +19,10 @@ ShellRoot {
     // Once for the shell, not per screen.
     PowerSaverDim {}
 
-    // On the focused screen, which it follows.
+    // On the focused screen, which they follow.
     NotificationPopups {}
+
+    Osd {}
 
     // Reloads report as notifications rather than through Quickshell's own
     // popup, once they settle: an activation swaps the files one at a time, so

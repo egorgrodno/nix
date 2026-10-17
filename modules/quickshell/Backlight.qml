@@ -20,6 +20,8 @@ Singleton {
     // TLP sets it with each profile, overriding a level set here.
     property int abm: -1
 
+    signal stepped
+
     // Skips a value with a write in flight, since reading it would undo the write.
     function read() {
         if (device === "")
@@ -34,15 +36,27 @@ Singleton {
         }
     }
 
+    // Never below 1%, whether from the power panel, the brightness keys or
+    // power-saver.
     function set(raw) {
         if (device === "")
             return;
-        level = Math.max(0, Math.min(max, raw));
+        level = Math.max(Math.round(max / 100), Math.min(max, raw));
         writer.submit([Programs.brightnessctl, "-q", "-d", device, "set", String(level)]);
     }
 
     function setPercent(percent) {
         set(Math.round(percent * max / 100));
+    }
+
+    // By `delta` percent of the level as it is now, for the brightness keys,
+    // which the OSD follows.
+    function step(delta) {
+        if (device === "")
+            return;
+        read();
+        setPercent(percent + delta);
+        stepped();
     }
 
     function setAbm(value) {
@@ -107,6 +121,18 @@ Singleton {
         path: root.device ? `/sys/class/backlight/${root.device}/device/amdgpu/panel_power_savings` : ""
         blockAllReads: true
         printErrors: false
+    }
+
+    IpcHandler {
+        target: "backlight"
+
+        function up(): void {
+            root.step(10);
+        }
+
+        function down(): void {
+            root.step(-10);
+        }
     }
 
     Queue {
