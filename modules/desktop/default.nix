@@ -132,6 +132,8 @@ let
   # line up with it at the sides.
   outerGap = 10;
 
+  wallpaperDir = u: "${u.homedir}/Pictures/Wallpapers";
+
   # Centre of each module a window docks to, in px from the screen's right
   # edge, measured off the bottom bar: Hyprland cannot read the layout.
   barModuleCentre = {
@@ -665,7 +667,15 @@ in
         xdg-desktop-portal-hyprland
 
         swaybg
-        waypaper
+        # Pinned on every launch; a folder picked in the GUI lasts the session.
+        (symlinkJoin {
+          name = "waypaper";
+          paths = [ waypaper ];
+          nativeBuildInputs = [ makeWrapper ];
+          postBuild = ''
+            wrapProgram $out/bin/waypaper --add-flags "--folder ${wallpaperDir u}"
+          '';
+        })
 
         vivaldi
         ungoogled-chromium
@@ -863,6 +873,7 @@ in
         templates = null;
         extraConfig = {
           SCREENSHOTS = "${u.homedir}/Pictures/Screenshots";
+          WALLPAPERS = wallpaperDir u;
         };
       };
 
@@ -1553,6 +1564,7 @@ in
             download
             pictures
             extraConfig.SCREENSHOTS
+            extraConfig.WALLPAPERS
             music
             videos
           ];
