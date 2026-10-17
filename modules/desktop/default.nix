@@ -598,7 +598,7 @@ in
       # left, edited or not. The path then takes the clipboard unless Satty's
       # own copy already put the image there.
       (writeShellScriptBin "screenshot" ''
-        FILE="$HOME/Screenshots/$(date +%Y%m%d_%H%M%S).png"
+        FILE="$(${pkgs.xdg-user-dirs}/bin/xdg-user-dir SCREENSHOTS)/$(date +%Y%m%d_%H%M%S).png"
         COPIED="$XDG_RUNTIME_DIR/screenshot-$$"
 
         # A cancelled selection exits non-zero and writes no file.
@@ -652,7 +652,7 @@ in
     # either way.
     environment.sessionVariables.UWSM_SILENT_START = "1";
 
-    home-manager.users = forAllUsers {
+    home-manager.users = forAllUsers (u: {
       home.packages = with pkgs; [
         wofi
         wlogout
@@ -853,8 +853,18 @@ in
         };
       };
 
-      # Both Print binds save here, and grimblast fails rather than create it.
-      systemd.user.tmpfiles.rules = [ "d %h/Screenshots 0755 - - -" ];
+      # Created at activation: both Print binds save to SCREENSHOTS, and
+      # grimblast fails rather than create it.
+      xdg.userDirs = {
+        enable = true;
+        createDirectories = true;
+        setSessionVariables = false;
+        publicShare = null;
+        templates = null;
+        extraConfig = {
+          SCREENSHOTS = "${u.homedir}/Pictures/Screenshots";
+        };
+      };
 
       programs.satty = {
         enable = true;
@@ -1534,6 +1544,18 @@ in
           # strips minimize and maximize from Vivaldi.
           "gtk-decoration-layout" = "appmenu:close";
         };
+        # Desktop is left out: pcmanfm already lists it under Places.
+        gtk3.bookmarks =
+          with config.home-manager.users.${u.name}.xdg.userDirs;
+          map (dir: "file://${dir}") [
+            projects
+            documents
+            download
+            pictures
+            extraConfig.SCREENSHOTS
+            music
+            videos
+          ];
         gtk4 = {
           theme = null;
           extraConfig = {
@@ -1542,6 +1564,9 @@ in
           };
         };
       };
+      # The file manager and file chooser write this file too; the declared
+      # list wins.
+      xdg.configFile."gtk-3.0/bookmarks".force = true;
 
       home.pointerCursor = {
         gtk.enable = true;
@@ -1602,6 +1627,6 @@ in
           };
         };
       };
-    };
+    });
   };
 }
