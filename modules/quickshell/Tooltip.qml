@@ -87,17 +87,18 @@ PopupWindow {
         onOpacityChanged: if (!tip.shown && opacity === 0)
             tip.visible = false
 
+        // One curve both ways, as in Panel.qml.
         Behavior on y {
             NumberAnimation {
-                duration: tip.shown ? 200 : 150
-                easing.type: tip.shown ? Easing.OutCubic : Easing.InCubic
+                duration: 200
+                easing.type: Easing.OutExpo
             }
         }
 
         Behavior on opacity {
             NumberAnimation {
-                duration: tip.shown ? 200 : 150
-                easing.type: tip.shown ? Easing.OutCubic : Easing.InCubic
+                duration: 200
+                easing.type: Easing.OutExpo
             }
         }
 

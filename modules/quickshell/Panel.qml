@@ -89,17 +89,20 @@ PanelWindow {
         onOpacityChanged: if (!panel.open && opacity === 0)
             panel.dismissed()
 
+        // One curve both ways: a Behavior starts before the animation's own
+        // bindings see `open` change, so a curve bound to it takes the previous
+        // transition's.
         Behavior on y {
             NumberAnimation {
-                duration: panel.open ? 200 : 150
-                easing.type: panel.open ? Easing.OutCubic : Easing.InCubic
+                duration: 200
+                easing.type: Easing.OutExpo
             }
         }
 
         Behavior on opacity {
             NumberAnimation {
-                duration: panel.open ? 200 : 150
-                easing.type: panel.open ? Easing.OutCubic : Easing.InCubic
+                duration: 200
+                easing.type: Easing.OutExpo
             }
         }
 
@@ -108,7 +111,7 @@ PanelWindow {
 
             NumberAnimation {
                 duration: 200
-                easing.type: Easing.OutCubic
+                easing.type: Easing.OutExpo
             }
         }
 
