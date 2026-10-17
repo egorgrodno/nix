@@ -4,53 +4,24 @@ import Quickshell
 import Quickshell.Networking as Nm
 
 // Over the network module: the connection, Wi-Fi and the networks in range,
-// Ethernet, and a switch per VPN profile. A click outside closes it, as Escape
-// does.
-PopupWindow {
+// Ethernet, and a switch per VPN profile.
+Panel {
     id: panel
 
-    required property Network module
     readonly property Nm.WifiDevice wifi: module.wifi
     readonly property Nm.WiredDevice wired: module.wired
     // Connected first, then known, then by the module's strength steps, so a
     // wavering signal does not reorder the list under the pointer.
     readonly property var networks: (wifi?.networks.values ?? []).filter(n => n.name !== "").sort((a, b) => b.connected - a.connected || b.known - a.known || module.bars(b.signalStrength) - module.bars(a.signalStrength) || a.name.localeCompare(b.name))
-    readonly property bool upward: {
-        const anchors = module.QsWindow.window?.anchors;
-        return anchors?.bottom === true && anchors?.top !== true;
-    }
-    // Centred on the module unless that would cross the outer gap, as a docked
-    // window is, in the module's coordinates.
-    readonly property real left: {
-        const x = module.mapToItem(null, 0, 0).x;
-        const right = module.QsWindow.window.width - Theme.outerGap - box.implicitWidth;
-        return Math.max(Theme.outerGap, Math.min(x + (module.width - box.implicitWidth) / 2, right)) - x;
-    }
 
     function openEditor(args) {
         Quickshell.execDetached([Programs.nmConnectionEditor].concat(args));
-        visible = false;
+        close();
     }
 
-    anchor.item: module
-    anchor.rect.x: left
-    anchor.rect.y: upward ? -4 : module.height + 3
-    anchor.rect.width: 1
-    anchor.rect.height: 1
-    anchor.edges: (upward ? Edges.Top : Edges.Bottom) | Edges.Left
-    anchor.gravity: (upward ? Edges.Top : Edges.Bottom) | Edges.Right
-    implicitWidth: box.implicitWidth
-    implicitHeight: box.implicitHeight
-    color: "transparent"
-    grabFocus: true
-    visible: true
-
-    // NetworkManager scans only while the panel is open.
-    Component.onCompleted: {
-        if (wifi)
-            wifi.scannerEnabled = true;
-        Vpn.refresh();
-    }
+    // Quickshell lists a network it does not know only while scanning, so the
+    // scanner, which the module starts, runs as long as the panel is open.
+    Component.onCompleted: Vpn.refresh()
     Component.onDestruction: if (wifi)
         wifi.scannerEnabled = false
 
@@ -368,213 +339,191 @@ PopupWindow {
         }
     }
 
-    Rectangle {
-        id: box
+    Row {
+        spacing: 12
 
-        implicitWidth: 360
-        implicitHeight: content.implicitHeight + 2 * 20
-        color: Theme.alpha(Theme.backgroundMain, 0.97)
-        border.color: Qt.rgba(1, 1, 1, 0.08)
-        border.width: 1
-        radius: Theme.radius
-        focus: true
-        Keys.onEscapePressed: panel.visible = false
+        BarText {
+            anchors.verticalCenter: parent.verticalCenter
+            text: panel.module.glyph
+            color: panel.module.glyphColor
+            font.pixelSize: 32
+        }
 
         Column {
-            id: content
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 4
 
-            x: 20
-            y: 20
-            width: parent.width - 40
-            spacing: 20
-
-            Row {
-                spacing: 12
-
-                BarText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: panel.module.glyph
-                    color: panel.module.glyphColor
-                    font.pixelSize: 32
-                }
-
-                Column {
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: 4
-
-                    BarText {
-                        width: content.width - 44
-                        elide: Text.ElideRight
-                        text: panel.module.name
-                    }
-
-                    BarText {
-                        visible: text !== ""
-                        text: panel.module.detail
-                        color: Theme.foregroundMuted
-                        font.pixelSize: 14
-                    }
-                }
+            BarText {
+                width: panel.contentWidth - 44
+                elide: Text.ElideRight
+                text: panel.module.name
             }
+
+            BarText {
+                visible: text !== ""
+                text: panel.module.detail
+                color: Theme.foregroundMuted
+                font.pixelSize: 14
+            }
+        }
+    }
+
+    Column {
+        width: panel.contentWidth
+        visible: panel.wifi !== null
+        spacing: 8
+
+        Labelled {
+            id: wifiSwitch
+
+            width: parent.width
+            title: "Wi-Fi"
+            detail: Nm.Networking.wifiHardwareEnabled ? "" : "Blocked by a hardware switch"
+            clickable: Nm.Networking.wifiHardwareEnabled
+            onClicked: Nm.Networking.wifiEnabled = !Nm.Networking.wifiEnabled
+
+            Toggle {
+                checked: Nm.Networking.wifiEnabled
+                hovered: wifiSwitch.hovered
+            }
+        }
+
+        // Six rows, then it scrolls.
+        Flickable {
+            width: parent.width
+            height: Math.min(contentHeight, 6 * 40)
+            visible: Nm.Networking.wifiEnabled && panel.networks.length > 0
+            contentHeight: list.implicitHeight
+            clip: true
+            boundsBehavior: Flickable.StopAtBounds
 
             Column {
-                width: content.width
-                visible: panel.wifi !== null
-                spacing: 8
+                id: list
 
-                Labelled {
-                    id: wifiSwitch
-
-                    width: parent.width
-                    title: "Wi-Fi"
-                    detail: Nm.Networking.wifiHardwareEnabled ? "" : "Blocked by a hardware switch"
-                    clickable: Nm.Networking.wifiHardwareEnabled
-                    onClicked: Nm.Networking.wifiEnabled = !Nm.Networking.wifiEnabled
-
-                    Toggle {
-                        checked: Nm.Networking.wifiEnabled
-                        hovered: wifiSwitch.hovered
-                    }
-                }
-
-                // Six rows, then it scrolls.
-                Flickable {
-                    width: parent.width
-                    height: Math.min(contentHeight, 6 * 40)
-                    visible: Nm.Networking.wifiEnabled && panel.networks.length > 0
-                    contentHeight: list.implicitHeight
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-
-                    Column {
-                        id: list
-
-                        width: parent.width
-
-                        Repeater {
-                            model: ScriptModel {
-                                values: panel.networks
-                            }
-
-                            NetworkRow {
-                                width: list.width
-                                glyph: panel.module.strengthGlyph(modelData.signalStrength)
-                                onEditorWanted: panel.openEditor(["--create", "--type=802-11-wireless"])
-                            }
-                        }
-                    }
-                }
-
-                BarText {
-                    visible: Nm.Networking.wifiEnabled && panel.networks.length === 0
-                    text: "Searching…"
-                    color: Theme.foregroundMuted
-                    font.pixelSize: 14
-                }
-            }
-
-            Labelled {
-                width: content.width
-                visible: panel.wired !== null
-                title: "Ethernet"
-                detail: {
-                    const w = panel.wired;
-                    if (!w)
-                        return "";
-                    if (w.connected)
-                        return w.linkSpeed > 0 ? `Connected · ${w.linkSpeed} Mb/s` : "Connected";
-                    return w.hasLink ? "Disconnected" : "Cable unplugged";
-                }
-
-                Action {
-                    visible: panel.wired !== null && (panel.wired.connected || panel.wired.network !== null)
-                    text: panel.wired?.connected ? "Disconnect" : "Connect"
-                    onClicked: panel.wired.connected ? panel.wired.disconnect() : panel.wired.network.connect()
-                }
-            }
-
-            Column {
-                width: content.width
-                visible: Vpn.profiles.length > 0
-                spacing: 12
+                width: parent.width
 
                 Repeater {
                     model: ScriptModel {
-                        values: Vpn.profiles
-                        objectProp: "uuid"
+                        values: panel.networks
                     }
 
-                    Labelled {
-                        id: vpn
-
-                        required property var modelData
-                        readonly property bool up: Vpn.isUp(modelData)
-                        readonly property string error: Vpn.errors[modelData.uuid] ?? ""
-
-                        width: content.width
-                        title: modelData.name
-                        detail: {
-                            if (error !== "")
-                                return error;
-                            switch (modelData.state) {
-                            case "activating":
-                                return "Connecting…";
-                            case "deactivating":
-                                return "Disconnecting…";
-                            default:
-                                return modelData.type === "wireguard" ? "WireGuard" : "VPN";
-                            }
-                        }
-                        detailColor: error !== "" ? Theme.yellow : Theme.foregroundMuted
-                        clickable: !(modelData.uuid in Vpn.pending)
-                        onClicked: Vpn.setUp(modelData.uuid, !up)
-
-                        Toggle {
-                            checked: vpn.up
-                            hovered: vpn.hovered
-                        }
+                    NetworkRow {
+                        width: list.width
+                        glyph: panel.module.strengthGlyph(modelData.signalStrength)
+                        onEditorWanted: panel.openEditor(["--create", "--type=802-11-wireless"])
                     }
                 }
             }
+        }
 
-            Rectangle {
-                width: content.width
-                height: 36
-                radius: Theme.radius - 4
-                color: settingsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
+        BarText {
+            visible: Nm.Networking.wifiEnabled && panel.networks.length === 0
+            text: "Searching…"
+            color: Theme.foregroundMuted
+            font.pixelSize: 14
+        }
+    }
 
-                Behavior on color {
-                    ColorAnimation {
-                        duration: 150
-                        easing.type: Easing.OutQuad
+    Labelled {
+        width: panel.contentWidth
+        visible: panel.wired !== null
+        title: "Ethernet"
+        detail: {
+            const w = panel.wired;
+            if (!w)
+                return "";
+            if (w.connected)
+                return w.linkSpeed > 0 ? `Connected · ${w.linkSpeed} Mb/s` : "Connected";
+            return w.hasLink ? "Disconnected" : "Cable unplugged";
+        }
+
+        Action {
+            visible: panel.wired !== null && (panel.wired.connected || panel.wired.network !== null)
+            text: panel.wired?.connected ? "Disconnect" : "Connect"
+            onClicked: panel.wired.connected ? panel.wired.disconnect() : panel.wired.network.connect()
+        }
+    }
+
+    Column {
+        width: panel.contentWidth
+        visible: Vpn.profiles.length > 0
+        spacing: 12
+
+        Repeater {
+            model: ScriptModel {
+                values: Vpn.profiles
+                objectProp: "uuid"
+            }
+
+            Labelled {
+                id: vpn
+
+                required property var modelData
+                readonly property bool up: Vpn.isUp(modelData)
+                readonly property string error: Vpn.errors[modelData.uuid] ?? ""
+
+                width: panel.contentWidth
+                title: modelData.name
+                detail: {
+                    if (error !== "")
+                        return error;
+                    switch (modelData.state) {
+                    case "activating":
+                        return "Connecting…";
+                    case "deactivating":
+                        return "Disconnecting…";
+                    default:
+                        return modelData.type === "wireguard" ? "WireGuard" : "VPN";
                     }
                 }
+                detailColor: error !== "" ? Theme.yellow : Theme.foregroundMuted
+                clickable: !(modelData.uuid in Vpn.pending)
+                onClicked: Vpn.setUp(modelData.uuid, !up)
 
-                Row {
-                    anchors.centerIn: parent
-                    spacing: 8
-
-                    BarText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "\u{F08BB}"
-                        color: Theme.foregroundMuted
-                    }
-
-                    BarText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: "Network settings"
-                        font.pixelSize: 14
-                    }
-                }
-
-                MouseArea {
-                    id: settingsMouse
-
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    onClicked: panel.openEditor([])
+                Toggle {
+                    checked: vpn.up
+                    hovered: vpn.hovered
                 }
             }
+        }
+    }
+
+    Rectangle {
+        width: panel.contentWidth
+        height: 36
+        radius: Theme.radius - 4
+        color: settingsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
+
+        Behavior on color {
+            ColorAnimation {
+                duration: 150
+                easing.type: Easing.OutQuad
+            }
+        }
+
+        Row {
+            anchors.centerIn: parent
+            spacing: 8
+
+            BarText {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "\u{F08BB}"
+                color: Theme.foregroundMuted
+            }
+
+            BarText {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Network settings"
+                font.pixelSize: 14
+            }
+        }
+
+        MouseArea {
+            id: settingsMouse
+
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: panel.openEditor([])
         }
     }
 }

@@ -64,8 +64,12 @@ Pill {
     // Once the paths follow it.
     onSysfsChanged: Qt.callLater(sample)
     onClicked: button => {
-        if (button === Qt.LeftButton)
-            panel.active = !panel.active;
+        if (button === Qt.LeftButton) {
+            if (panel.active)
+                panel.item.close();
+            else
+                panel.active = true;
+        }
     }
 
     Gauge {
@@ -147,8 +151,7 @@ Pill {
 
         PowerPanel {
             module: battery
-            onVisibleChanged: if (!visible)
-                panel.active = false
+            onDismissed: panel.active = false
         }
     }
 }

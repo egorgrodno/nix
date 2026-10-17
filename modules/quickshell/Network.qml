@@ -46,13 +46,24 @@ Pill {
         return ["\u{F091F}", "\u{F0922}", "\u{F0925}", "\u{F0928}"][bars(signal) - 1];
     }
 
+    // The scanner starts first, so the networks Quickshell already knows are
+    // listed as the panel builds and it opens at its full height.
+    function openPanel() {
+        if (wifi)
+            wifi.scannerEnabled = true;
+        panel.active = true;
+    }
+
     visible: Stats.sampled
     lit: panel.active
     tooltip: [detail === "" ? name : `${name}, ${detail}`].concat(Vpn.active.map(p => `VPN: ${p.name}`)).join("\n")
     onClicked: button => {
-        if (button === Qt.LeftButton)
-            panel.active = !panel.active;
-        else if (button === Qt.RightButton)
+        if (button === Qt.LeftButton) {
+            if (panel.active)
+                panel.item.close();
+            else
+                openPanel();
+        } else if (button === Qt.RightButton)
             Quickshell.execDetached([Programs.nmConnectionEditor]);
     }
 
@@ -145,8 +156,7 @@ Pill {
 
         NetworkPanel {
             module: network
-            onVisibleChanged: if (!visible)
-                panel.active = false
+            onDismissed: panel.active = false
         }
     }
 }

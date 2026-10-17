@@ -1089,6 +1089,15 @@ in
             ", mouse:276, movewindow"
           ];
 
+          # Quickshell's panels animate themselves, sliding out of the bar.
+          layerrule = [
+            {
+              name = "quickshell-panel";
+              "match:namespace" = "^(quickshell-panel)$";
+              no_anim = true;
+            }
+          ];
+
           windowrule =
             # Generated rules lead. Apply order is list order and the last match
             # wins a property, so every hand-written rule below stays an override

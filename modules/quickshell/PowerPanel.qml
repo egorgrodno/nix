@@ -5,11 +5,10 @@ import Quickshell.Io
 import Quickshell.Services.UPower
 
 // Under the battery module: the charge, the power profile, the backlight and
-// the charge limit. A click outside closes it, as Escape does.
-PopupWindow {
+// the charge limit.
+Panel {
     id: panel
 
-    required property Battery module
     // On unless the off file exists. While a toggle runs, the state it asked for.
     property bool limitBusy: false
     property bool limitTarget
@@ -21,18 +20,6 @@ PopupWindow {
         limiter.command = [Programs.systemctl, "start", `charge-limit@${limitTarget ? "on" : "off"}.service`];
         limiter.running = true;
     }
-
-    anchor.item: module
-    anchor.rect.width: module.width
-    anchor.rect.height: module.height + 4
-    anchor.edges: Edges.Bottom
-    anchor.gravity: Edges.Bottom
-    anchor.adjustment: PopupAdjustment.SlideX
-    implicitWidth: box.implicitWidth
-    implicitHeight: box.implicitHeight
-    color: "transparent"
-    grabFocus: true
-    visible: true
 
     Component.onCompleted: {
         module.sample();
@@ -94,258 +81,236 @@ PopupWindow {
         }
     }
 
-    Rectangle {
-        id: box
+    Column {
+        width: panel.contentWidth
+        spacing: 8
 
-        implicitWidth: 360
-        implicitHeight: content.implicitHeight + 2 * 20
-        color: Theme.alpha(Theme.backgroundMain, 0.97)
-        border.color: Qt.rgba(1, 1, 1, 0.08)
-        border.width: 1
-        radius: Theme.radius
-        focus: true
-        Keys.onEscapePressed: panel.visible = false
+        Figure {
+            text: `${panel.module.capacity}%`
+            font.pixelSize: 32
+        }
 
-        Column {
-            id: content
+        // The charge, and the band the charge limit holds it in.
+        Rectangle {
+            width: parent.width
+            height: 8
+            radius: 2
+            color: Qt.rgba(1, 1, 1, 0.1)
 
-            x: 20
-            y: 20
-            width: parent.width - 40
-            spacing: 20
-
-            Column {
-                width: content.width
-                spacing: 8
-
-                Figure {
-                    text: `${panel.module.capacity}%`
-                    font.pixelSize: 32
-                }
-
-                // The charge, and the band the charge limit holds it in.
-                Rectangle {
-                    width: parent.width
-                    height: 8
-                    radius: 2
-                    color: Qt.rgba(1, 1, 1, 0.1)
-
-                    Rectangle {
-                        width: parent.width * Math.min(1, panel.module.capacity / 100)
-                        height: parent.height
-                        radius: 2
-                        color: panel.module.status === "Charging" ? Theme.green : panel.module.capacity <= 10 ? Theme.red : panel.module.capacity <= 20 ? Theme.yellow : Theme.foregroundMain
-                    }
-
-                    Rectangle {
-                        visible: panel.module.chargeEnd < 100
-                        x: parent.width * panel.module.chargeStart / 100
-                        width: parent.width * (panel.module.chargeEnd - panel.module.chargeStart) / 100
-                        height: parent.height
-                        color: Theme.alpha(Theme.blue, 0.6)
-                    }
-                }
-
-                BarText {
-                    text: {
-                        const b = panel.module;
-                        switch (b.status) {
-                        case "Discharging":
-                            return b.time === "" ? "Discharging" : `Empty in ${b.time}`;
-                        case "Charging":
-                            return b.time === "" ? "Charging" : `Full in ${b.time}`;
-                        case "Plugged":
-                            return "Plugged in, not charging";
-                        default:
-                            return "Full";
-                        }
-                    }
-                    color: Theme.foregroundMuted
-                    font.pixelSize: 14
-                }
+            Rectangle {
+                width: parent.width * Math.min(1, panel.module.capacity / 100)
+                height: parent.height
+                radius: 2
+                color: panel.module.status === "Charging" ? Theme.green : panel.module.capacity <= 10 ? Theme.red : panel.module.capacity <= 20 ? Theme.yellow : Theme.foregroundMain
             }
 
-            Row {
-                id: profiles
+            Rectangle {
+                visible: panel.module.chargeEnd < 100
+                x: parent.width * panel.module.chargeStart / 100
+                width: parent.width * (panel.module.chargeEnd - panel.module.chargeStart) / 100
+                height: parent.height
+                color: Theme.alpha(Theme.blue, 0.6)
+            }
+        }
 
-                readonly property var model: [
-                    {
-                        profile: PowerProfile.PowerSaver,
-                        icon: "󰌪",
-                        label: "Power saver"
-                    },
-                    {
-                        profile: PowerProfile.Balanced,
-                        icon: "󰗑",
-                        label: "Balanced"
-                    },
-                    {
-                        profile: PowerProfile.Performance,
-                        icon: "󰓅",
-                        label: "Performance"
-                    }
-                ].filter(p => p.profile !== PowerProfile.Performance || PowerProfiles.hasPerformanceProfile)
-
-                spacing: 8
-
-                Repeater {
-                    model: profiles.model
-
-                    Rectangle {
-                        id: button
-
-                        required property var modelData
-                        readonly property bool active: PowerProfiles.profile === modelData.profile
-                        readonly property color textColor: active ? Theme.backgroundMain : "#ffffff"
-
-                        width: (content.width - profiles.spacing * (profiles.model.length - 1)) / profiles.model.length
-                        height: 64
-                        radius: Theme.radius
-                        color: active ? Theme.blue : mouse.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
-
-                        Behavior on color {
-                            ColorAnimation {
-                                duration: 150
-                                easing.type: Easing.OutQuad
-                            }
-                        }
-
-                        Column {
-                            anchors.centerIn: parent
-                            spacing: 4
-
-                            BarText {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: button.modelData.icon
-                                color: button.textColor
-                                font.pixelSize: 20
-                            }
-
-                            BarText {
-                                anchors.horizontalCenter: parent.horizontalCenter
-                                text: button.modelData.label
-                                color: button.textColor
-                                font.pixelSize: 14
-                            }
-                        }
-
-                        MouseArea {
-                            id: mouse
-
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            onClicked: PowerProfiles.profile = button.modelData.profile
-                        }
-                    }
+        BarText {
+            text: {
+                const b = panel.module;
+                switch (b.status) {
+                case "Discharging":
+                    return b.time === "" ? "Discharging" : `Empty in ${b.time}`;
+                case "Charging":
+                    return b.time === "" ? "Charging" : `Full in ${b.time}`;
+                case "Plugged":
+                    return "Plugged in, not charging";
+                default:
+                    return "Full";
                 }
             }
+            color: Theme.foregroundMuted
+            font.pixelSize: 14
+        }
+    }
 
-            Row {
-                spacing: 12
+    Row {
+        id: profiles
 
-                BarText {
-                    id: sun
-
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "󰃠"
-                    font.pixelSize: 20
-                }
-
-                PanelSlider {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: content.width - sun.width - percent.width - 2 * parent.spacing
-                    from: 1
-                    to: 100
-                    // As on the volume module.
-                    wheelStep: 5
-                    value: Backlight.percent
-                    onPicked: value => Backlight.setPercent(value)
-                }
-
-                // As wide as 100%, so the slider keeps its length.
-                Figure {
-                    id: percent
-
-                    anchors.verticalCenter: parent.verticalCenter
-                    horizontalAlignment: Text.AlignRight
-                    widest: "100%"
-                    text: `${Backlight.percent}%`
-                }
+        readonly property var model: [
+            {
+                profile: PowerProfile.PowerSaver,
+                icon: "󰌪",
+                label: "Power saver"
+            },
+            {
+                profile: PowerProfile.Balanced,
+                icon: "󰗑",
+                label: "Balanced"
+            },
+            {
+                profile: PowerProfile.Performance,
+                icon: "󰓅",
+                label: "Performance"
             }
+        ].filter(p => p.profile !== PowerProfile.Performance || PowerProfiles.hasPerformanceProfile)
 
-            // Lowers the backlight and brightens the pixels to make up for it.
-            Column {
-                width: content.width
-                spacing: 8
-                visible: Backlight.abm >= 0
+        spacing: 8
 
-                Item {
-                    width: parent.width
-                    height: abmTitle.implicitHeight
+        Repeater {
+            model: profiles.model
 
-                    BarText {
-                        id: abmTitle
+            Rectangle {
+                id: button
 
-                        text: "Adaptive backlight"
-                    }
+                required property var modelData
+                readonly property bool active: PowerProfiles.profile === modelData.profile
+                readonly property color textColor: active ? Theme.backgroundMain : "#ffffff"
 
-                    BarText {
-                        anchors.right: parent.right
-                        anchors.baseline: abmTitle.baseline
-                        text: Backlight.abm === 0 ? "Off" : `Level ${Backlight.abm}`
-                        color: Theme.foregroundMuted
-                        font.pixelSize: 14
+                width: (panel.contentWidth - profiles.spacing * (profiles.model.length - 1)) / profiles.model.length
+                height: 64
+                radius: Theme.radius
+                color: active ? Theme.blue : mouse.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: 150
+                        easing.type: Easing.OutQuad
                     }
                 }
-
-                PanelSlider {
-                    width: parent.width
-                    from: 0
-                    to: 4
-                    value: Backlight.abm
-                    onPicked: value => Backlight.setAbm(Math.round(value))
-                }
-            }
-
-            Item {
-                width: content.width
-                height: Math.max(limitText.implicitHeight, toggle.height)
 
                 Column {
-                    id: limitText
-
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.centerIn: parent
                     spacing: 4
 
                     BarText {
-                        text: "Charge limit"
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: button.modelData.icon
+                        color: button.textColor
+                        font.pixelSize: 20
                     }
 
                     BarText {
-                        text: panel.module.chargeEnd < 100 ? `Stops at ${panel.module.chargeEnd}%, resumes below ${panel.module.chargeStart}%` : "Charges to 100%"
-                        color: Theme.foregroundMuted
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        text: button.modelData.label
+                        color: button.textColor
                         font.pixelSize: 14
                     }
                 }
 
-                Toggle {
-                    id: toggle
-
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    checked: panel.limited
-                    hovered: toggleMouse.containsMouse
-                }
-
                 MouseArea {
-                    id: toggleMouse
+                    id: mouse
 
                     anchors.fill: parent
                     hoverEnabled: true
-                    enabled: !panel.limitBusy
-                    onClicked: panel.toggleLimit()
+                    onClicked: PowerProfiles.profile = button.modelData.profile
                 }
             }
+        }
+    }
+
+    Row {
+        spacing: 12
+
+        BarText {
+            id: sun
+
+            anchors.verticalCenter: parent.verticalCenter
+            text: "󰃠"
+            font.pixelSize: 20
+        }
+
+        PanelSlider {
+            anchors.verticalCenter: parent.verticalCenter
+            width: panel.contentWidth - sun.width - percent.width - 2 * parent.spacing
+            from: 1
+            to: 100
+            // As on the volume module.
+            wheelStep: 5
+            value: Backlight.percent
+            onPicked: value => Backlight.setPercent(value)
+        }
+
+        // As wide as 100%, so the slider keeps its length.
+        Figure {
+            id: percent
+
+            anchors.verticalCenter: parent.verticalCenter
+            horizontalAlignment: Text.AlignRight
+            widest: "100%"
+            text: `${Backlight.percent}%`
+        }
+    }
+
+    // Lowers the backlight and brightens the pixels to make up for it.
+    Column {
+        width: panel.contentWidth
+        spacing: 8
+        visible: Backlight.abm >= 0
+
+        Item {
+            width: parent.width
+            height: abmTitle.implicitHeight
+
+            BarText {
+                id: abmTitle
+
+                text: "Adaptive backlight"
+            }
+
+            BarText {
+                anchors.right: parent.right
+                anchors.baseline: abmTitle.baseline
+                text: Backlight.abm === 0 ? "Off" : `Level ${Backlight.abm}`
+                color: Theme.foregroundMuted
+                font.pixelSize: 14
+            }
+        }
+
+        PanelSlider {
+            width: parent.width
+            from: 0
+            to: 4
+            value: Backlight.abm
+            onPicked: value => Backlight.setAbm(Math.round(value))
+        }
+    }
+
+    Item {
+        width: panel.contentWidth
+        height: Math.max(limitText.implicitHeight, toggle.height)
+
+        Column {
+            id: limitText
+
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: 4
+
+            BarText {
+                text: "Charge limit"
+            }
+
+            BarText {
+                text: panel.module.chargeEnd < 100 ? `Stops at ${panel.module.chargeEnd}%, resumes below ${panel.module.chargeStart}%` : "Charges to 100%"
+                color: Theme.foregroundMuted
+                font.pixelSize: 14
+            }
+        }
+
+        Toggle {
+            id: toggle
+
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            checked: panel.limited
+            hovered: toggleMouse.containsMouse
+        }
+
+        MouseArea {
+            id: toggleMouse
+
+            anchors.fill: parent
+            hoverEnabled: true
+            enabled: !panel.limitBusy
+            onClicked: panel.toggleLimit()
         }
     }
 

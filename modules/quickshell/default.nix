@@ -53,6 +53,8 @@ let
         // The windows' outer gap, which the segments line up with at the sides.
         readonly property int outerGap: ${toString cfg.outerGap}
         readonly property int radius: 8
+        // How far panels and tooltips slide out of the bar as they fade in.
+        readonly property int slide: 24
 
         function alpha(color, a) {
             return Qt.rgba(color.r, color.g, color.b, a);

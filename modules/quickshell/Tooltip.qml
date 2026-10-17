@@ -3,7 +3,9 @@ import Quickshell
 
 // Under the module, or over it on a bar along the bottom edge, centred on where
 // the pointer came to rest, after half a second's hover, as GTK places a
-// tooltip.
+// tooltip. It slides out from the module's side as it fades in, and back once
+// the pointer leaves, clipped at the window's edge: a window reaching over the
+// module would take the hover off it.
 PopupWindow {
     id: tip
 
@@ -15,6 +17,8 @@ PopupWindow {
     // Pointer x in the target, read when the tooltip opens.
     property real pointerX
     property real openedAt
+    // False from the start of the fade out.
+    property bool shown: false
     readonly property bool upward: {
         const anchors = target.QsWindow.window?.anchors;
         return anchors?.bottom === true && anchors?.top !== true;
@@ -23,6 +27,7 @@ PopupWindow {
     // Hides it until the pointer leaves and comes back, as a click does in GTK.
     function dismiss() {
         delay.stop();
+        shown = false;
         visible = false;
     }
 
@@ -45,8 +50,8 @@ PopupWindow {
             delay.restart();
         } else {
             delay.stop();
-            if (visible) {
-                visible = false;
+            if (shown) {
+                shown = false;
                 Tooltips.left();
             }
         }
@@ -63,6 +68,7 @@ PopupWindow {
                 return;
             tip.openedAt = tip.pointerX;
             tip.visible = true;
+            tip.shown = true;
             Tooltips.shown();
         }
     }
@@ -76,6 +82,24 @@ PopupWindow {
         border.color: Qt.rgba(1, 1, 1, 0.08)
         border.width: 1
         radius: Theme.radius
+        y: tip.shown ? 0 : tip.upward ? Theme.slide : -Theme.slide
+        opacity: tip.shown ? 1 : 0
+        onOpacityChanged: if (!tip.shown && opacity === 0)
+            tip.visible = false
+
+        Behavior on y {
+            NumberAnimation {
+                duration: tip.shown ? 200 : 150
+                easing.type: tip.shown ? Easing.OutCubic : Easing.InCubic
+            }
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: tip.shown ? 200 : 150
+                easing.type: tip.shown ? Easing.OutCubic : Easing.InCubic
+            }
+        }
 
         BarText {
             id: label
