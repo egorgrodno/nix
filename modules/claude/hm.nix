@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ lib, pkgs, ... }:
 
 {
   home.packages = [
@@ -8,8 +8,10 @@
     '')
 
     # Statusline for the Claude Code CLI: ccusage's session/context readout.
+    # Online pricing: the bundled table lags new models, which then read $0.00
+    # against a 200k context window.
     (pkgs.writeShellScriptBin "claude-statusline" ''
-      exec npx ccusage@latest statusline --context-low-threshold 50 --context-medium-threshold 85
+      exec ${lib.getExe pkgs.ccusage} statusline --no-offline --context-low-threshold 50 --context-medium-threshold 85
     '')
   ];
 }
