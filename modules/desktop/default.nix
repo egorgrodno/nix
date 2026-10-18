@@ -18,7 +18,13 @@ let
 
   # The focused-window accent, reused by hyprlock's password field so the lock
   # screen and the session agree on what "active" looks like.
-  activeBorder = "${hyprColor theme.blue "ff"} ${hyprColor theme.cyan "ff"} 45deg";
+  activeBorder = {
+    colors = [
+      (hyprColor theme.blue "ff")
+      (hyprColor theme.cyan "ff")
+    ];
+    angle = 45;
+  };
 
   # Hyprland's directional keys: focus, move, and the resize submap.
   dirs =
@@ -150,8 +156,8 @@ let
       height,
     }:
     {
-      float = "yes";
-      pin = "yes";
+      float = true;
+      pin = true;
       move = "(monitor_w-${
         toString (lib.max (fromRight + width / 2) (width + outerGap))
       }) (monitor_h-${toString (barHeight + height)})";
@@ -166,8 +172,8 @@ let
     kind: props: class:
     {
       name = "${kind}-${class}";
-      "match:class" = "(?i)^(${escapeRegex class})$";
-      float = "yes";
+      match.class = "(?i)^(${escapeRegex class})$";
+      float = true;
       center = true;
     }
     // props;
@@ -190,7 +196,7 @@ let
   # `max_size` would not hold, since float placement undoes its clamp.
   fitWorkArea = {
     name = "fit-work-area";
-    "match:class" = ".*";
+    match.class = ".*";
     size = "min(window_w,monitor_w-${toString (2 * outerGap)}) min(window_h,monitor_h-${
       toString (2 * (barHeight + outerGap))
     })";
@@ -274,7 +280,7 @@ let
       esac
 
       case $1 in
-        dim) [ "$2" -ge "$dim" ] && hyprctl keyword decoration:screen_shader ${dimShader} ;;
+        dim) [ "$2" -ge "$dim" ] && hyprctl eval 'hl.config({ decoration = { screen_shader = "${dimShader}" } })' ;;
         lock) [ "$2" -ge "$lock" ] && loginctl lock-session ;;
         suspend) [ "$2" -ge "$suspend" ] && systemctl suspend-then-hibernate ;;
       esac
@@ -335,11 +341,25 @@ in
     };
 
     extraMonitors = mkOption {
-      type = types.listOf types.str;
-      default = [ ", preferred, auto, 1" ];
-      example = [ "DP-1, 1920x1080@60, 2560x0, 1" ];
+      type = types.listOf (types.attrsOf types.anything);
+      default = [
+        {
+          output = "";
+          mode = "preferred";
+          position = "auto";
+          scale = 1;
+        }
+      ];
+      example = [
+        {
+          output = "DP-1";
+          mode = "1920x1080@60";
+          position = "2560x0";
+          scale = 1;
+        }
+      ];
       description = ''
-        Hyprland monitor strings for the outputs other than the primary, emitted
+        `hl.monitor` specs for the outputs other than the primary, emitted
         after it. The primary is always generated from `primaryScreen` and
         `primaryMode`, so populating this list cannot silently drop it.
         The default catch-all gives any further display its preferred mode,
@@ -472,14 +492,6 @@ in
       brightnessctl
       playerctl # backs the XF86Audio{Play,Pause,Prev,Next} binds
 
-      # `togglefloating` floats a window at whatever geometry its tile happened
-      # to have, which is the geometry being escaped. This lands it where the
-      # manager kind would have, for the windows no rule caught. Percentages
-      # here go through the dispatcher rather than muParser, so they parse.
-      (writeShellScriptBin "hypr-float-here" ''
-        hyprctl --batch "dispatch setfloating ; dispatch resizeactive exact 47% 62% ; dispatch centerwindow"
-      '')
-
       # Classifying a program means knowing the class it actually reports, which
       # is not derivable from its name: viewnior answers `Viewnior` under
       # XWayland, okular `org.kde.okular`, and blueman leaks its Nix wrapper.
@@ -514,12 +526,12 @@ in
         # special one is overlaid, so it is always a valid destination.
         WORKSPACE=$(hyprctl activeworkspace -j | ${lib.getExe pkgs.jq} -r '.id')
 
-        hyprctl dispatch movetoworkspace "$WORKSPACE,address:$ADDRESS"
+        hyprctl dispatch "hl.dsp.window.move({ workspace = $WORKSPACE, window = \"address:$ADDRESS\" })"
       '')
 
       # Scale is runtime state, the way the wallpaper is: the `monitor` setting
-      # is what a session starts at, and `hyprctl keyword` overrides it until
-      # the next config reload.
+      # is what a session starts at, and `hyprctl eval` overrides it until the
+      # next config reload.
       (writeShellScriptBin "hypr-monitor-scale" ''
         read -r NAME W H RR X Y CURRENT < <(hyprctl monitors -j \
           | ${lib.getExe pkgs.jq} -r '.[] | select(.focused)
@@ -560,7 +572,7 @@ in
 
         # Mode and position are read back from the monitor rather than passed as
         # `auto`, which would re-run mode selection and re-lay-out every output.
-        hyprctl keyword monitor "$NAME,''${W}x''${H}@''${RR},''${X}x''${Y},$SCALE"
+        hyprctl eval "hl.monitor({ output = \"$NAME\", mode = \"''${W}x''${H}@''${RR}\", position = \"''${X}x''${Y}\", scale = $SCALE })"
 
         notify-send --app-name=Hyprland "Monitor scale" "$NAME at ''${CHOICE%% *}x — $LOGICAL" \
           --urgency normal --hint string:synchronous:my_scale
@@ -874,250 +886,174 @@ in
 
       wayland.windowManager.hyprland = {
         enable = true;
-        configType = "hyprlang";
+        configType = "lua";
         # Use the Hyprland and portal packages from the NixOS module
         package = null;
         portalPackage = null;
 
+        # Data, which home-manager renders as one `hl.<name>(...)` call per
+        # entry; `curve` leads through `importantPrefixes`, so an animation can
+        # name it. Binds, the resize submap and startup are code, in
+        # `extraConfig`.
         settings = {
-          "$mod" = "ALT";
-
           # The primary screen always leads, anchored at the origin; everything
           # else follows it.
-          monitor = [ "${cfg.primaryScreen}, ${cfg.primaryMode}, 0x0, 1" ] ++ cfg.extraMonitors;
+          monitor = [
+            {
+              output = cfg.primaryScreen;
+              mode = cfg.primaryMode;
+              position = "0x0";
+              scale = 1;
+            }
+          ]
+          ++ cfg.extraMonitors;
 
           env = [
-            "XCURSOR_SIZE,24"
-            "HYPRCURSOR_SIZE,24"
+            {
+              _args = [
+                "XCURSOR_SIZE"
+                "24"
+              ];
+            }
+            {
+              _args = [
+                "HYPRCURSOR_SIZE"
+                "24"
+              ];
+            }
           ];
 
-          exec-once = [
-            "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
-            "${lib.getExe pkgs.waypaper} --restore"
-            # NetworkManager's secret agent, which asks for VPN, 802.1X and
-            # changed Wi-Fi secrets. Quickshell hides its tray icon.
-            "${waitForSni} && ${lib.getExe pkgs.networkmanagerapplet}"
-            "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
-            "${lib.getExe' pkgs.wl-clipboard "wl-paste"} --watch ${clipboardPersistCb}"
-            "wl-paste --type text --watch cliphist store"
-            "wl-paste --type image --watch cliphist store"
-          ];
+          config = {
+            general = {
+              gaps_in = 5;
+              gaps_out = outerGap;
+              border_size = 2;
+              col = {
+                active_border = activeBorder;
+                inactive_border = hyprColor theme.foreground.dark "aa";
+              };
+              resize_on_border = false;
+              allow_tearing = false;
+              layout = "dwindle";
+            };
 
-          general = {
-            gaps_in = 5;
-            gaps_out = outerGap;
-            border_size = 2;
-            "col.active_border" = activeBorder;
-            "col.inactive_border" = hyprColor theme.foreground.dark "aa";
-            resize_on_border = false;
-            allow_tearing = false;
-            layout = "dwindle";
+            decoration = {
+              rounding = 10;
+              active_opacity = 1.0;
+              inactive_opacity = 1.0;
+              shadow = {
+                enabled = true;
+                range = 4;
+                render_power = 3;
+                color = "rgba(1a1a1aee)";
+              };
+              blur = {
+                enabled = true;
+                size = 3;
+                passes = 1;
+                vibrancy = 0.1696;
+              };
+            };
+
+            input = {
+              repeat_delay = 300;
+              repeat_rate = 30;
+              kb_layout = if config.base.keyboard.layout == "hallmack" then "us" else "us,ru";
+              kb_options = concatStringsSep "," (
+                optional (config.base.keyboard.layout != "hallmack") "grp:win_space_toggle"
+                ++ optional config.base.keyboard.swapCapsEscape "caps:swapescape"
+              );
+              follow_mouse = 1;
+              # Hyprland applies these to every pointer, the touchpad included;
+              # scoping them to the mouse would take a per-device section, whose
+              # name is host-specific.
+              sensitivity = 0.4;
+              accel_profile = "flat";
+              touchpad = {
+                natural_scroll = false;
+                # Hyprland defaults tap-to-click on, which fires clicks from palm
+                # brushes while typing.
+                tap_to_click = false;
+                middle_button_emulation = false;
+                disable_while_typing = true;
+              };
+            };
+
+            gestures = {
+              workspace_swipe_distance = 500;
+              workspace_swipe_create_new = true;
+            };
+
+            dwindle.preserve_split = true;
+            master.new_status = "master";
+
+            misc = {
+              force_default_wallpaper = -1;
+              disable_hyprland_logo = false;
+              disable_splash_rendering = false;
+            };
+
+            animations.enabled = true;
           };
 
-          decoration = {
-            rounding = 10;
-            active_opacity = 1.0;
-            inactive_opacity = 1.0;
-            shadow = {
+          curve._args = [
+            "snappy"
+            {
+              type = "bezier";
+              points = [
+                [
+                  0.2
+                  1
+                ]
+                [
+                  0.2
+                  1
+                ]
+              ];
+            }
+          ];
+
+          animation = [
+            {
+              leaf = "windows";
               enabled = true;
-              range = 4;
-              render_power = 3;
-              color = "rgba(1a1a1aee)";
-            };
-            blur = {
+              speed = 10;
+              bezier = "snappy";
+              style = "popin 80%";
+            }
+            {
+              leaf = "fade";
               enabled = true;
-              size = 3;
-              passes = 1;
-              vibrancy = 0.1696;
-            };
-          };
-
-          input = {
-            repeat_delay = 300;
-            repeat_rate = 30;
-            kb_layout = if config.base.keyboard.layout == "hallmack" then "us" else "us,ru";
-            kb_options = concatStringsSep "," (
-              optional (config.base.keyboard.layout != "hallmack") "grp:win_space_toggle"
-              ++ optional config.base.keyboard.swapCapsEscape "caps:swapescape"
-            );
-            follow_mouse = 1;
-            # Hyprland applies these to every pointer, the touchpad included;
-            # scoping them to the mouse would take a per-device section, whose
-            # name is host-specific.
-            sensitivity = 0.4;
-            accel_profile = "flat";
-            touchpad = {
-              natural_scroll = false;
-              # Hyprland defaults tap-to-click on, which fires clicks from palm
-              # brushes while typing.
-              "tap-to-click" = false;
-              middle_button_emulation = false;
-              disable_while_typing = true;
-            };
-          };
-
-          gestures = {
-            workspace_swipe_distance = 500;
-            workspace_swipe_create_new = true;
-          };
-
-          dwindle.preserve_split = true;
-
-          master = {
-            new_status = "master";
-          };
-
-          misc = {
-            force_default_wallpaper = -1;
-            disable_hyprland_logo = false;
-            disable_splash_rendering = false;
-          };
-
-          animations = {
-            enabled = true;
-            bezier = "snappy, 0.2, 1, 0.2, 1";
-            animation = [
-              "windows, 1, 10, snappy, popin 80%"
-              "fade, 1, 3, snappy"
-              "workspaces, 1, 10, snappy, slide"
-            ];
-          };
-
-          bind =
-            let
-              splitKey = if config.base.keyboard.layout == "hallmack" then "L" else "E";
-            in
-            [
-              "$mod, Return, exec, kitty"
-              "$mod, Escape, killactive"
-              "$mod, D, exec, wofi --show drun"
-              "$mod, F, fullscreen"
-              "$mod, SPACE, togglefloating"
-              "$mod SHIFT, SPACE, exec, hypr-float-here"
-              "$mod CTRL, SPACE, exec, hypr-window-class"
-              "$mod, P, pseudo"
-              "$mod, ${splitKey}, layoutmsg, togglesplit"
-              "$mod, M, exec, pwvucontrol"
-              "$mod, W, exec, pcmanfm"
-              "$mod SHIFT, R, exec, systemctl --user restart quickshell"
-              "$mod, grave, exec, quickshell ipc call notifications dismiss"
-              "$mod SHIFT, grave, exec, quickshell ipc call notifications dismissAll"
-              "$mod CTRL, grave, exec, quickshell ipc call notifications toggle"
-              "$mod SHIFT, S, exec, hypr-monitor-scale"
-              "$mod, R, submap, resize"
-              "$mod, 0, exec, wlogout"
-
-              # Focus
-              "$mod, ${dirs.l}, movefocus, l"
-              "$mod, ${dirs.d}, movefocus, d"
-              "$mod, ${dirs.u}, movefocus, u"
-              "$mod, ${dirs.r}, movefocus, r"
-              "$mod, left, movefocus, l"
-              "$mod, down, movefocus, d"
-              "$mod, up, movefocus, u"
-              "$mod, right, movefocus, r"
-
-              # Move windows
-              "$mod SHIFT, ${dirs.l}, movewindow, l"
-              "$mod SHIFT, ${dirs.d}, movewindow, d"
-              "$mod SHIFT, ${dirs.u}, movewindow, u"
-              "$mod SHIFT, ${dirs.r}, movewindow, r"
-              "$mod SHIFT, left, movewindow, l"
-              "$mod SHIFT, down, movewindow, d"
-              "$mod SHIFT, up, movewindow, u"
-              "$mod SHIFT, right, movewindow, r"
-
-              # Workspace back/forth
-              "$mod, B, workspace, previous"
-              "$mod SHIFT, B, movetoworkspace, previous"
-
-              # Special workspace, standing in for i3's scratchpad. S only
-              # overlays it; minus stashes a window and pulls one back out,
-              # neither of which needs the overlay open.
-              "$mod, S, togglespecialworkspace, magic"
-              "$mod, minus, exec, hypr-move-to-active-workspace"
-              "$mod SHIFT, minus, movetoworkspacesilent, special:magic"
-
-              # Screenshot
-              ", Print, exec, screenshot --edit"
-              "SHIFT, Print, exec, screenshot"
-
-              # Audio, each raising the OSD; the volume steps repeat below. SHIFT
-              # C is an absolute assignment that drops straight back to 10%
-              # rather than a decrement.
-              "$mod SHIFT, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 10% && quickshell ipc call osd volume"
-              "$mod, T, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && quickshell ipc call osd volume"
-              "$mod, N, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && quickshell ipc call osd mic"
-
-              # Apps
-              "$mod, F2, exec, galculator"
-              "$mod, F4, exec, transmission-gtk"
-              "$mod, F6, exec, kitty glances"
-            ]
-            ++ map (n: "$mod, ${toString n}, workspace, ${toString n}") (lib.range 1 9)
-            ++ map (n: "$mod SHIFT, ${toString n}, movetoworkspace, ${toString n}") (lib.range 1 9)
-            ++ map (n: "$mod CTRL, ${toString n}, movetoworkspacesilent, ${toString n}") (lib.range 1 9);
-
-          # The unshifted pair steps by 5% inside `--limit 1.0`. SHIFT V
-          # deliberately escapes that limit and climbs past 100%.
-          binde = [
-            "$mod, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && quickshell ipc call osd volume"
-            "$mod, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- --limit 1.0 && quickshell ipc call osd volume"
-            "$mod SHIFT, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && quickshell ipc call osd volume"
-          ];
-
-          # The volume keys have no escape from the limit.
-          bindel = [
-            ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && quickshell ipc call osd volume"
-            ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && quickshell ipc call osd volume"
-            ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && quickshell ipc call osd volume"
-            ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && quickshell ipc call osd mic"
-            # Through the bar's backlight, which holds the 1% floor; brightnessctl
-            # takes only a raw one. On the thinkpad these keys come from the
-            # Video Bus as taps, so a held key repeats at the firmware's pace.
-            ", XF86MonBrightnessUp, exec, quickshell ipc call backlight up"
-            ", XF86MonBrightnessDown, exec, quickshell ipc call backlight down"
-          ];
-
-          bindl = [
-            ", XF86AudioPlay, exec, playerctl play-pause"
-            ", XF86AudioPause, exec, playerctl play-pause"
-            ", XF86AudioPrev, exec, playerctl previous"
-            ", XF86AudioNext, exec, playerctl next"
-
-            "$mod SHIFT, 0, exec, pidof hyprlock || hyprlock"
-          ];
-
-          # On release, once the lock has toggled, and passed through, so the
-          # key still reaches the client. Ignoring mods, since the held key's
-          # own Lock is still down on release and would fail an empty mask.
-          bindrni = [ ", Caps_Lock, exec, quickshell ipc call osd caps" ];
-
-          bindm = [
-            "$mod, mouse:272, movewindow"
-            "$mod, mouse:273, resizewindow"
-            ", mouse:275, resizewindow"
-            ", mouse:276, movewindow"
+              speed = 3;
+              bezier = "snappy";
+            }
+            {
+              leaf = "workspaces";
+              enabled = true;
+              speed = 10;
+              bezier = "snappy";
+              style = "slide";
+            }
           ];
 
           # Quickshell's panels and notification popups animate themselves,
           # sliding out of the bar. Both sit on `overlay`, where Hyprland draws
           # a higher `order` first, so the popups go beneath the panels.
-          layerrule = [
+          layer_rule = [
             {
               name = "quickshell-panel";
-              "match:namespace" = "^(quickshell-panel)$";
+              match.namespace = "^(quickshell-panel)$";
               no_anim = true;
             }
             {
               name = "quickshell-notifications";
-              "match:namespace" = "^(quickshell-notifications)$";
+              match.namespace = "^(quickshell-notifications)$";
               no_anim = true;
               order = 1;
             }
           ];
 
-          windowrule =
+          window_rule =
             # Generated rules lead. Apply order is list order and the last match
             # wins a property, so every hand-written rule below stays an override
             # — notably the two that dock to a bar module, which would
@@ -1166,26 +1102,26 @@ in
               # own file chooser in-process are still out of reach.
               {
                 name = "dialog-modal";
-                "match:modal" = true;
-                float = "yes";
+                match.modal = true;
+                float = true;
                 center = true;
               }
               {
                 name = "firefox-workspace";
-                "match:class" = "^(firefox)$";
+                match.class = "^(firefox)$";
                 workspace = "1 silent";
               }
               # XWayland reports WM_CLASS's second field, and Hyprland matches
               # case-sensitively, so the class is `Slack`.
               {
                 name = "slack-workspace";
-                "match:class" = "^(Slack)$";
+                match.class = "^(Slack)$";
                 workspace = "3 silent";
               }
               (
                 {
                   name = "pwvucontrol-float-pin";
-                  "match:class" = "^(com\\.saivert\\.pwvucontrol)$";
+                  match.class = "^(com\\.saivert\\.pwvucontrol)$";
                 }
                 // dockToBarModule {
                   fromRight = barModuleCentre.volume;
@@ -1195,22 +1131,24 @@ in
               )
               {
                 name = "suppress-maximize";
-                "match:class" = ".*";
+                match.class = ".*";
                 suppress_event = "maximize";
               }
               {
                 name = "fullscreen-idle-inhibit";
-                "match:class" = ".*";
+                match.class = ".*";
                 idle_inhibit = "fullscreen";
               }
               {
                 name = "fix-xwayland-drags";
-                "match:class" = "^$";
-                "match:float" = true;
-                "match:fullscreen" = false;
-                "match:pin" = false;
-                "match:title" = "^$";
-                "match:xwayland" = true;
+                match = {
+                  class = "^$";
+                  float = true;
+                  fullscreen = false;
+                  pin = false;
+                  title = "^$";
+                  xwayland = true;
+                };
                 no_focus = true;
               }
               # No `size`: a rule that sets one wins the initial map and the
@@ -1218,38 +1156,202 @@ in
               # `--width`/`--lines`, as hypr-monitor-scale does, need theirs.
               {
                 name = "wofi-float";
-                "match:class" = "^(wofi)$";
+                match.class = "^(wofi)$";
                 center = true;
-                float = "yes";
-                pin = "yes";
+                float = true;
+                pin = true;
                 dim_around = true;
               }
               {
                 name = "stretchly-break";
-                "match:class" = "^electron$";
-                "match:title" = "^Time to take a break!$";
+                match = {
+                  class = "^electron$";
+                  title = "^Time to take a break!$";
+                };
                 center = true;
-                pin = "yes";
+                pin = true;
                 dim_around = true;
               }
             ];
         };
 
-        extraConfig = ''
-          # Percentages, not pixels: Hyprland rejects a grow delta larger than
-          # the window itself, which a fixed step hits on short splits.
-          submap = resize
-          binde = , ${dirs.l}, resizeactive, -10% 0
-          binde = , ${dirs.d}, resizeactive, 0 10%
-          binde = , ${dirs.u}, resizeactive, 0 -10%
-          binde = , ${dirs.r}, resizeactive, 10% 0
-          binde = , left, resizeactive, -10% 0
-          binde = , down, resizeactive, 0 10%
-          binde = , up, resizeactive, 0 -10%
-          binde = , right, resizeactive, 10% 0
-          bind = , Escape, submap, reset
-          submap = reset
-        '';
+        extraConfig =
+          let
+            lua = generators.toLua { };
+            splitKey = if config.base.keyboard.layout == "hallmack" then "L" else "E";
+
+            startup = [
+              "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
+              "${lib.getExe pkgs.waypaper} --restore"
+              # NetworkManager's secret agent, which asks for VPN, 802.1X and
+              # changed Wi-Fi secrets. Quickshell hides its tray icon.
+              "${waitForSni} && ${lib.getExe pkgs.networkmanagerapplet}"
+              "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
+              "${lib.getExe' pkgs.wl-clipboard "wl-paste"} --watch ${clipboardPersistCb}"
+              "wl-paste --type text --watch cliphist store"
+              "wl-paste --type image --watch cliphist store"
+            ];
+          in
+          ''
+            local mod = "ALT"
+            local exec = hl.dsp.exec_cmd
+
+            hl.on("hyprland.start", function()
+            ${concatMapStrings (command: "  hl.exec_cmd(${lua command})\n") startup}end)
+
+            -- `togglefloating` floats a window at whatever geometry its tile
+            -- happened to have, which is the geometry being escaped. This lands
+            -- it where the manager kind would have, for the windows no rule
+            -- caught. A monitor reports its size in pixels, which its scale
+            -- takes back to the logical size the rules measure in.
+            local function float_here()
+              local monitor = hl.get_active_monitor()
+              if not monitor then
+                return
+              end
+              hl.dispatch(hl.dsp.window.float({ action = "enable" }))
+              hl.dispatch(hl.dsp.window.resize({
+                x = monitor.width / monitor.scale * 0.47,
+                y = monitor.height / monitor.scale * 0.62,
+              }))
+              hl.dispatch(hl.dsp.window.center())
+            end
+
+            -- Grows the focused window by a fraction of its own size. Fractions,
+            -- not pixels: Hyprland rejects a grow delta larger than the window
+            -- itself, which a fixed step hits on short splits.
+            local function grow(fx, fy)
+              return function()
+                local window = hl.get_active_window()
+                if window then
+                  hl.dispatch(hl.dsp.window.resize({
+                    x = fx * window.size.x,
+                    y = fy * window.size.y,
+                    relative = true,
+                  }))
+                end
+              end
+            end
+
+            hl.bind(mod .. " + Return", exec("kitty"))
+            hl.bind(mod .. " + Escape", hl.dsp.window.close())
+            hl.bind(mod .. " + D", exec("wofi --show drun"))
+            hl.bind(mod .. " + F", hl.dsp.window.fullscreen())
+            hl.bind(mod .. " + SPACE", hl.dsp.window.float())
+            hl.bind(mod .. " + SHIFT + SPACE", float_here)
+            hl.bind(mod .. " + CTRL + SPACE", exec("hypr-window-class"))
+            hl.bind(mod .. " + P", hl.dsp.window.pseudo())
+            hl.bind(mod .. " + ${splitKey}", hl.dsp.layout("togglesplit"))
+            hl.bind(mod .. " + M", exec("pwvucontrol"))
+            hl.bind(mod .. " + W", exec("pcmanfm"))
+            hl.bind(mod .. " + SHIFT + R", exec("systemctl --user restart quickshell"))
+            hl.bind(mod .. " + grave", exec("quickshell ipc call notifications dismiss"))
+            hl.bind(mod .. " + SHIFT + grave", exec("quickshell ipc call notifications dismissAll"))
+            hl.bind(mod .. " + CTRL + grave", exec("quickshell ipc call notifications toggle"))
+            hl.bind(mod .. " + SHIFT + S", exec("hypr-monitor-scale"))
+            hl.bind(mod .. " + R", hl.dsp.submap("resize"))
+            hl.bind(mod .. " + 0", exec("wlogout"))
+
+            -- Focus, and with SHIFT move, by the layout's direction keys and the
+            -- arrows alike.
+            for _, keys in ipairs({
+              { "${dirs.l}", "left", "l" },
+              { "${dirs.d}", "down", "d" },
+              { "${dirs.u}", "up", "u" },
+              { "${dirs.r}", "right", "r" },
+            }) do
+              for _, key in ipairs({ keys[1], keys[2] }) do
+                hl.bind(mod .. " + " .. key, hl.dsp.focus({ direction = keys[3] }))
+                hl.bind(mod .. " + SHIFT + " .. key, hl.dsp.window.move({ direction = keys[3] }))
+              end
+            end
+
+            for i = 1, 9 do
+              hl.bind(mod .. " + " .. i, hl.dsp.focus({ workspace = i }))
+              hl.bind(mod .. " + SHIFT + " .. i, hl.dsp.window.move({ workspace = i }))
+              hl.bind(mod .. " + CTRL + " .. i, hl.dsp.window.move({ workspace = i, follow = false }))
+            end
+
+            -- Workspace back/forth
+            hl.bind(mod .. " + B", hl.dsp.focus({ workspace = "previous" }))
+            hl.bind(mod .. " + SHIFT + B", hl.dsp.window.move({ workspace = "previous" }))
+
+            -- Special workspace, standing in for i3's scratchpad. S only
+            -- overlays it; minus stashes a window and pulls one back out,
+            -- neither of which needs the overlay open.
+            hl.bind(mod .. " + S", hl.dsp.workspace.toggle_special("magic"))
+            hl.bind(mod .. " + minus", exec("hypr-move-to-active-workspace"))
+            hl.bind(mod .. " + SHIFT + minus", hl.dsp.window.move({ workspace = "special:magic", follow = false }))
+
+            hl.bind("Print", exec("screenshot --edit"))
+            hl.bind("SHIFT + Print", exec("screenshot"))
+
+            -- Audio, each raising the OSD. SHIFT C is an absolute assignment
+            -- that drops straight back to 10% rather than a decrement. The
+            -- unshifted pair steps by 5% inside `--limit 1.0`; SHIFT V
+            -- deliberately escapes that limit and climbs past 100%.
+            hl.bind(mod .. " + SHIFT + C", exec("wpctl set-volume @DEFAULT_AUDIO_SINK@ 10% && quickshell ipc call osd volume"))
+            hl.bind(mod .. " + T", exec("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && quickshell ipc call osd volume"))
+            hl.bind(mod .. " + N", exec("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && quickshell ipc call osd mic"))
+            hl.bind(mod .. " + V", exec("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && quickshell ipc call osd volume"), { repeating = true })
+            hl.bind(mod .. " + C", exec("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- --limit 1.0 && quickshell ipc call osd volume"), { repeating = true })
+            hl.bind(mod .. " + SHIFT + V", exec("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && quickshell ipc call osd volume"), { repeating = true })
+
+            -- The volume keys have no escape from the limit. The brightness keys
+            -- go through the bar's backlight, which holds the 1% floor;
+            -- brightnessctl takes only a raw one. On the thinkpad they come from
+            -- the Video Bus as taps, so a held key repeats at the firmware's pace.
+            local media = { locked = true, repeating = true }
+            hl.bind("XF86AudioRaiseVolume", exec("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && quickshell ipc call osd volume"), media)
+            hl.bind("XF86AudioLowerVolume", exec("wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && quickshell ipc call osd volume"), media)
+            hl.bind("XF86AudioMute", exec("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && quickshell ipc call osd volume"), media)
+            hl.bind("XF86AudioMicMute", exec("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && quickshell ipc call osd mic"), media)
+            hl.bind("XF86MonBrightnessUp", exec("quickshell ipc call backlight up"), media)
+            hl.bind("XF86MonBrightnessDown", exec("quickshell ipc call backlight down"), media)
+
+            hl.bind("XF86AudioPlay", exec("playerctl play-pause"), { locked = true })
+            hl.bind("XF86AudioPause", exec("playerctl play-pause"), { locked = true })
+            hl.bind("XF86AudioPrev", exec("playerctl previous"), { locked = true })
+            hl.bind("XF86AudioNext", exec("playerctl next"), { locked = true })
+            hl.bind(mod .. " + SHIFT + 0", exec("pidof hyprlock || hyprlock"), { locked = true })
+
+            -- On release, once the lock has toggled, and passed through, so the
+            -- key still reaches the client. Ignoring mods, since the held key's
+            -- own Lock is still down on release and would fail an empty mask.
+            hl.bind("Caps_Lock", exec("quickshell ipc call osd caps"), {
+              release = true,
+              non_consuming = true,
+              ignore_mods = true,
+            })
+
+            -- Apps
+            hl.bind(mod .. " + F2", exec("galculator"))
+            hl.bind(mod .. " + F4", exec("transmission-gtk"))
+            hl.bind(mod .. " + F6", exec("kitty glances"))
+
+            -- A drag or resize dispatcher ends on the button's release by
+            -- itself, so these need no mouse option.
+            hl.bind(mod .. " + mouse:272", hl.dsp.window.drag())
+            hl.bind(mod .. " + mouse:273", hl.dsp.window.resize())
+            hl.bind("mouse:275", hl.dsp.window.resize())
+            hl.bind("mouse:276", hl.dsp.window.drag())
+
+            hl.define_submap("resize", function()
+              for _, step in ipairs({
+                { "${dirs.l}", -0.1, 0 },
+                { "${dirs.d}", 0, 0.1 },
+                { "${dirs.u}", 0, -0.1 },
+                { "${dirs.r}", 0.1, 0 },
+                { "left", -0.1, 0 },
+                { "down", 0, 0.1 },
+                { "up", 0, -0.1 },
+                { "right", 0.1, 0 },
+              }) do
+                hl.bind(step[1], grow(step[2], step[3]), { repeating = true })
+              end
+              hl.bind("Escape", hl.dsp.submap("reset"))
+            end)
+          '';
       };
 
       xdg.configFile."wofi/config".text = ''
@@ -1435,7 +1537,7 @@ in
               size = "300, 50";
               outline_thickness = 2;
               dots_spacing = 0.3;
-              outer_color = activeBorder;
+              outer_color = "${concatStringsSep " " activeBorder.colors} ${toString activeBorder.angle}deg";
               inner_color = "rgba(0, 0, 0, 0.0)";
               font_color = hyprColor theme.foreground.main "ff";
               fade_on_empty = false;
@@ -1480,7 +1582,7 @@ in
           general = {
             lock_cmd = "pidof hyprlock || hyprlock";
             before_sleep_cmd = "loginctl lock-session";
-            after_sleep_cmd = "hyprctl dispatch dpms on";
+            after_sleep_cmd = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'";
           };
           # One listener per distinct step and threshold. The suspend turns the
           # screen off.
@@ -1492,7 +1594,7 @@ in
                   step: timeout: {
                     inherit timeout;
                     on-timeout = "${idleStep} ${step} ${toString timeout}";
-                    on-resume = "hyprctl keyword decoration:screen_shader '[[EMPTY]]'";
+                    on-resume = "hyprctl eval 'hl.config({ decoration = { screen_shader = \"\" } })'";
                   }
                 )
               ) idleTimeouts

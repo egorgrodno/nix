@@ -61,7 +61,7 @@ Any name not in `list` falls back to `~/.config/<name>`.
 | `hyprlock`, `wofi`, `wlogout` | No signal — config is read at launch, so just launch it again. |
 | `nvim`, `zsh` | No signal — new instances pick it up (`exec zsh` for the current shell). |
 
-A QML error on save leaves the running bar in place and posts a critical "Quickshell failed to reload" notice with the error. A broken `hyprland.conf` is rejected by `hyprctl reload` with the error printed, leaving the running config intact.
+A QML error on save leaves the running bar in place and posts a critical "Quickshell failed to reload" notice with the error. A Lua syntax error in `hyprland.lua` is rejected by `hyprctl reload` with the error printed, leaving the running config intact.
 
 ## Porting the edits back
 
@@ -70,7 +70,7 @@ This is the part that matters — dev mode is scratch space, and nothing survive
 | Live file | Nix source |
 |---|---|
 | `.config/quickshell/*.qml` | `modules/quickshell/`, the same name; `Theme.qml` and `Programs.qml` from its `default.nix` |
-| `.config/hypr/hyprland.conf` | `modules/desktop/default.nix` — `wayland.windowManager.hyprland` (~492) |
+| `.config/hypr/hyprland.lua` | `modules/desktop/default.nix` — `wayland.windowManager.hyprland` (~887): `settings` for the `hl.config`, monitor and rule calls, `extraConfig` for the Lua after them |
 | `.config/hypr/hyprlock.conf` | `modules/desktop/default.nix` — `programs.hyprlock` (~912) |
 | `.config/hypr/hypridle.conf` | `modules/desktop/default.nix` — `services.hypridle` (~969) |
 | `.config/kitty/*` | `modules/desktop/default.nix` — `programs.kitty` (~411) |
@@ -100,7 +100,7 @@ Never skip step 4. A port that looks right and a port that regenerates the file 
 
 - **Interpolated store paths.** `wlogout: "${lib.getExe pkgs.wlogout}"` in `Programs.qml` renders as `wlogout: "/nix/store/6rkhi5…-wlogout-1.2.2/bin/wlogout"`. Porting that back verbatim pins a store path that dies at the next garbage collection. Restore the `${pkgs.…}` form.
 - **Theme colors.** A hex value in a diff is almost always a `theme.*` reference rendered out — `#16191D` is `theme.background.main`, `#61AFEF` is `theme.blue`. A literal undoes the theme routing. If the color is genuinely new, add it to `theme` in `flake.nix`.
-- **Attrsets rendered as text.** Kitty and hyprland configs come from Nix attrsets. `font_size 12.0` is `programs.kitty.settings.font_size = 12.0`, not a string to paste into a text block.
+- **Attrsets rendered as text.** Kitty's config and Hyprland's settings, monitors and rules come from Nix attrsets; Hyprland's binds, submap and startup are Lua in `extraConfig` and port back as Lua. `font_size 12.0` is `programs.kitty.settings.font_size = 12.0`, not a string to paste into a text block.
 - **Resolved conditionals.** The live file contains one branch. The others are invisible in the diff and are the easiest thing to break — see below.
 
 ### Conditional branches

@@ -17,7 +17,7 @@ note() { printf '%s\n' "$*" >&2; }
 paths_of() {
   case "$1" in
   quickshell) echo ".config/quickshell" ;;
-  hyprland) echo ".config/hypr/hyprland.conf" ;;
+  hyprland) echo ".config/hypr/hyprland.lua" ;;
   hyprlock) echo ".config/hypr/hyprlock.conf" ;;
   hypridle) echo ".config/hypr/hypridle.conf" ;;
   kitty) echo ".config/kitty" ;;

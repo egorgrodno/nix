@@ -114,7 +114,7 @@ users = [
 |---|---|
 | `primaryScreen` | Connector name; defaults to `eDP-1`. Always emitted first, at `0x0`. |
 | `primaryMode` | `2560x1440@120`, or `preferred` / `highres` / `highrr`. |
-| `extraMonitors` | Hyprland strings for the remaining outputs, appended after the primary. |
+| `extraMonitors` | `hl.monitor` specs for the remaining outputs, appended after the primary. |
 
 ### Laptop role
 
