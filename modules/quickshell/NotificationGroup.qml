@@ -112,7 +112,7 @@ Item {
                 Figure {
                     id: count
 
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.baseline: name.baseline
                     text: `${group.shown.length}`
                     color: Theme.foregroundMuted
                     font.pixelSize: 14
