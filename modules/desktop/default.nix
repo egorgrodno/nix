@@ -233,6 +233,16 @@ let
     }
   '';
 
+  # Lua that sets the screen shader. Hyprland 0.56.2 repaints only two of an
+  # output's three buffers on a shader change, so the third flashes the old
+  # shader every third frame. Writing master's mfact back to itself makes
+  # Hyprland repaint every monitor in full. Remove that write once Hyprland
+  # includes a287842067 (hyprwm/Hyprland#15924), which no release past 0.56.2
+  # has yet.
+  setScreenShader =
+    path:
+    ''hl.config({ decoration = { screen_shader = "${path}" }, master = { mfact = hl.get_config("master.mfact") } })'';
+
   # Minutes of idle before each step, per power profile. Hibernation follows
   # the suspend after HibernateDelaySec.
   idleMinutes = {
@@ -280,7 +290,7 @@ let
       esac
 
       case $1 in
-        dim) [ "$2" -ge "$dim" ] && hyprctl eval 'hl.config({ decoration = { screen_shader = "${dimShader}" } })' ;;
+        dim) [ "$2" -ge "$dim" ] && hyprctl eval '${setScreenShader dimShader}' ;;
         lock) [ "$2" -ge "$lock" ] && loginctl lock-session ;;
         suspend) [ "$2" -ge "$suspend" ] && systemctl suspend-then-hibernate ;;
       esac
@@ -1601,9 +1611,8 @@ in
             after_sleep_cmd = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'";
           };
           # One listener per distinct step and threshold. The suspend turns the
-          # screen off. Only a dim listener undoes the dim, and only when it is
-          # on: every shader change redraws the screen twice, so six listeners
-          # resuming at once flicker it.
+          # screen off. Only a dim listener undoes the dim, and only while it is
+          # on, so a return from idle without a dim touches nothing.
           listener = unique (
             concatLists (
               mapAttrsToList (
@@ -1615,7 +1624,7 @@ in
                     on-timeout = "${idleStep} ${step} ${toString timeout}";
                   }
                   // optionalAttrs (step == "dim") {
-                    on-resume = "hyprctl eval 'if hl.get_config(\"decoration.screen_shader\") ~= \"\" then hl.config({ decoration = { screen_shader = \"\" } }) end'";
+                    on-resume = "hyprctl eval 'if hl.get_config(\"decoration.screen_shader\") ~= \"\" then ${setScreenShader ""} end'";
                   }
                 )
               ) idleTimeouts
