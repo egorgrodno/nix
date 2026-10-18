@@ -82,7 +82,7 @@ let
   greeterTheme = "container=black;border=blue;text=gray;time=cyan;prompt=cyan;input=white;action=gray;button=yellow";
 
   waitForSni = pkgs.writeShellScript "wait-for-sni" ''
-    until ${pkgs.dbus}/bin/dbus-send --session --print-reply \
+    until ${lib.getExe' pkgs.dbus "dbus-send"} --session --print-reply \
         --dest=org.freedesktop.DBus /org/freedesktop/DBus \
         org.freedesktop.DBus.GetNameOwner \
         string:org.kde.StatusNotifierWatcher 2>/dev/null; do
@@ -91,7 +91,7 @@ let
   '';
 
   clipboardPersistCb = pkgs.writeShellScript "clipboard-persist-cb" ''
-    types=$(${pkgs.wl-clipboard}/bin/wl-paste --list-types 2>/dev/null)
+    types=$(${lib.getExe' pkgs.wl-clipboard "wl-paste"} --list-types 2>/dev/null)
     pid_file="''${XDG_RUNTIME_DIR:-/tmp}/clipboard-persist.pid"
 
     # If our own wl-copy is still alive, this event was triggered by us — skip to break feedback loop
@@ -117,10 +117,10 @@ let
     # newline and `printf '%s'` cannot put them back — a line-wise yank would
     # come back without the `\n` that makes a shell paste auto-execute. Re-read
     # the selection instead, so the bytes never pass through the shell.
-    [ "$(${pkgs.wl-clipboard}/bin/wl-paste --no-newline | wc -c)" -eq 0 ] && exit 0
+    [ "$(${lib.getExe' pkgs.wl-clipboard "wl-paste"} --no-newline | wc -c)" -eq 0 ] && exit 0
 
-    ${pkgs.wl-clipboard}/bin/wl-paste --no-newline \
-      | ${pkgs.wl-clipboard}/bin/wl-copy --foreground &
+    ${lib.getExe' pkgs.wl-clipboard "wl-paste"} --no-newline \
+      | ${lib.getExe' pkgs.wl-clipboard "wl-copy"} --foreground &
     echo $! > "$pid_file"
   '';
 
@@ -307,7 +307,7 @@ let
     EOF
 
     export ZDOTDIR="$zdotdir"
-    exec ${pkgs.kitty}/bin/kitty -d /etc/nixos -e ${pkgs.zsh}/bin/zsh
+    exec ${lib.getExe pkgs.kitty} -d /etc/nixos -e ${lib.getExe pkgs.zsh}
   '';
 
 in
@@ -394,11 +394,11 @@ in
     services.greetd = {
       enable = true;
       settings.default_session.command = "${pkgs.writeShellScript "greeter" ''
-        exec ${pkgs.cage}/bin/cage -d -s -- \
-          ${pkgs.foot}/bin/foot \
+        exec ${lib.getExe pkgs.cage} -d -s -- \
+          ${lib.getExe pkgs.foot} \
             --config=${greeterTerminal} \
             --term=xterm-256color \
-            -e ${pkgs.tuigreet}/bin/tuigreet \
+            -e ${lib.getExe pkgs.tuigreet} \
               --time \
               --asterisks \
               --user-menu \
@@ -485,7 +485,7 @@ in
       # XWayland, okular `org.kde.okular`, and blueman leaks its Nix wrapper.
       (writeShellScriptBin "hypr-window-class" ''
         hyprctl activewindow -j \
-          | ${pkgs.jq}/bin/jq -r '"class: \(.class)\ninitialClass: \(.initialClass)\nxwayland: \(.xwayland)"' \
+          | ${lib.getExe pkgs.jq} -r '"class: \(.class)\ninitialClass: \(.initialClass)\nxwayland: \(.xwayland)"' \
           | xargs -0 notify-send "Window class" --urgency normal --hint string:synchronous:my_class
       '')
 
@@ -498,11 +498,11 @@ in
         # so it wins. Only when focus is elsewhere does the first parked window
         # apply, which lets repeated presses walk through the rest.
         ADDRESS=$(hyprctl activewindow -j \
-          | ${pkgs.jq}/bin/jq -r 'select(.workspace.name == "special:magic") | .address // empty')
+          | ${lib.getExe pkgs.jq} -r 'select(.workspace.name == "special:magic") | .address // empty')
 
         if [ -z "$ADDRESS" ]; then
           ADDRESS=$(hyprctl clients -j \
-            | ${pkgs.jq}/bin/jq -r 'map(select(.workspace.name == "special:magic")) | .[0].address // empty')
+            | ${lib.getExe pkgs.jq} -r 'map(select(.workspace.name == "special:magic")) | .[0].address // empty')
         fi
 
         if [ -z "$ADDRESS" ]; then
@@ -512,7 +512,7 @@ in
 
         # `activeworkspace` keeps reporting the real workspace while the
         # special one is overlaid, so it is always a valid destination.
-        WORKSPACE=$(hyprctl activeworkspace -j | ${pkgs.jq}/bin/jq -r '.id')
+        WORKSPACE=$(hyprctl activeworkspace -j | ${lib.getExe pkgs.jq} -r '.id')
 
         hyprctl dispatch movetoworkspace "$WORKSPACE,address:$ADDRESS"
       '')
@@ -522,7 +522,7 @@ in
       # the next config reload.
       (writeShellScriptBin "hypr-monitor-scale" ''
         read -r NAME W H RR X Y CURRENT < <(hyprctl monitors -j \
-          | ${pkgs.jq}/bin/jq -r '.[] | select(.focused)
+          | ${lib.getExe pkgs.jq} -r '.[] | select(.focused)
               | "\(.name) \(.width) \(.height) \(.refreshRate) \(.x) \(.y) \(.scale)"')
 
         if [ -z "$NAME" ]; then
@@ -536,7 +536,7 @@ in
         #
         # The two-decimal label is for reading; the exact scale rides in a
         # second tabbed field, since 1.875 is a divisor and 1.88 is not.
-        MENU=$(${pkgs.gawk}/bin/awk -v w="$W" -v h="$H" -v cur="$CURRENT" 'BEGIN {
+        MENU=$(${lib.getExe pkgs.gawk} -v w="$W" -v h="$H" -v cur="$CURRENT" 'BEGIN {
           a = w; b = h; while (b) { t = b; b = a % b; a = t }
           limit = 120 * a
 
@@ -555,8 +555,8 @@ in
         [ -n "$CHOICE" ] || exit 0
 
         SCALE=$(printf '%s\n' "$MENU" \
-          | ${pkgs.gawk}/bin/awk -F'\t' -v c="$CHOICE" '$1 == c { print $2; exit }')
-        LOGICAL=$(printf '%s\n' "$CHOICE" | ${pkgs.gawk}/bin/awk '{ print $2 }')
+          | ${lib.getExe pkgs.gawk} -F'\t' -v c="$CHOICE" '$1 == c { print $2; exit }')
+        LOGICAL=$(printf '%s\n' "$CHOICE" | ${lib.getExe pkgs.gawk} '{ print $2 }')
 
         # Mode and position are read back from the monitor rather than passed as
         # `auto`, which would re-run mode selection and re-lay-out every output.
@@ -571,7 +571,7 @@ in
       # left, edited or not. The path then takes the clipboard unless Satty's
       # own copy already put the image there.
       (writeShellScriptBin "screenshot" ''
-        FILE="$(${pkgs.xdg-user-dirs}/bin/xdg-user-dir SCREENSHOTS)/$(date +%Y%m%d_%H%M%S).png"
+        FILE="$(${lib.getExe' pkgs.xdg-user-dirs "xdg-user-dir"} SCREENSHOTS)/$(date +%Y%m%d_%H%M%S).png"
         COPIED="$XDG_RUNTIME_DIR/screenshot-$$"
 
         # A cancelled selection exits non-zero and writes no file.
@@ -789,7 +789,7 @@ in
           "Development"
         ];
 
-        exec = "${pkgs.kitty}/bin/kitty nvim %f";
+        exec = "${lib.getExe pkgs.kitty} nvim %f";
 
         mimeType = [
           "text/plain"
@@ -806,7 +806,7 @@ in
         type = "Application";
         terminal = false;
         icon = "nvim";
-        exec = "${nxe}/bin/nxe";
+        exec = lib.getExe nxe;
         categories = [
           "Utility"
           "TextEditor"
@@ -889,12 +889,12 @@ in
 
           exec-once = [
             "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
-            "${pkgs.waypaper}/bin/waypaper --restore"
+            "${lib.getExe pkgs.waypaper} --restore"
             # NetworkManager's secret agent, which asks for VPN, 802.1X and
             # changed Wi-Fi secrets. Quickshell hides its tray icon.
-            "${waitForSni} && ${pkgs.networkmanagerapplet}/bin/nm-applet"
+            "${waitForSni} && ${lib.getExe pkgs.networkmanagerapplet}"
             "${pkgs.polkit_gnome}/libexec/polkit-gnome-authentication-agent-1"
-            "${pkgs.wl-clipboard}/bin/wl-paste --watch ${clipboardPersistCb}"
+            "${lib.getExe' pkgs.wl-clipboard "wl-paste"} --watch ${clipboardPersistCb}"
             "wl-paste --type text --watch cliphist store"
             "wl-paste --type image --watch cliphist store"
           ];
@@ -1595,7 +1595,7 @@ in
           # the unit, or empties the file and starts it.
           ConditionFileNotEmpty = "!%S/night-light";
         };
-        Service.ExecStart = "${pkgs.wlsunset}/bin/wlsunset -S 07:00 -s 18:30 -T 6500 -t 3500 -d 7200";
+        Service.ExecStart = "${lib.getExe pkgs.wlsunset} -S 07:00 -s 18:30 -T 6500 -t 3500 -d 7200";
         Install.WantedBy = [ "graphical-session.target" ];
       };
     });

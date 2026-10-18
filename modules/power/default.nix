@@ -116,10 +116,10 @@ let
     dropin=/run/systemd/sleep.conf.d/power-saver.conf
     read -r profile _ < /run/tlp/last_pwr || profile=
     if [ "$profile" = 2 ]; then
-      ${pkgs.coreutils}/bin/mkdir -p "''${dropin%/*}"
+      ${lib.getExe' pkgs.coreutils "mkdir"} -p "''${dropin%/*}"
       printf '[Sleep]\nHibernateDelaySec=5min\n' > "$dropin"
     else
-      ${pkgs.coreutils}/bin/rm -f "$dropin"
+      ${lib.getExe' pkgs.coreutils "rm"} -f "$dropin"
     fi
   '';
 
@@ -157,14 +157,14 @@ in
     environment.systemPackages = [ chargeLimit ];
 
     services.udev.extraRules = ''
-      ACTION=="change", SUBSYSTEM=="power_supply", RUN+="${config.systemd.package}/bin/systemctl start --no-block power-profile-sync.service"
+      ACTION=="change", SUBSYSTEM=="power_supply", RUN+="${lib.getExe' config.systemd.package "systemctl"} start --no-block power-profile-sync.service"
     '';
 
     # tlp.service runs after multi-user.target, so a unit ordered after it must
     # hang off it rather than a target. `tlp init start` resets the profile by
     # power source, so the sync forgets the last source and decides afresh.
     systemd.services.tlp.serviceConfig.ExecStartPost =
-      "${pkgs.coreutils}/bin/rm -f /run/power-profile/online";
+      "${lib.getExe' pkgs.coreutils "rm"} -f /run/power-profile/online";
 
     systemd.services.power-profile-sync = {
       description = "Select the power profile for the power source and charge";

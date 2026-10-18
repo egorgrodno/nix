@@ -1,4 +1,9 @@
-{ pkgs, forAllUsers, ... }:
+{
+  lib,
+  pkgs,
+  forAllUsers,
+  ...
+}:
 
 {
   home-manager.users = forAllUsers {
@@ -19,7 +24,7 @@
 
       Service = {
         Type = "simple";
-        ExecStart = "${pkgs.nextcloud-client}/bin/nextcloud --logfile /tmp/nextcloud-sync.log";
+        ExecStart = "${lib.getExe pkgs.nextcloud-client} --logfile /tmp/nextcloud-sync.log";
         Restart = "on-failure";
         KillMode = "process";
       };

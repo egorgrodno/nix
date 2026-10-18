@@ -1,5 +1,6 @@
 {
   config,
+  lib,
   pkgs,
   forAllUsers,
   ...
@@ -26,7 +27,7 @@
     # the standalone profiles share without installing gh.
     programs.git.settings.credential."https://github.com".helper = [
       ""
-      "${pkgs.gh}/bin/gh auth git-credential"
+      "${lib.getExe pkgs.gh} auth git-credential"
     ];
   };
 }
