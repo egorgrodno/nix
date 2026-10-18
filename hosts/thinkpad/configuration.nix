@@ -20,6 +20,17 @@
   # Wifi and Bluetooth firmware, and the AMD microcode the hardware file wires up.
   hardware.enableRedistributableFirmware = true;
 
+  # The TrackPoint buttons reach libinput as a device apart from the touchpad,
+  # so a finger brushing the pad while it holds one turns a drag into a
+  # two-finger scroll. A top button strip keeps touches that start in the top
+  # 10 mm out of pointer motion and gestures.
+  environment.etc."libinput/local-overrides.quirks".text = ''
+    [ThinkPad T14 Gen 5 touchpad]
+    MatchUdevType=touchpad
+    MatchName=SYNA8019:00 06CB:CE68 Touchpad
+    AttrInputProp=+INPUT_PROP_TOPBUTTONPAD
+  '';
+
   environment.systemPackages = [
     # Rebinding the driver resets the touchpad, which recalibrates it. One
     # touched while it resumes can lose its left click until then.
