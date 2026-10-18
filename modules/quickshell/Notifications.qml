@@ -56,6 +56,12 @@ Singleton {
         return hours < 24 ? `${hours}h` : `${Math.floor(hours / 24)}d`;
     }
 
+    // notify-send names itself when its caller gives no app name, which tells
+    // the reader nothing.
+    function appLabel(entry) {
+        return entry.appName === "notify-send" ? "" : entry.appName;
+    }
+
     function remove(entry) {
         if (entries.includes(entry))
             entries = entries.filter(e => e !== entry);

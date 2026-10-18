@@ -104,7 +104,7 @@ Item {
 
                     anchors.verticalCenter: parent.verticalCenter
                     width: Math.min(implicitWidth, parent.width - (icon.visible ? icon.width + parent.spacing : 0) - count.width - parent.spacing)
-                    text: group.newest?.appName ?? ""
+                    text: group.newest ? Notifications.appLabel(group.newest) : ""
                     elide: Text.ElideRight
                     font.pixelSize: 14
                 }

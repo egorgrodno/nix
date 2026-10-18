@@ -486,7 +486,7 @@ in
       (writeShellScriptBin "hypr-window-class" ''
         hyprctl activewindow -j \
           | ${lib.getExe pkgs.jq} -r '"class: \(.class)\ninitialClass: \(.initialClass)\nxwayland: \(.xwayland)"' \
-          | xargs -0 notify-send "Window class" --urgency normal --hint string:synchronous:my_class
+          | xargs -0 notify-send --app-name=Hyprland "Window class" --urgency normal --hint string:synchronous:my_class
       '')
 
       # The Hyprland equivalent of i3's `scratchpad show`: pull the first window
@@ -506,7 +506,7 @@ in
         fi
 
         if [ -z "$ADDRESS" ]; then
-          notify-send "Scratchpad" "Empty" --urgency low --hint string:synchronous:my_scratchpad
+          notify-send --app-name=Hyprland "Scratchpad" "Empty" --urgency low --hint string:synchronous:my_scratchpad
           exit 0
         fi
 
@@ -526,7 +526,7 @@ in
               | "\(.name) \(.width) \(.height) \(.refreshRate) \(.x) \(.y) \(.scale)"')
 
         if [ -z "$NAME" ]; then
-          notify-send "Monitor scale" "No focused monitor" --urgency critical
+          notify-send --app-name=Hyprland "Monitor scale" "No focused monitor" --urgency critical
           exit 1
         fi
 
@@ -562,7 +562,7 @@ in
         # `auto`, which would re-run mode selection and re-lay-out every output.
         hyprctl keyword monitor "$NAME,''${W}x''${H}@''${RR},''${X}x''${Y},$SCALE"
 
-        notify-send "Monitor scale" "$NAME at ''${CHOICE%% *}x — $LOGICAL" \
+        notify-send --app-name=Hyprland "Monitor scale" "$NAME at ''${CHOICE%% *}x — $LOGICAL" \
           --urgency normal --hint string:synchronous:my_scale
       '')
 
@@ -588,7 +588,7 @@ in
         fi
 
         printf '%s' "$FILE" | wl-copy
-        notify-send "Screenshot path copied" "$FILE" --urgency low --hint string:synchronous:my_screenshot
+        notify-send --app-name=Hyprland "Screenshot path copied" "$FILE" --urgency low --hint string:synchronous:my_screenshot
       '')
 
       wl-clipboard

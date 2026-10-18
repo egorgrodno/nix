@@ -219,7 +219,9 @@ Item {
                             id: appName
 
                             width: parent.width - (card.icon !== "" ? 16 + parent.spacing : 0)
-                            text: !card.showApp ? Notifications.ageOf(card.entry.time) : card.showTime ? `${card.entry.appName} · ${Notifications.ageOf(card.entry.time)}` : card.entry.appName
+                            readonly property string app: card.showApp ? Notifications.appLabel(card.entry) : ""
+
+                            text: app === "" ? Notifications.ageOf(card.entry.time) : card.showTime ? `${app} · ${Notifications.ageOf(card.entry.time)}` : app
                             elide: Text.ElideRight
                         }
                     }
