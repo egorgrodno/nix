@@ -8,6 +8,7 @@
 
     # Applies on external power too, since logind ignores an unset
     # HandleLidSwitchExternalPower.
-    services.logind.settings.Login.HandleLidSwitch = "suspend-then-hibernate";
+    services.logind.settings.Login.HandleLidSwitch =
+      if config.base.hibernate then "suspend-then-hibernate" else "suspend";
   };
 }

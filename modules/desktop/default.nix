@@ -243,8 +243,7 @@ let
     path:
     ''hl.config({ decoration = { screen_shader = "${path}" }, master = { mfact = hl.get_config("master.mfact") } })'';
 
-  # Minutes of idle before each step, per power profile. Hibernation follows
-  # the suspend after HibernateDelaySec.
+  # Minutes of idle before each step, per power profile.
   idleMinutes = {
     performance = {
       dim = 10;
@@ -271,6 +270,10 @@ let
     suspend = m.suspend * 60 + (if m.suspend == m.lock then 5 else 0);
   }) idleMinutes;
 
+  # The idle suspend, which on a host that hibernates hibernates after
+  # HibernateDelaySec.
+  suspendVerb = if config.base.hibernate then "suspend-then-hibernate" else "suspend";
+
   # hypridle owns org.freedesktop.ScreenSaver, so restarting it on a profile
   # change would drop every app's idle inhibit. It runs every profile's
   # listeners instead, and each runs its step once the step is due under the
@@ -292,7 +295,7 @@ let
       case $1 in
         dim) [ "$2" -ge "$dim" ] && hyprctl eval '${setScreenShader dimShader}' ;;
         lock) [ "$2" -ge "$lock" ] && loginctl lock-session ;;
-        suspend) [ "$2" -ge "$suspend" ] && systemctl suspend-then-hibernate ;;
+        suspend) [ "$2" -ge "$suspend" ] && systemctl ${suspendVerb} ;;
       esac
     '';
 
@@ -623,16 +626,6 @@ in
 
     # Paired with the ntfs3g package below; the in-kernel ntfs3 driver loses to it.
     boot.blacklistedKernelModules = [ "ntfs3" ];
-
-    # hypridle's idle suspend hibernates after this delay, which logind refuses
-    # on a host without swap, leaving the machine awake.
-    assertions = [
-      {
-        assertion = config.swapDevices != [ ];
-        message = "The desktop module suspends then hibernates on idle: declare swap at least the size of RAM in `swapDevices`.";
-      }
-    ];
-    systemd.sleep.settings.Sleep.HibernateDelaySec = "10min";
 
     environment.sessionVariables.NIXOS_OZONE_WL = "1";
 

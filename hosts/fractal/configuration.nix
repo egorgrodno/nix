@@ -71,6 +71,8 @@ in
     useOSProber = true;
   };
 
+  base.hibernate = true;
+
   # Sized to RAM so any workload fits the hibernation image. systemd records the
   # file's location in the HibernateLocation EFI variable and the systemd initrd
   # resumes from it, so neither `resume=` nor `resume_offset=` is set.

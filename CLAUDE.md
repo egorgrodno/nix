@@ -100,13 +100,15 @@ users = [
 
 **Bluetooth.** Quickshell's Bluetooth module leads volume. A click soft-blocks or unblocks every Bluetooth radio through rfkill, as `btoff` and `bton` do. On the thinkpad the block cuts the radio's power and BlueZ drops the adapter, so the module reads rfkill as well and shows wherever a Bluetooth rfkill switch or adapter exists. A right-click opens blueman-manager, which runs blueman's applet, and with it the pairing agent, only while it is open, and without a tray icon of its own. The block survives a reboot, through systemd-rfkill on fractal and TLP's `RESTORE_DEVICE_STATE_ON_STARTUP` on a laptop; both restore Wi-Fi's block too.
 
-**Idle.** hypridle dims, locks, and runs `suspend-then-hibernate` after the minutes of idle below, by the profile TLP last applied; a host without TLP takes the performance row. The suspend turns the screen off, and trails a lock in the same minute by 5 s. One hypridle runs every profile's listeners, since a restart would drop the D-Bus idle inhibits it holds. A listener runs its step once the step is due under the active profile, so a profile change mid-idle can delay a step to the performance row but never skip it. A fullscreen window inhibits idle. A host **must** declare swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
+**Idle.** hypridle dims, locks, and suspends after the minutes of idle below, by the profile TLP last applied; a host without TLP takes the performance row. The suspend turns the screen off, and trails a lock in the same minute by 5 s. One hypridle runs every profile's listeners, since a restart would drop the D-Bus idle inhibits it holds. A listener runs its step once the step is due under the active profile, so a profile change mid-idle can delay a step to the performance row but never skip it. A fullscreen window inhibits idle.
 
 | Profile | Dim | Lock | Suspend | Hibernate |
 |---|---|---|---|---|
 | performance | 10 | 15 | 20 | 30 |
 | balanced | 3 | 5 | 5 | 15 |
 | power-saver | 1 | 2 | 2 | 7 |
+
+**Hibernation.** Under `base.hibernate` every suspend, from idle or the lid, is `suspend-then-hibernate`, which hibernates after `HibernateDelaySec`; without it a suspend stays one, and the table's last column does not apply. The option **requires** swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
 
 **Hardware belongs to the host.** The module enables `hardware.graphics` and sets `NIXOS_OZONE_WL`; the video driver, VA-API backend, and vendor session variables are the host's. Screens likewise:
 
@@ -118,7 +120,7 @@ users = [
 
 ### Laptop role
 
-`base.isLaptop` turns on `roles/role-laptop.nix`, which enables `modules/power/` and sends lid close to `suspend-then-hibernate`. The flag also pins `hostnamectl chassis` to `laptop`, by which dev mode holds off idle, sleep and the lid switch while anything is unlocked.
+`base.isLaptop` turns on `roles/role-laptop.nix`, which enables `modules/power/` and sends lid close to the same suspend as idle. The flag also pins `hostnamectl chassis` to `laptop`, by which dev mode holds off idle, sleep and the lid switch while anything is unlocked.
 
 **Profiles.** TLP applies `performance`, `balanced` and `power-saver` but never picks one (`TLP_AUTO_SWITCH=0`). `power-profile-sync` picks on every power_supply event, every minute, and after each TLP start: performance on AC, balanced on battery, power-saver at or below 20%. A choice made through tlp-pd holds until the next plug event. Power-saver hibernates 5 minutes after suspend; an `ExecStartPre` on `systemd-suspend-then-hibernate.service` writes that drop-in at suspend time.
 
@@ -134,7 +136,7 @@ users = [
 
 - `fractal` — AMD/NVIDIA hybrid, NVIDIA PRIME sync, `HDMI-A-2` at `2560x1440@120`; users `egor` and `forge`. Dual-boots Windows, which boots from its own ESP (`WINBOOT`, `nvme1n1`) but keeps its D: (`WINDISKD`) on the NixOS disk, so a reinstall **must** use the installer's reuse mode rather than wipe `nvme0n1`.
 - `thinkpad` — AMD, `eDP-1`, qwerty, portable GRUB, `base.isLaptop`; user `egor`. `touchpad-reset` rebinds a touchpad that lost its click, and `wifi-reset` reloads ath11k when the Wi-Fi card stops completing handshakes.
-- Both track `nixos-unstable`. `role-base-config.nix` mounts `/` (ext4, `NIXROOT`) and `/boot` (vfat, `NIXBOOT`) by label on every host, so a reinstall must label its partitions to match. A weekly `nh clean` keeps a generation while it is one of the last 10 or under 90 days old, and GRUB lists at most 20, since `NIXBOOT` is 1 GiB. `wheel` has passwordless sudo. Both run sshd with password authentication disabled.
+- Both track `nixos-unstable`. `role-base-config.nix` mounts `/` (ext4, `NIXROOT`) and `/boot` (vfat, `NIXBOOT`) by label on every host, so a reinstall must label its partitions to match. A weekly `nh clean` keeps a generation while it is one of the last 10 or under 90 days old, and GRUB lists at most 20, since `NIXBOOT` is 1 GiB. `wheel` has passwordless sudo. Both run sshd with password authentication disabled, and both set `base.hibernate` with a swapfile the size of RAM.
 
 ## Documentation conventions
 

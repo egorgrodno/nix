@@ -15,7 +15,7 @@ Roles receive `specialArgs` (`users`, `forAllUsers`, `theme`, `fontPackages`, `i
 
 | Role | Purpose |
 |---|---|
-| `role-base-config.nix` | Declares the `base.*` contract — `isNixosSystem`, `isDesktop`, `isHeadless`, `isLaptop`, `keyboard.layout` (`qwerty`\|`hallmack`, **required**), `keyboard.swapCapsEscape`. Asserts exactly one of `isDesktop`/`isHeadless`, and forwards `keyboardLayout` and `isDesktop` to home-manager. Pins the chassis in `/etc/machine-info` to `laptop` or `desktop` by `isLaptop`, and imports `role-laptop.nix`. Mounts `/` and `/boot` by the `NIXROOT` and `NIXBOOT` labels. Every top-level role **must** import it. |
+| `role-base-config.nix` | Declares the `base.*` contract — `isNixosSystem`, `isDesktop`, `isHeadless`, `isLaptop`, `hibernate`, `keyboard.layout` (`qwerty`\|`hallmack`, **required**), `keyboard.swapCapsEscape`. Asserts exactly one of `isDesktop`/`isHeadless`, and swap wherever `hibernate` is set. Forwards `keyboardLayout` and `isDesktop` to home-manager. Pins the chassis in `/etc/machine-info` to `laptop` or `desktop` by `isLaptop`, and imports `role-laptop.nix`. Mounts `/` and `/boot` by the `NIXROOT` and `NIXBOOT` labels. Every top-level role **must** import it. |
 
 ## Aspect roles
 
@@ -30,7 +30,7 @@ Single-concern bundles, imported by a top-level role or directly by a host.
 | `role-nextcloud-client.nix` | Nextcloud client and a per-user sync service. |
 | `role-vm-host.nix` | VirtualBox host; blacklists the KVM modules, adds users to `vboxusers`. |
 | `role-docker.nix` | Docker, with `dockerd` left down at boot; adds `admin` users to `docker`. |
-| `role-laptop.nix` | Turned on by `base.isLaptop`: power profiles, profile switching and the charge limit (`modules/power`), and `suspend-then-hibernate` on lid close. |
+| `role-laptop.nix` | Turned on by `base.isLaptop`: power profiles, profile switching and the charge limit (`modules/power`), and the idle suspend on lid close, `suspend-then-hibernate` under `base.hibernate`. |
 
 ## Top-level roles
 

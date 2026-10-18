@@ -34,6 +34,12 @@ in
       description = "Whether the machine is a laptop: turns on `role-laptop.nix` and pins the chassis hostnamed reports";
     };
 
+    hibernate = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether the machine hibernates, which takes swap at least the size of RAM: a suspend from idle or the lid hibernates after HibernateDelaySec";
+    };
+
     keyboard = {
       layout = mkOption {
         type = types.enum [
@@ -89,7 +95,14 @@ in
         assertion = cfg.isDesktop != cfg.isHeadless;
         message = "Either 'isDesktop' or 'isHeadless' must be enabled";
       }
+      # logind refuses to hibernate without swap, leaving the machine awake.
+      {
+        assertion = cfg.hibernate -> config.swapDevices != [ ];
+        message = "`base.hibernate` hibernates to swap: declare swap at least the size of RAM in `swapDevices`.";
+      }
     ];
+
+    systemd.sleep.settings.Sleep.HibernateDelaySec = mkIf cfg.hibernate "10min";
 
     # Read by tools that act only on a laptop, such as dev mode's inhibitor.
     environment.etc."machine-info" = mkIf (cfg.isLaptop || cfg.isDesktop) {

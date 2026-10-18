@@ -70,6 +70,7 @@ askNewHost() {
   *) form=pc ;;
   esac
   form=$(gum choose --header "Form factor" --selected "$form" laptop pc)
+  if gum confirm "Hibernate? It takes a swapfile the size of RAM."; then hibernate=true; else hibernate=false; fi
 
   cpu=amd
   grep -q GenuineIntel /proc/cpuinfo && cpu=intel
@@ -145,7 +146,7 @@ EOF
       cat <<'EOF'
 
   # `open` needs a Turing or newer card. powerManagement saves video memory
-  # across the suspend and hibernation the desktop module triggers on idle.
+  # across the suspend, or hibernation, the desktop module triggers on idle.
   services.xserver.videoDrivers = [ "nvidia" ];
   hardware.nvidia = {
     open = true;
@@ -166,6 +167,10 @@ EOF
       efiSupport = true;
     };
   };
+EOF
+    [[ $hibernate == false ]] || cat <<EOF
+
+  base.hibernate = true;
 
   # Sized to RAM so any workload fits the hibernation image. systemd records the
   # file's location in the HibernateLocation EFI variable and the systemd initrd
@@ -176,6 +181,8 @@ EOF
       size = $swapGib * 1024;
     }
   ];
+EOF
+    cat <<'EOF'
 
   networking.useDHCP = lib.mkDefault true;
 
