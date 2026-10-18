@@ -1013,6 +1013,12 @@ in
             }
           ];
 
+          gesture = {
+            fingers = 3;
+            direction = "horizontal";
+            action = "workspace";
+          };
+
           animation = [
             {
               leaf = "windows";
