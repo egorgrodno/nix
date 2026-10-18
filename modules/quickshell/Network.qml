@@ -70,31 +70,49 @@ Pill {
     component Direction: Row {
         property alias icon: arrow.text
         property alias values: spark.values
-        property alias rate: figure.text
+        // As Stats formats it: a figure, a space, a unit.
+        property string rate
 
         anchors.verticalCenter: parent.verticalCenter
         visible: !Stats.offline
-        spacing: 4
+        leftPadding: 4
+        spacing: 6
 
         BarText {
             id: arrow
 
             anchors.verticalCenter: parent.verticalCenter
             color: Theme.foregroundMuted
-            font.pixelSize: 12
         }
 
         Spark {
             id: spark
 
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.bottom: figure.baseline
+            height: 20
         }
 
         Figure {
             id: figure
 
             anchors.verticalCenter: parent.verticalCenter
-            widest: "999 Kb/s"
+            widest: "999"
+            horizontalAlignment: Text.AlignRight
+            text: parent.rate.split(" ")[0]
+        }
+
+        // A slot as wide as the widest unit.
+        Caption {
+            id: units
+
+            visible: false
+            text: ["b/s", "Kb/s", "Mb/s", "Gb/s"].join("\n")
+        }
+
+        Caption {
+            anchors.baseline: figure.baseline
+            width: units.implicitWidth
+            text: parent.rate.split(" ")[1] ?? ""
         }
     }
 

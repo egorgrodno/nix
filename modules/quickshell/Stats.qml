@@ -50,8 +50,8 @@ Singleton {
     function rate(bytes) {
         for (const [unit, divisor] of [["Gb/s", 1e9], ["Mb/s", 1e6], ["Kb/s", 1e3]])
             if (bytes >= divisor)
-                return `${String(Math.trunc(bytes / divisor)).padStart(3)} ${unit}`;
-        return `${String(Math.trunc(bytes)).padStart(3)}  b/s`;
+                return `${Math.trunc(bytes / divisor)} ${unit}`;
+        return `${Math.trunc(bytes)} b/s`;
     }
 
     function sampleCpu() {
