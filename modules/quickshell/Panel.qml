@@ -24,6 +24,8 @@ PanelWindow {
     // content that arrives as the panel opens, as scanned networks do, grows
     // it smoothly rather than in a jump.
     property bool settled: false
+    // Between the box's edge and the content.
+    property int padding: 20
 
     // The close has finished: the owner drops the panel.
     signal dismissed
@@ -88,7 +90,7 @@ PanelWindow {
             id: box
 
             width: parent.width
-            height: column.implicitHeight + 2 * 20
+            height: column.implicitHeight + 2 * panel.padding
             // Starting under the bar's edge.
             y: panel.open ? 0 : panel.upward ? Theme.slide : -Theme.slide
             opacity: panel.open ? 1 : 0
@@ -131,9 +133,9 @@ PanelWindow {
             Column {
                 id: column
 
-                x: 20
-                y: 20
-                width: parent.width - 40
+                x: panel.padding
+                y: panel.padding
+                width: parent.width - 2 * panel.padding
                 spacing: 20
             }
         }

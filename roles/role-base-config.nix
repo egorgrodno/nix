@@ -37,7 +37,7 @@ in
     hibernate = mkOption {
       type = types.bool;
       default = false;
-      description = "Whether the machine hibernates, which takes swap at least the size of RAM: a suspend from idle or the lid hibernates after HibernateDelaySec";
+      description = "Whether the machine hibernates, which takes swap at least the size of RAM: a suspend from idle, the lid or the session menu hibernates after HibernateDelaySec, and the session menu offers hibernation";
     };
 
     keyboard = {

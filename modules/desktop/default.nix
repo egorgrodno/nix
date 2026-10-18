@@ -202,21 +202,6 @@ let
     })";
   };
 
-  # wlogout bakes its icons in an off-palette lavender. The shapes live in the
-  # alpha channel, so `-colorize` repaints them without touching the mask.
-  wlogoutIcons =
-    pkgs.runCommand "wlogout-icons-one-dark"
-      {
-        nativeBuildInputs = [ pkgs.imagemagick ];
-      }
-      ''
-        mkdir -p $out
-        for icon in ${pkgs.wlogout}/share/wlogout/icons/*.png; do
-          magick "$icon" -fill "${theme.foreground.main}" -colorize 100 \
-            "$out/$(basename "$icon")"
-        done
-      '';
-
   # The idle dim. A screen shader rather than brightnessctl, since an external
   # monitor has no backlight to turn down.
   dimShader = pkgs.writeText "dim.frag" ''
@@ -643,7 +628,6 @@ in
     home-manager.users = forAllUsers (u: {
       home.packages = with pkgs; [
         wofi
-        wlogout
         hyprlock
         hyprgraphics
         hyprpicker
@@ -755,6 +739,7 @@ in
         };
       };
 
+      # https://github.com/end-4/dots-hyprland/blob/main/dots/.config/kitty/kitty.conf
       programs.kitty.enable = true; # required for the default Hyprland config
       programs.kitty.font = {
         name = theme.fontMono;
@@ -1269,7 +1254,7 @@ in
             hl.bind(mod .. " + CTRL + grave", exec("quickshell ipc call notifications toggle"))
             hl.bind(mod .. " + SHIFT + S", exec("hypr-monitor-scale"))
             hl.bind(mod .. " + R", hl.dsp.submap("resize"))
-            hl.bind(mod .. " + 0", exec("wlogout"))
+            hl.bind(mod .. " + 0", exec("quickshell ipc call session toggle"))
 
             -- Focus, and with SHIFT move, by the layout's direction keys and the
             -- arrows alike.
@@ -1443,95 +1428,6 @@ in
         #entry:selected #text,
         #entry:selected > * {
           color: ${theme.background.main};
-        }
-      '';
-
-      # https://github.com/end-4/dots-hyprland/blob/main/dots/.config/kitty/kitty.conf
-      # https://github.com/end-4/dots-hyprland/blob/main/dots/.config/wlogout/style.css
-      xdg.configFile."wlogout/layout".text = lib.concatMapStrings (entry: builtins.toJSON entry + "\n") [
-        {
-          label = "lock";
-          action = "hyprlock";
-          text = "Lock";
-          keybind = "l";
-        }
-        {
-          label = "hibernate";
-          action = "systemctl hibernate";
-          text = "Hibernate";
-          keybind = "h";
-        }
-        {
-          label = "logout";
-          action = "loginctl terminate-user $USER";
-          text = "Logout";
-          keybind = "e";
-        }
-        {
-          label = "shutdown";
-          action = "systemctl poweroff";
-          text = "Shutdown";
-          keybind = "s";
-        }
-        {
-          label = "suspend";
-          action = "systemctl suspend";
-          text = "Suspend";
-          keybind = "u";
-        }
-        {
-          label = "reboot";
-          action = "systemctl reboot";
-          text = "Reboot";
-          keybind = "r";
-        }
-      ];
-
-      xdg.configFile."wlogout/style.css".text = ''
-        * {
-          font-family: "${theme.fontMono}", monospace;
-          background-image: none;
-        }
-
-        window {
-          background-color: ${rgba theme.background.main "0.92"};
-        }
-
-        button {
-          color: ${theme.foreground.main};
-          background-color: ${theme.background.light};
-          border: 1px solid ${theme.foreground.dark};
-          border-radius: 10px;
-          margin: 10px;
-          background-repeat: no-repeat;
-          background-position: center;
-          background-size: 64px;
-          font-size: 16px;
-          /* Materia's ripple animates background-size to 1000% on :active, and
-             a running animation outranks any static value. */
-          animation: none;
-          outline: none;
-        }
-
-        #logout    { background-image: url("${wlogoutIcons}/logout.png");    }
-        #shutdown  { background-image: url("${wlogoutIcons}/shutdown.png");  }
-        #reboot    { background-image: url("${wlogoutIcons}/reboot.png");    }
-        #suspend   { background-image: url("${wlogoutIcons}/suspend.png");   }
-        #hibernate { background-image: url("${wlogoutIcons}/hibernate.png"); }
-        #lock      { background-image: url("${wlogoutIcons}/lock.png");      }
-
-        /* No `:focus` rule: GTK focuses the first button, which would read as
-           a preselected option. */
-        button:hover {
-          background-color: ${theme.foreground.dark};
-          border-color: ${theme.blue};
-          color: ${theme.blue};
-        }
-
-        button:active {
-          background-color: ${theme.background.main};
-          border-color: ${theme.blue};
-          color: ${theme.blue};
         }
       '';
 

@@ -100,6 +100,8 @@ users = [
 
 **Bluetooth.** Quickshell's Bluetooth module leads volume. A click soft-blocks or unblocks every Bluetooth radio through rfkill, as `btoff` and `bton` do. On the thinkpad the block cuts the radio's power and BlueZ drops the adapter, so the module reads rfkill as well and shows wherever a Bluetooth rfkill switch or adapter exists. A right-click opens blueman-manager, which runs blueman's applet, and with it the pairing agent, only while it is open, and without a tray icon of its own. The block survives a reboot, through systemd-rfkill on fractal and TLP's `RESTORE_DEVICE_STATE_ON_STARTUP` on a laptop; both restore Wi-Fi's block too.
 
+**Session menu.** A click on the ⏻ module, or `$mod 0` through `quickshell ipc call session toggle`, opens a panel of the session's actions, each run by a click or its key: `l` lock, `u` suspend, `h` hibernate, `e` log out, `r` reboot, and `S` shut down, which takes Shift so Caps Lock alone never sends it. No row starts selected; only the pointer highlights one. Hibernate shows only under `base.hibernate`. Log out ends the graphical login session through `loginctl terminate-session auto`, with or without uwsm, and leaves SSH sessions alone. `$mod SHIFT 0` locks directly.
+
 **Idle.** hypridle dims, locks, and suspends after the minutes of idle below, by the profile TLP last applied; a host without TLP takes the performance row. The suspend turns the screen off, and trails a lock in the same minute by 5 s. One hypridle runs every profile's listeners, since a restart would drop the D-Bus idle inhibits it holds. A listener runs its step once the step is due under the active profile, so a profile change mid-idle can delay a step to the performance row but never skip it. A fullscreen window inhibits idle.
 
 | Profile | Dim | Lock | Suspend | Hibernate |
@@ -108,7 +110,7 @@ users = [
 | balanced | 3 | 5 | 5 | 15 |
 | power-saver | 1 | 2 | 2 | 7 |
 
-**Hibernation.** Under `base.hibernate` every suspend, from idle or the lid, is `suspend-then-hibernate`, which hibernates after `HibernateDelaySec`; without it a suspend stays one, and the table's last column does not apply. The option **requires** swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
+**Hibernation.** Under `base.hibernate` every suspend, from idle, the lid or the session menu, is `suspend-then-hibernate`, which hibernates after `HibernateDelaySec`; without it a suspend stays one, and the table's last column does not apply. The option **requires** swap at least the size of RAM in `swapDevices`; an assertion enforces its presence.
 
 **Hardware belongs to the host.** The module enables `hardware.graphics` and sets `NIXOS_OZONE_WL`; the video driver, VA-API backend, and vendor session variables are the host's. Screens likewise:
 

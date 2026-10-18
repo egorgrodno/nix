@@ -74,6 +74,7 @@ let
         readonly property string brightnessctl: "${lib.getExe pkgs.brightnessctl}"
         readonly property string df: "${lib.getExe' pkgs.coreutils "df"}"
         readonly property string hyprctl: "${lib.getExe' config.programs.hyprland.package "hyprctl"}"
+        readonly property string loginctl: "${lib.getExe' config.systemd.package "loginctl"}"
         readonly property string nmConnectionEditor: "${lib.getExe' pkgs.networkmanagerapplet "nm-connection-editor"}"
         readonly property string nmcli: "${lib.getExe' config.networking.networkmanager.package "nmcli"}"
         readonly property string notifySend: "${lib.getExe' pkgs.libnotify "notify-send"}"
@@ -82,8 +83,18 @@ let
         readonly property string rfkill: "${lib.getExe' pkgs.util-linux "rfkill"}"
         readonly property string rm: "${lib.getExe' pkgs.coreutils "rm"}"
         readonly property string systemctl: "${lib.getExe' config.systemd.package "systemctl"}"
-        readonly property string wlogout: "${lib.getExe pkgs.wlogout}"
         readonly property string xdgOpen: "${lib.getExe' pkgs.xdg-utils "xdg-open"}"
+    }
+  '';
+
+  # What the host can do, from its NixOS configuration.
+  hostQml = pkgs.writeText "Host.qml" ''
+    pragma Singleton
+
+    import Quickshell
+
+    Singleton {
+        readonly property bool hibernate: ${lib.boolToString config.base.hibernate}
     }
   '';
 
@@ -96,6 +107,7 @@ let
     // {
       "quickshell/Theme.qml".source = themeQml;
       "quickshell/Programs.qml".source = programsQml;
+      "quickshell/Host.qml".source = hostQml;
     };
 
 in
