@@ -11,6 +11,9 @@ Pill {
 
     readonly property int count: Notifications.unseen.length
     readonly property bool critical: Notifications.unseen.some(e => e.urgency === NotificationUrgency.Critical)
+    // Half the room a single digit leaves in its slot, moved before the bell,
+    // so the pair sits centred in the pill.
+    readonly property int slack: Math.round((figure.width - figure.implicitWidth) / 2)
 
     function toggle() {
         if (panel.active)
@@ -19,6 +22,8 @@ Pill {
             panel.active = true;
     }
 
+    leftPadding: 12 + slack
+    rightPadding: 12 - slack
     lit: panel.active
     tooltip: [count === 0 ? "No new notifications" : count === 1 ? "1 new notification" : `${count} new notifications`].concat(Notifications.dnd ? ["Do not disturb"] : []).join("\n")
     onClicked: button => {
@@ -55,6 +60,8 @@ Pill {
     }
 
     Figure {
+        id: figure
+
         anchors.verticalCenter: parent.verticalCenter
         widest: "99"
         text: `${Math.min(bell.count, 99)}`
