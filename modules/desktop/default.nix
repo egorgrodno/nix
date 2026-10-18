@@ -891,6 +891,16 @@ in
         package = null;
         portalPackage = null;
 
+        # UWSM brings `graphical-session.target` up itself. The stop below
+        # propagates to that target and cancels UWSM's pending start of it,
+        # which takes the compositor down with it, so a UWSM session skips the
+        # restart; the plain session needs it for the user units.
+        systemd.extraCommands = [
+          ''[ -z "$UWSM_FINALIZE_VARNAMES" ]''
+          "systemctl --user stop hyprland-session.target"
+          "systemctl --user start hyprland-session.target"
+        ];
+
         # Data, which home-manager renders as one `hl.<name>(...)` call per
         # entry; `curve` leads through `importantPrefixes`, so an animation can
         # name it. Binds, the resize submap and startup are code, in
