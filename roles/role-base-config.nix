@@ -54,6 +54,20 @@ in
   config = {
     boot.tmp.cleanOnBoot = true;
 
+    # A generation survives while it is one of the last 10 or under 90 days old,
+    # so a quiet spell never strips the rollback history.
+    programs.nh.clean = {
+      enable = true;
+      extraArgs = "--keep 10 --keep-since 90d";
+    };
+    nix.optimise = {
+      automatic = true;
+      dates = [ "weekly" ];
+    };
+
+    # NIXBOOT is 1 GiB, and every distinct kernel copies about 70 MB onto it.
+    boot.loader.grub.configurationLimit = 20;
+
     # Every host is partitioned to these labels, which is what lets the installer
     # and repair-boot mount any of them without asking.
     fileSystems."/" = {
