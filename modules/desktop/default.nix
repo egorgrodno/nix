@@ -1583,6 +1583,9 @@ in
           After = [ "graphical-session.target" ];
           PartOf = [ "graphical-session.target" ];
           ConditionEnvironment = "WAYLAND_DISPLAY";
+          # The power panel's night-light toggle writes `off` here and stops
+          # the unit, or empties the file and starts it.
+          ConditionFileNotEmpty = "!%S/night-light";
         };
         Service.ExecStart = "${pkgs.wlsunset}/bin/wlsunset -S 07:00 -s 18:30 -T 6500 -t 3500 -d 7200";
         Install.WantedBy = [ "graphical-session.target" ];

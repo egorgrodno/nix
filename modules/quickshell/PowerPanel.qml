@@ -4,8 +4,8 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Services.UPower
 
-// Over the battery module: the charge, the power profile, the backlight and
-// the charge limit.
+// Over the battery module: the charge, the power profile, the backlight, the
+// night light and the charge limit.
 Panel {
     id: panel
 
@@ -13,12 +13,19 @@ Panel {
     property bool limitBusy: false
     property bool limitTarget
     readonly property bool limited: limitBusy ? limitTarget : !limitOff.loaded
+    readonly property bool nightLight: nightOff.text().trim() === ""
 
     function toggleLimit() {
         limitTarget = !limited;
         limitBusy = true;
         limiter.command = [Programs.systemctl, "start", `charge-limit@${limitTarget ? "on" : "off"}.service`];
         limiter.running = true;
+    }
+
+    function toggleNightLight() {
+        const on = !nightLight;
+        nightOff.setText(on ? "" : "off");
+        Quickshell.execDetached([Programs.systemctl, "--user", on ? "start" : "stop", "wlsunset.service"]);
     }
 
     Component.onCompleted: {
@@ -276,6 +283,32 @@ Panel {
 
     Item {
         width: panel.contentWidth
+        height: nightToggle.height
+
+        BarText {
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Night light"
+        }
+
+        Toggle {
+            id: nightToggle
+
+            anchors.right: parent.right
+            checked: panel.nightLight
+            hovered: nightMouse.containsMouse
+        }
+
+        MouseArea {
+            id: nightMouse
+
+            anchors.fill: parent
+            hoverEnabled: true
+            onClicked: panel.toggleNightLight()
+        }
+    }
+
+    Item {
+        width: panel.contentWidth
         height: Math.max(limitText.implicitHeight, toggle.height)
 
         Column {
@@ -329,6 +362,16 @@ Panel {
 
         path: "/var/lib/charge-limit/off"
         blockAllReads: true
+        printErrors: false
+    }
+
+    // wlsunset skips its start while this reads `off`; %S in its unit.
+    FileView {
+        id: nightOff
+
+        path: `${Quickshell.env("XDG_STATE_HOME") || Quickshell.env("HOME") + "/.local/state"}/night-light`
+        blockAllReads: true
+        blockWrites: true
         printErrors: false
     }
 
