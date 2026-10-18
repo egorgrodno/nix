@@ -1601,16 +1601,21 @@ in
             after_sleep_cmd = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'";
           };
           # One listener per distinct step and threshold. The suspend turns the
-          # screen off.
+          # screen off. Only a dim listener undoes the dim, and only when it is
+          # on: every shader change redraws the screen twice, so six listeners
+          # resuming at once flicker it.
           listener = unique (
             concatLists (
               mapAttrsToList (
                 _:
                 mapAttrsToList (
-                  step: timeout: {
+                  step: timeout:
+                  {
                     inherit timeout;
                     on-timeout = "${idleStep} ${step} ${toString timeout}";
-                    on-resume = "hyprctl eval 'hl.config({ decoration = { screen_shader = \"\" } })'";
+                  }
+                  // optionalAttrs (step == "dim") {
+                    on-resume = "hyprctl eval 'if hl.get_config(\"decoration.screen_shader\") ~= \"\" then hl.config({ decoration = { screen_shader = \"\" } }) end'";
                   }
                 )
               ) idleTimeouts
