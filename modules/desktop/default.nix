@@ -387,23 +387,27 @@ in
     # the plain one sorts first; picking it leaves the compositor a child of
     # greetd, logging to the VT instead of the journal, with no systemd user
     # units. `--remember-session` makes one deliberate choice stick.
+    #
+    # A script, since greetd parses its config line by line and fails on the
+    # `'''` block the TOML generator writes for a multi-line command. Without
+    # an explicit UID range tuigreet lists the nix build users (30001 up).
     services.greetd = {
       enable = true;
-      settings = {
-        default_session.command = ''
-          ${pkgs.cage}/bin/cage -d -s -- \
-            ${pkgs.foot}/bin/foot \
-              --config=${greeterTerminal} \
-              --term=xterm-256color \
-              -e ${pkgs.tuigreet}/bin/tuigreet \
-                --time \
-                --asterisks \
-                --user-menu \
-                --remember-session \
-                --theme '${greeterTheme}' \
-                --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions
-        '';
-      };
+      settings.default_session.command = "${pkgs.writeShellScript "greeter" ''
+        exec ${pkgs.cage}/bin/cage -d -s -- \
+          ${pkgs.foot}/bin/foot \
+            --config=${greeterTerminal} \
+            --term=xterm-256color \
+            -e ${pkgs.tuigreet}/bin/tuigreet \
+              --time \
+              --asterisks \
+              --user-menu \
+              --user-menu-min-uid ${toString config.security.loginDefs.settings.UID_MIN} \
+              --user-menu-max-uid ${toString config.security.loginDefs.settings.UID_MAX} \
+              --remember-session \
+              --theme '${greeterTheme}' \
+              --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions
+      ''}";
     };
 
     # Kernel chatter makes the plain TTYs behind the greeter unreadable. This
@@ -953,10 +957,7 @@ in
             workspace_swipe_create_new = true;
           };
 
-          dwindle = {
-            pseudotile = true;
-            preserve_split = true;
-          };
+          dwindle.preserve_split = true;
 
           master = {
             new_status = "master";
@@ -1574,6 +1575,7 @@ in
       xdg.configFile."gtk-3.0/bookmarks".force = true;
 
       home.pointerCursor = {
+        enable = true;
         gtk.enable = true;
         package = pkgs.bibata-cursors;
         name = "Bibata-Modern-Classic";
