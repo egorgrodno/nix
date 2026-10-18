@@ -748,6 +748,10 @@ in
       # The terminal is the only surface that consumes ANSI colors, so it is
       # where the accent half of `theme` earns its keep.
       programs.kitty.settings = {
+        # Inconsolata LGC 3.x cut its line height from 1.48 em to 1.11 em; this
+        # restores the 1.x spacing.
+        modify_font = "cell_height 133%";
+
         background = theme.background.main;
         foreground = theme.foreground.main;
 
