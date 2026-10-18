@@ -1037,13 +1037,9 @@ in
               ", Print, exec, screenshot --edit"
               "SHIFT, Print, exec, screenshot"
 
-              # Audio, each raising the OSD. The unshifted pair steps by 5% inside
-              # `--limit 1.0`. Holding SHIFT deliberately escapes that limit:
-              # V climbs past 100%, and C is an absolute assignment that drops
-              # straight back to 10% rather than a decrement.
-              "$mod, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && quickshell ipc call osd volume"
-              "$mod, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- --limit 1.0 && quickshell ipc call osd volume"
-              "$mod SHIFT, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && quickshell ipc call osd volume"
+              # Audio, each raising the OSD; the volume steps repeat below. SHIFT
+              # C is an absolute assignment that drops straight back to 10%
+              # rather than a decrement.
               "$mod SHIFT, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 10% && quickshell ipc call osd volume"
               "$mod, T, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && quickshell ipc call osd volume"
               "$mod, N, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && quickshell ipc call osd mic"
@@ -1057,13 +1053,23 @@ in
             ++ map (n: "$mod SHIFT, ${toString n}, movetoworkspace, ${toString n}") (lib.range 1 9)
             ++ map (n: "$mod CTRL, ${toString n}, movetoworkspacesilent, ${toString n}") (lib.range 1 9);
 
+          # The unshifted pair steps by 5% inside `--limit 1.0`. SHIFT V
+          # deliberately escapes that limit and climbs past 100%.
+          binde = [
+            "$mod, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && quickshell ipc call osd volume"
+            "$mod, C, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- --limit 1.0 && quickshell ipc call osd volume"
+            "$mod SHIFT, V, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && quickshell ipc call osd volume"
+          ];
+
+          # The volume keys have no escape from the limit.
           bindel = [
-            ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && quickshell ipc call osd volume"
+            ", XF86AudioRaiseVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ --limit 1.0 && quickshell ipc call osd volume"
             ", XF86AudioLowerVolume, exec, wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && quickshell ipc call osd volume"
             ", XF86AudioMute, exec, wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle && quickshell ipc call osd volume"
             ", XF86AudioMicMute, exec, wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle && quickshell ipc call osd mic"
             # Through the bar's backlight, which holds the 1% floor; brightnessctl
-            # takes only a raw one.
+            # takes only a raw one. On the thinkpad these keys come from the
+            # Video Bus as taps, so a held key repeats at the firmware's pace.
             ", XF86MonBrightnessUp, exec, quickshell ipc call backlight up"
             ", XF86MonBrightnessDown, exec, quickshell ipc call backlight down"
           ];
