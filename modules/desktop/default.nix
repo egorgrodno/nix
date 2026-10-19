@@ -585,7 +585,6 @@ in
 
     home-manager.users = forAllUsers (u: {
       home.packages = with pkgs; [
-        wofi
         hyprlock
         hyprgraphics
         hyprpicker
@@ -1113,17 +1112,6 @@ in
                 };
                 no_focus = true;
               }
-              # No `size`: a rule that sets one wins the initial map and the
-              # window then snaps back to what wofi asks for. Callers passing
-              # `--width`/`--lines`, as hypr-monitor-scale does, need theirs.
-              {
-                name = "wofi-float";
-                match.class = "^(wofi)$";
-                center = true;
-                float = true;
-                pin = true;
-                dim_around = true;
-              }
               {
                 name = "stretchly-break";
                 match = {
@@ -1317,79 +1305,6 @@ in
             end)
           '';
       };
-
-      xdg.configFile."wofi/config".text = ''
-        mode=drun
-        allow-markup=true
-        enable-advanced-run=true
-        line-wrap=true
-        image-size=28
-        normal_window=true
-        width=520
-        height=320
-        anchor=center
-        hide-scroll=true
-        prompt= Search...
-        columns=1
-        matching=fuzzy
-        allow-empty-run=false
-        output=auto
-      '';
-
-      xdg.configFile."wofi/style.css".text = ''
-        /* The window is the only painted surface. Every box inside it is
-           transparent, so the launcher background is stated once and a change
-           to `theme` cannot leave one layer behind. */
-        window {
-          font-family: "${theme.fontUI}", monospace;
-          font-size: 17px;
-          letter-spacing: 0.2px;
-          margin: 0px;
-          background-color: ${theme.background.light};
-          border-radius: 10px;
-        }
-
-        #outer-box,
-        #inner-box,
-        #scroll,
-        #entry {
-          background-color: transparent;
-          border: none;
-        }
-
-        #inner-box {
-          margin: 0 8px 8px;
-        }
-
-        #scroll {
-          max-height: 300px;
-        }
-
-        #input {
-          margin: 14px 8px;
-          border: none;
-          color: ${theme.foreground.main};
-        }
-
-        #text {
-          margin: 0px 6px;
-          border: none;
-          color: ${theme.foreground.main};
-        }
-
-        /* The selected row is the one place a second color is wanted, so it
-           takes the accent rather than a second shade of the background: two
-           near-identical greys is what made the selection vanish. */
-        #entry:selected {
-          background-color: ${theme.blue};
-          border-radius: 6px;
-        }
-
-        #entry:selected #text,
-        #entry:selected > * {
-          color: ${theme.background.main};
-        }
-      '';
 
       programs.hyprlock = {
         enable = true;

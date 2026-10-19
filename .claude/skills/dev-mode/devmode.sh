@@ -21,7 +21,6 @@ paths_of() {
   hyprlock) echo ".config/hypr/hyprlock.conf" ;;
   hypridle) echo ".config/hypr/hypridle.conf" ;;
   kitty) echo ".config/kitty" ;;
-  wofi) echo ".config/wofi" ;;
   nvim) echo ".config/nvim" ;;
   zsh) echo ".config/zsh" ;;
   git) echo ".config/git" ;;
@@ -52,7 +51,6 @@ reload_of() {
 manual_of() {
   case "$1" in
   hyprlock) echo "lock again to see it (hyprlock reads its config at launch)" ;;
-  wofi) echo "launch it again (config is read at launch)" ;;
   nvim) echo "open a new nvim, or :source the file" ;;
   zsh) echo "run 'exec zsh' in the shell you are testing" ;;
   gtk) echo "restart the GTK application" ;;
@@ -364,7 +362,7 @@ cmd_verify() {
 
 cmd_list() {
   echo "known targets:"
-  for name in quickshell hyprland hyprlock hypridle kitty wofi nvim zsh git gtk vifm ripgrep less mimeapps udiskie; do
+  for name in quickshell hyprland hyprlock hypridle kitty nvim zsh git gtk vifm ripgrep less mimeapps udiskie; do
     printf '  %-10s %s\n' "$name" "$(paths_of "$name")"
   done
   echo "any other name falls back to .config/<name>"

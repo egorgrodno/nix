@@ -7,7 +7,7 @@ description: >
   Trigger on "dev mode", "live edit", "tweak the bar", "iterate on the quickshell
   QML", "iterate on the hyprland config", "try some colors", or any request to see a
   config change quickly instead of rebuilding. Covers quickshell, hyprland, hyprlock,
-  kitty, wofi, nvim, zsh, gtk and anything else home-manager writes
+  kitty, nvim, zsh, gtk and anything else home-manager writes
   into ~/.config.
 ---
 
@@ -58,7 +58,7 @@ Any name not in `list` falls back to `~/.config/<name>`.
 | `kitty` | `pkill -USR1 kitty`. All windows, live. |
 | `hypridle` | `systemctl --user restart hypridle` |
 | `quickshell` | `systemctl --user restart quickshell`. It reloads on save by itself, but only once restarted after `on`, and a text-rendering change needs a restart regardless. |
-| `hyprlock`, `wofi` | No signal — config is read at launch, so just launch it again. |
+| `hyprlock` | No signal — config is read at launch, so just launch it again. |
 | `nvim`, `zsh` | No signal — new instances pick it up (`exec zsh` for the current shell). |
 
 A QML error on save leaves the running bar in place and posts a critical "Quickshell failed to reload" notice with the error. A Lua syntax error in `hyprland.lua` is rejected by `hyprctl reload` with the error printed, leaving the running config intact.
@@ -74,7 +74,6 @@ This is the part that matters — dev mode is scratch space, and nothing survive
 | `.config/hypr/hyprlock.conf` | `modules/desktop/default.nix` — `programs.hyprlock` (~912) |
 | `.config/hypr/hypridle.conf` | `modules/desktop/default.nix` — `services.hypridle` (~969) |
 | `.config/kitty/*` | `modules/desktop/default.nix` — `programs.kitty` (~411) |
-| `.config/wofi/config`, `style.css` | `modules/desktop/default.nix` (~779, ~797) |
 | `.config/gtk-3.0/settings.ini`, `gtk-4.0` | `modules/desktop/default.nix` — `gtk` (~1011) |
 | `.config/nvim/init.lua` | `modules/neovim/hm.nix` |
 | `.config/nvim/lua/config.lua` | `modules/neovim/lua-config.nix` |
