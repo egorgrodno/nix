@@ -15,7 +15,7 @@ nxs   # nixos-rebuild switch --flake /etc/nixos  (apply configuration)
 nxc   # nixos-rebuild build --flake /etc/nixos   (build without activating)
 nxb   # nixos-rebuild boot --flake /etc/nixos    (build and add boot entry, no activation)
 nxt   # nixos-rebuild test --flake /etc/nixos    (activate temporarily, no boot entry)
-nxu   # nix flake update --flake /etc/nixos      (update flake.lock)
+nxu   # nix flake update --flake /etc/nixos      (update flake.lock), then craft-update
 nx-setup  # per-user setup after the first boot: logins, identity, plugins; safe to rerun
 ```
 
@@ -120,7 +120,7 @@ users = [
 | `primaryMode` | `2560x1440@120`, or `preferred` / `highres` / `highrr`. |
 | `extraMonitors` | `hl.monitor` specs for the remaining outputs, appended after the primary. |
 
-**Craft apps.** `modules/craft/` installs the [Craft apps](https://github.com/storytold) for every user from their own Linux tarballs, patched for the store rather than compiled, each with the `<app>-cli` that serves MCP. `sources.json` pins each app's version and hash; `craft-update` moves every key to its latest release, and a new app enters as a key with an empty object. Each generation keeps the tarballs, so rebuilding the pinned versions needs no GitHub. The Claude Code config's `craft` plugin registers the MCP servers.
+**Craft apps.** `modules/craft/` installs the [Craft apps](https://github.com/storytold) for every user from their own Linux tarballs, patched for the store rather than compiled, each with the `<app>-cli` that serves MCP. `sources.json` pins each app's version and hash; `craft-update`, which `nxu` runs, moves every key to its latest release, and a new app enters as a key with an empty object. Each generation keeps the tarballs, so rebuilding the pinned versions needs no GitHub. The Claude Code config's `craft` plugin registers the MCP servers.
 
 ### Laptop role
 

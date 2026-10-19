@@ -2,7 +2,10 @@
 
 {
   home.packages = [
-    (pkgs.writeShellScriptBin "nxu" "nix flake update --flake /etc/nixos")
+    (pkgs.writeShellScriptBin "nxu" ''
+      nix flake update --flake /etc/nixos &&
+        ${pkgs.callPackage ../../pkgs/craft-update { }}/bin/craft-update
+    '')
     # No flake attribute: this module fans out to every user on every host, so
     # nixos-rebuild must resolve the configuration by hostname.
     (pkgs.writeShellScriptBin "nxs" "nixos-rebuild switch --flake /etc/nixos")
