@@ -13,6 +13,7 @@
     ./role-devtools.nix
     ./role-print.nix
     ../modules/desktop
+    ../modules/craft
   ];
 
   base = {

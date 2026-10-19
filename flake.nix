@@ -186,6 +186,8 @@
         repair-boot = pkgs.callPackage ./pkgs/repair-boot { };
         # Installed for every user by modules/nixtools.
         nx-setup = pkgs.callPackage ./pkgs/nx-setup { };
+        # Installed for every user by modules/craft.
+        craft-update = pkgs.callPackage ./pkgs/craft-update { };
       };
       # The packages are listed so their build-time shellcheck runs here too.
       checks.${system} = {

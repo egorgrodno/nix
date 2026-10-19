@@ -57,7 +57,7 @@ users/<name>.nix                           # identity + optional homeModules
 - `modules/` — Feature modules. Each owns both its NixOS and home-manager configuration, applying `hm.nix` to every user through `forAllUsers`.
 - `profiles/` — Home-manager profiles attached to a single user. See `profiles/README.md`.
 - `users/` — One file per user: `name`, `homedir`, `stateVersion`, optional `homeModules`. A host lists them by name in `host.nix`; the flake imports them into `specialArgs.users`.
-- `pkgs/` — Flake packages, one directory each: a `writeShellApplication` in `default.nix` and its script beside it. `checks` builds them, so shellcheck runs under `nix flake check`. `install` and `repair-boot` run as root from a NixOS ISO; `nx-setup` reaches every user through `modules/nixtools`.
+- `pkgs/` — Flake packages, one directory each: a `writeShellApplication` in `default.nix` and its script beside it. `checks` builds them, so shellcheck runs under `nix flake check`. `install` and `repair-boot` run as root from a NixOS ISO; `nx-setup` reaches every user through `modules/nixtools`, and `craft-update` through `modules/craft`.
 - `lib/` — Pure helper functions, not modules: each file takes `lib` and returns a value, and is used with `import ../../lib/<name>.nix lib`. Nothing here reads `config` or sets an option.
 - `home.nix` — Generates each `home-manager.users.*` entry: identity plus that user's `homeModules`.
 
@@ -119,6 +119,8 @@ users = [
 | `primaryScreen` | Connector name; defaults to `eDP-1`. Always emitted first, at `0x0`. |
 | `primaryMode` | `2560x1440@120`, or `preferred` / `highres` / `highrr`. |
 | `extraMonitors` | `hl.monitor` specs for the remaining outputs, appended after the primary. |
+
+**Craft apps.** `modules/craft/` installs the [Craft apps](https://github.com/storytold) for every user from their own Linux tarballs, patched for the store rather than compiled, each with the `<app>-cli` that serves MCP. `sources.json` pins each app's version and hash; `craft-update` moves every key to its latest release, and a new app enters as a key with an empty object. The Claude Code config's `craft` plugin registers the MCP servers.
 
 ### Laptop role
 
