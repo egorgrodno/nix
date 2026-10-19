@@ -662,7 +662,6 @@ in
         kdePackages.okular
         libheif
         libnotify
-        libreoffice
         engrampa
         p7zip
         unrar

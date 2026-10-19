@@ -120,7 +120,7 @@ users = [
 | `primaryMode` | `2560x1440@120`, or `preferred` / `highres` / `highrr`. |
 | `extraMonitors` | `hl.monitor` specs for the remaining outputs, appended after the primary. |
 
-**Craft apps.** `modules/craft/` installs the [Craft apps](https://github.com/storytold) for every user from their own Linux tarballs, patched for the store rather than compiled, each with the `<app>-cli` that serves MCP. `sources.json` pins each app's version and hash; `craft-update`, which `nxu` runs, moves every key to its latest release, and a new app enters as a key with an empty object. Each generation keeps the tarballs, so rebuilding the pinned versions needs no GitHub. The Claude Code config's `craft` plugin registers the MCP servers.
+**Craft apps.** `modules/craft/` installs the [Craft apps](https://github.com/storytold) for every user from their own Linux tarballs, patched for the store rather than compiled, each with the `<app>-cli` that serves MCP. `sources.json` pins each app's version and hash; `craft-update`, which `nxu` runs, moves every key to its latest release, and a new app enters as a key with an empty object. Each generation keeps the tarballs, so rebuilding the pinned versions needs no GitHub. The apps open the office formats and their own; PDF, SVG, images and video stay with the viewers in `modules/desktop/`. The Claude Code config's `craft` plugin registers the MCP servers.
 
 ### Laptop role
 
