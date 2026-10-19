@@ -738,7 +738,7 @@ in
       };
 
       xdg.desktopEntries.nvim-gui = {
-        name = "Neovim GUI";
+        name = "Neovim";
         comment = "Open file in Neovim within default terminal";
         type = "Application";
         terminal = false;
@@ -759,6 +759,16 @@ in
           "application/xml"
         ];
       };
+
+      # The Neovim wrapper's own entry, which would list beside the one above,
+      # hidden from menus but kept for the file types it claims.
+      xdg.dataFile."applications/nvim.desktop".source = pkgs.runCommand "nvim.desktop" { } ''
+        sed '0,/^\[Desktop Entry\]$/s//&\nNoDisplay=true/' \
+          ${
+            config.home-manager.users.${u.name}.programs.neovim.finalPackage
+          }/share/applications/nvim.desktop > $out
+      '';
+
       xdg.desktopEntries.nxe = {
         name = "nxe";
         genericName = "NixOS Configuration";
