@@ -481,6 +481,13 @@ in
 
     environment.variables.TERMINAL = "kitty";
 
+    # The terminal uwsm opens a `Terminal=true` desktop entry in, as the
+    # launcher starts every app through it.
+    xdg.terminal-exec = {
+      enable = true;
+      settings.default = [ "kitty.desktop" ];
+    };
+
     environment.systemPackages = with pkgs; [
       kitty.terminfo
 
@@ -1238,7 +1245,9 @@ in
 
             hl.bind(mod .. " + Return", exec("kitty"))
             hl.bind(mod .. " + Escape", hl.dsp.window.close())
-            hl.bind(mod .. " + D", exec("wofi --show drun"))
+            hl.bind(mod .. " + D", exec("quickshell ipc call launcher toggle apps"))
+            hl.bind(mod .. " + Y", exec("quickshell ipc call launcher toggle clipboard"))
+            hl.bind(mod .. " + period", exec("quickshell ipc call launcher toggle symbols"))
             hl.bind(mod .. " + F", hl.dsp.window.fullscreen())
             hl.bind(mod .. " + SPACE", hl.dsp.window.float())
             hl.bind(mod .. " + SHIFT + SPACE", float_here)

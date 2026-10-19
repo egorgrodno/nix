@@ -64,7 +64,7 @@ Pill {
             else
                 openPanel();
         } else if (button === Qt.RightButton)
-            Quickshell.execDetached([Programs.nmConnectionEditor]);
+            Launcher.run([Programs.nmConnectionEditor]);
     }
 
     component Direction: Row {

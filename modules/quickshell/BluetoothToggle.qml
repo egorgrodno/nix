@@ -57,7 +57,7 @@ Pill {
         if (button === Qt.LeftButton)
             toggle();
         else if (button === Qt.RightButton)
-            Quickshell.execDetached([Programs.bluemanManager]);
+            Launcher.run([Programs.bluemanManager]);
     }
 
     // A slot as wide as the widest glyph, measured as on the volume module.

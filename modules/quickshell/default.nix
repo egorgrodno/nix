@@ -72,6 +72,7 @@ let
     Singleton {
         readonly property string bluemanManager: "${lib.getExe' pkgs.blueman "blueman-manager"}"
         readonly property string brightnessctl: "${lib.getExe pkgs.brightnessctl}"
+        readonly property string cliphist: "${lib.getExe pkgs.cliphist}"
         readonly property string df: "${lib.getExe' pkgs.coreutils "df"}"
         readonly property string hyprctl: "${lib.getExe' config.programs.hyprland.package "hyprctl"}"
         readonly property string loginctl: "${lib.getExe' config.systemd.package "loginctl"}"
@@ -82,7 +83,10 @@ let
         readonly property string pwvucontrol: "${lib.getExe pkgs.pwvucontrol}"
         readonly property string rfkill: "${lib.getExe' pkgs.util-linux "rfkill"}"
         readonly property string rm: "${lib.getExe' pkgs.coreutils "rm"}"
+        readonly property string sh: "${pkgs.runtimeShell}"
         readonly property string systemctl: "${lib.getExe' config.systemd.package "systemctl"}"
+        readonly property string uwsm: "${lib.getExe config.programs.uwsm.package}"
+        readonly property string wlCopy: "${lib.getExe' pkgs.wl-clipboard "wl-copy"}"
         readonly property string xdgOpen: "${lib.getExe' pkgs.xdg-utils "xdg-open"}"
     }
   '';
@@ -98,6 +102,36 @@ let
     }
   '';
 
+  # The launcher's symbols as [character, name, group]: emoji without their
+  # skin-tone variants, then Nerd Fonts' glyphs, whose names should come from
+  # the release nixpkgs builds the fonts from.
+  symbolsJson =
+    let
+      glyphNames = pkgs.fetchurl {
+        url = "https://raw.githubusercontent.com/ryanoasis/nerd-fonts/v3.5.0/glyphnames.json";
+        hash = "sha256-CELhoPai49j6f9IrWqtP+Th4JpyMLJFVswfwAOrqD5Q=";
+      };
+    in
+    pkgs.runCommand "symbols.json"
+      {
+        nativeBuildInputs = [
+          pkgs.gawk
+          pkgs.jq
+        ];
+      }
+      ''
+        {
+          awk -F'; fully-qualified +# ' '
+            /^# group: / { group = substr($0, 10) }
+            NF == 2 && $2 !~ /skin tone/ {
+              char = $2; sub(/ .*/, "", char)
+              name = $2; sub(/^[^ ]+ E[0-9.]+ /, "", name)
+              print char "\t" name "\t" group
+            }' ${pkgs.unicode-emoji}/share/unicode/emoji/emoji-test.txt
+          jq -r 'del(.METADATA) | to_entries[] | [.value.char, .key, "Nerd Font"] | @tsv' ${glyphNames}
+        } | jq -R -s -c 'split("\n") | map(select(. != "") | split("\t"))' > $out
+      '';
+
   # One link per file rather than one for the directory, so dev mode can swap
   # each for a writable copy.
   configFiles =
@@ -108,6 +142,7 @@ let
       "quickshell/Theme.qml".source = themeQml;
       "quickshell/Programs.qml".source = programsQml;
       "quickshell/Host.qml".source = hostQml;
+      "quickshell/symbols.json".source = symbolsJson;
     };
 
 in

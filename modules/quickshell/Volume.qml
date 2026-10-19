@@ -32,7 +32,7 @@ Pill {
     tooltip: sink?.description ?? ""
     onClicked: button => {
         if (button === Qt.LeftButton)
-            Quickshell.execDetached([Programs.pwvucontrol]);
+            Launcher.run([Programs.pwvucontrol]);
     }
     onScrolled: steps => {
         if (!sink?.audio)

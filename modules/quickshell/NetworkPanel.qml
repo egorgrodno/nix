@@ -16,7 +16,7 @@ Panel {
     readonly property var networks: (wifi?.networks.values ?? []).filter(n => n.name !== "").sort((a, b) => b.connected - a.connected || (b.name in WifiJoin.failures) - (a.name in WifiJoin.failures) || b.known - a.known || module.bars(b.signalStrength) - module.bars(a.signalStrength) || a.name.localeCompare(b.name))
 
     function openEditor(args) {
-        Quickshell.execDetached([Programs.nmConnectionEditor].concat(args));
+        Launcher.run([Programs.nmConnectionEditor].concat(args));
         close();
     }
 

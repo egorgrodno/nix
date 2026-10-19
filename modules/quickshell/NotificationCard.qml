@@ -271,7 +271,7 @@ Item {
                     maximumLineCount: card.expanded ? undefined : 3
                     elide: Text.ElideRight
                     linkColor: Theme.blue
-                    onLinkActivated: link => Quickshell.execDetached([Programs.xdgOpen, link])
+                    onLinkActivated: link => Launcher.run([Programs.xdgOpen, link])
                 }
 
                 // Clear of the text above it.

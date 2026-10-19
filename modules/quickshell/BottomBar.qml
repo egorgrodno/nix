@@ -2,9 +2,9 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.UPower
 
-// Along the bottom edge, in a strip as tall as the top bar's: cpu, ram and disk
-// in the left corner, and the tray, bluetooth, volume, battery, clock and power
-// in the right.
+// Along the bottom edge, in a strip as tall as the top bar's: the apps menu,
+// then cpu, ram and disk in the left corner, and the tray, bluetooth, volume,
+// battery, clock and power in the right.
 PanelWindow {
     required property ShellScreen modelData
 
@@ -27,79 +27,88 @@ PanelWindow {
             rightMargin: Theme.outerGap
         }
 
-        Segment {
-            Pill {
-                hoverable: false
-                tooltip: Stats.cpuTooltip
-                tooltipContent: Component {
-                    CoreChart {}
-                }
+        Row {
+            height: parent.height
+            spacing: 8
 
-                Caption {
-                    anchors.baseline: cpuFigure.baseline
-                    text: "cpu"
-                }
-
-                CoreBars {
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-
-                Figure {
-                    id: cpuFigure
-
-                    anchors.verticalCenter: parent.verticalCenter
-                    widest: "100%"
-                    text: `${Stats.cpu}%`
-                }
+            Segment {
+                Apps {}
             }
 
-            Pill {
-                hoverable: false
-                tooltip: Stats.memoryTooltip
+            Segment {
+                Pill {
+                    hoverable: false
+                    tooltip: Stats.cpuTooltip
+                    tooltipContent: Component {
+                        CoreChart {}
+                    }
 
-                Caption {
-                    anchors.baseline: ramFigure.baseline
-                    text: "ram"
+                    Caption {
+                        anchors.baseline: cpuFigure.baseline
+                        text: "cpu"
+                    }
+
+                    CoreBars {
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+
+                    Figure {
+                        id: cpuFigure
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        widest: "100%"
+                        text: `${Stats.cpu}%`
+                    }
                 }
 
-                Meter {
-                    anchors.verticalCenter: parent.verticalCenter
-                    value: Stats.memory / 100
+                Pill {
+                    hoverable: false
+                    tooltip: Stats.memoryTooltip
+
+                    Caption {
+                        anchors.baseline: ramFigure.baseline
+                        text: "ram"
+                    }
+
+                    Meter {
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: Stats.memory / 100
+                    }
+
+                    Figure {
+                        id: ramFigure
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        widest: "100%"
+                        text: `${Stats.memory}%`
+                    }
                 }
 
-                Figure {
-                    id: ramFigure
+                Pill {
+                    tooltip: Stats.diskTooltip
+                    onClicked: button => {
+                        if (button === Qt.LeftButton)
+                            Launcher.run([Programs.pcmanfm, "/"]);
+                    }
 
-                    anchors.verticalCenter: parent.verticalCenter
-                    widest: "100%"
-                    text: `${Stats.memory}%`
-                }
-            }
+                    Caption {
+                        anchors.baseline: diskFigure.baseline
+                        text: "disk"
+                    }
 
-            Pill {
-                tooltip: Stats.diskTooltip
-                onClicked: button => {
-                    if (button === Qt.LeftButton)
-                        Quickshell.execDetached([Programs.pcmanfm, "/"]);
-                }
+                    Meter {
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: Stats.disk / 100
+                    }
 
-                Caption {
-                    anchors.baseline: diskFigure.baseline
-                    text: "disk"
-                }
+                    Figure {
+                        id: diskFigure
 
-                Meter {
-                    anchors.verticalCenter: parent.verticalCenter
-                    value: Stats.disk / 100
-                }
-
-                Figure {
-                    id: diskFigure
-
-                    anchors.verticalCenter: parent.verticalCenter
-                    widest: "100%"
-                    text: `${Stats.disk}%`
-                    color: Stats.disk >= 90 ? Theme.red : "#ffffff"
+                        anchors.verticalCenter: parent.verticalCenter
+                        widest: "100%"
+                        text: `${Stats.disk}%`
+                        color: Stats.disk >= 90 ? Theme.red : "#ffffff"
+                    }
                 }
             }
         }
