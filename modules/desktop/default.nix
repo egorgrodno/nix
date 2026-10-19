@@ -534,55 +534,6 @@ in
         hyprctl dispatch "hl.dsp.window.move({ workspace = $WORKSPACE, window = \"address:$ADDRESS\" })"
       '')
 
-      # Scale is runtime state, the way the wallpaper is: the `monitor` setting
-      # is what a session starts at, and `hyprctl eval` overrides it until the
-      # next config reload.
-      (writeShellScriptBin "hypr-monitor-scale" ''
-        read -r NAME W H RR X Y CURRENT < <(hyprctl monitors -j \
-          | ${lib.getExe pkgs.jq} -r '.[] | select(.focused)
-              | "\(.name) \(.width) \(.height) \(.refreshRate) \(.x) \(.y) \(.scale)"')
-
-        if [ -z "$NAME" ]; then
-          notify-send --app-name=Hyprland "Monitor scale" "No focused monitor" --urgency critical
-          exit 1
-        fi
-
-        # Hyprland quantises a scale to 1/120 and substitutes one of its own for
-        # any value that leaves the mode a fractional number of logical pixels,
-        # so d/120 applies as written exactly when d divides 120*gcd(W, H).
-        #
-        # The two-decimal label is for reading; the exact scale rides in a
-        # second tabbed field, since 1.875 is a divisor and 1.88 is not.
-        MENU=$(${lib.getExe pkgs.gawk} -v w="$W" -v h="$H" -v cur="$CURRENT" 'BEGIN {
-          a = w; b = h; while (b) { t = b; b = a % b; a = t }
-          limit = 120 * a
-
-          for (d = 120; d <= 240; d++) {
-            if (limit % d) continue
-            scale = d / 120
-            mark = sprintf("%.2f", scale) == sprintf("%.2f", cur) ? "  (current)" : ""
-            row = sprintf("%.2f  %-9s%s", scale, sprintf("%dx%d", w * 120 / d, h * 120 / d), mark)
-            sub(/ +$/, "", row)
-            printf "%s\t%.6f\n", row, scale
-          }
-        }')
-
-        CHOICE=$(printf '%s\n' "$MENU" | cut -f1 | wofi --dmenu \
-          --prompt "Scale $NAME" --width 320 --lines "$(printf '%s\n' "$MENU" | wc -l)")
-        [ -n "$CHOICE" ] || exit 0
-
-        SCALE=$(printf '%s\n' "$MENU" \
-          | ${lib.getExe pkgs.gawk} -F'\t' -v c="$CHOICE" '$1 == c { print $2; exit }')
-        LOGICAL=$(printf '%s\n' "$CHOICE" | ${lib.getExe pkgs.gawk} '{ print $2 }')
-
-        # Mode and position are read back from the monitor rather than passed as
-        # `auto`, which would re-run mode selection and re-lay-out every output.
-        hyprctl eval "hl.monitor({ output = \"$NAME\", mode = \"''${W}x''${H}@''${RR}\", position = \"''${X}x''${Y}\", scale = $SCALE })"
-
-        notify-send --app-name=Hyprland "Monitor scale" "$NAME at ''${CHOICE%% *}x — $LOGICAL" \
-          --urgency normal --hint string:synchronous:my_scale
-      '')
-
       # Saves an area capture and copies its path. With `--edit`, Satty opens
       # it first and saves over it, so the path is valid however Satty is
       # left, edited or not. The path then takes the clipboard unless Satty's
@@ -901,7 +852,8 @@ in
         # `extraConfig`.
         settings = {
           # The primary screen always leads, anchored at the origin; everything
-          # else follows it.
+          # else follows it. A layout saved from the bar's monitor panel
+          # replaces these for its set of monitors, and again after a reload.
           monitor = [
             {
               output = cfg.primaryScreen;
@@ -1260,7 +1212,7 @@ in
             hl.bind(mod .. " + grave", exec("quickshell ipc call notifications dismiss"))
             hl.bind(mod .. " + SHIFT + grave", exec("quickshell ipc call notifications dismissAll"))
             hl.bind(mod .. " + CTRL + grave", exec("quickshell ipc call notifications toggle"))
-            hl.bind(mod .. " + SHIFT + S", exec("hypr-monitor-scale"))
+            hl.bind(mod .. " + SHIFT + S", exec("quickshell ipc call monitors toggle"))
             hl.bind(mod .. " + R", hl.dsp.submap("resize"))
             hl.bind(mod .. " + 0", exec("quickshell ipc call session toggle"))
 

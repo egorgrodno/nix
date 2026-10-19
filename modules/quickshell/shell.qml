@@ -2,6 +2,7 @@
 
 import QtQuick
 import Quickshell
+import Quickshell.Hyprland
 
 ShellRoot {
     Variants {
@@ -23,6 +24,53 @@ ShellRoot {
     NotificationPopups {}
 
     Osd {}
+
+    // On the screen focused as it opens, under the top bar. One whose screen
+    // goes, as when the layout it tries turns that screen off, opens again on
+    // the focused one with the same monitor picked, so the layout can still be
+    // kept.
+    LazyLoader {
+        id: monitors
+
+        property ShellScreen screen
+        property string selected
+
+        function open() {
+            screen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0];
+            active = true;
+        }
+
+        MonitorPanel {
+            screen: monitors.screen
+            selectedName: monitors.selected
+            onSelectedNameChanged: monitors.selected = selectedName
+            onDismissed: monitors.active = false
+        }
+    }
+
+    Connections {
+        target: Monitors
+
+        function onToggleRequested() {
+            if (monitors.active)
+                monitors.item.close();
+            else {
+                monitors.selected = "";
+                monitors.open();
+            }
+        }
+    }
+
+    Connections {
+        target: Quickshell
+
+        function onScreensChanged() {
+            if (monitors.active && !Quickshell.screens.includes(monitors.screen)) {
+                monitors.active = false;
+                monitors.open();
+            }
+        }
+    }
 
     // Reloads report as notifications rather than through Quickshell's own
     // popup, once they settle: an activation swaps the files one at a time, so

@@ -4,19 +4,21 @@ import Quickshell.Hyprland
 import Quickshell.Wayland
 
 // A panel opened from a bar module: against the bar, centred on the module
-// unless that would cross the outer gap. A layer surface rather than a popup,
-// since Hyprland drops a popup's grab whenever another layer surface unmaps, as
-// an expiring notification does. A click outside closes it, through Hyprland's
+// unless that would cross the outer gap, or, opened without one, centred on
+// its screen under the top bar. A layer surface rather than a popup, since
+// Hyprland drops a popup's grab whenever another layer surface unmaps, as an
+// expiring notification does. A click outside closes it, through Hyprland's
 // focus grab, as Escape does. It slides out of the bar as it fades in, and
 // back, and eases to a new height when its content changes. On `overlay`,
 // above the notification popups, which it holds while it is open.
 PanelWindow {
     id: panel
 
-    required property Item module
+    // Null for a panel whose owner sets its screen.
+    property Item module: null
     default property alias content: column.data
     readonly property alias contentWidth: column.width
-    readonly property PanelWindow bar: module.QsWindow.window
+    readonly property PanelWindow bar: module?.QsWindow.window ?? null
     readonly property bool upward: bar?.anchors.bottom === true && bar?.anchors.top !== true
     // False from the start of the close.
     property bool open: false
@@ -59,11 +61,15 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-panel"
 
-    // Placed once: a module that changes width while the panel is open would
-    // otherwise drag it along.
+    // Placed once against a module: one that changes width while the panel is
+    // open would otherwise drag it along. Without one it stays centred as the
+    // screen changes size, as it does under the monitor panel's own changes.
     Component.onCompleted: {
-        const x = module.mapToItem(null, 0, 0).x;
-        margins.left = Math.max(Theme.outerGap, Math.min(x + (module.width - implicitWidth) / 2, bar.width - Theme.outerGap - implicitWidth));
+        if (module) {
+            const x = module.mapToItem(null, 0, 0).x;
+            margins.left = Math.max(Theme.outerGap, Math.min(x + (module.width - implicitWidth) / 2, bar.width - Theme.outerGap - implicitWidth));
+        } else
+            margins.left = Qt.binding(() => Math.max(0, (screen?.width ?? implicitWidth) - implicitWidth) / 2);
         open = true;
         Qt.callLater(() => settled = true);
         Notifications.panels = [...Notifications.panels, panel];
@@ -80,9 +86,11 @@ PanelWindow {
     }
 
     // Where the box rests, against the bar with the gap between, its edge on
-    // the bar's side fixed as the box eases to a new height.
+    // the bar's side fixed as the box eases to a new height. As wide as the
+    // panel asks rather than as the window is, whose width passes through 0
+    // as the surface is configured, which would wrap the content tall.
     Item {
-        width: parent.width
+        width: panel.implicitWidth
         height: box.height
         y: panel.upward ? parent.height - Theme.slide - height : Theme.slide
 

@@ -170,6 +170,15 @@ in
 
       xdg.configFile = configFiles;
 
+      # The monitor panel, from the launcher as from its bind.
+      xdg.desktopEntries.displays = {
+        name = "Displays";
+        genericName = "Monitor layout";
+        exec = "${lib.getExe pkgs.quickshell} ipc call monitors toggle";
+        icon = "preferences-desktop-display";
+        categories = [ "Settings" ];
+      };
+
       # Quickshell is the notification daemon: a notification sent while the
       # bar is down starts it rather than failing.
       xdg.dataFile."dbus-1/services/org.freedesktop.Notifications.service".text = ''

@@ -7,6 +7,7 @@ Rectangle {
     property alias text: label.text
     property color hoverFill: Qt.rgba(1, 1, 1, 0.12)
     property bool lit: false
+    property color textColor: "#ffffff"
 
     signal clicked
 
@@ -26,7 +27,7 @@ Rectangle {
         id: label
 
         anchors.centerIn: parent
-        color: button.enabled ? "#ffffff" : Theme.foregroundMuted
+        color: button.enabled ? button.textColor : Theme.foregroundMuted
         font.pixelSize: 14
     }
 
