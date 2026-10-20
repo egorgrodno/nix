@@ -121,19 +121,7 @@ Panel {
         }
 
         BarText {
-            text: {
-                const b = panel.module;
-                switch (b.status) {
-                case "Discharging":
-                    return b.time === "" ? "Discharging" : `Empty in ${b.time}`;
-                case "Charging":
-                    return b.time === "" ? "Charging" : `Full in ${b.time}`;
-                case "Plugged":
-                    return "Plugged in, not charging";
-                default:
-                    return "Full";
-                }
-            }
+            text: panel.module.summary
             color: Theme.foregroundMuted
             font.pixelSize: 14
         }

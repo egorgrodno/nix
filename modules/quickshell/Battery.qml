@@ -35,6 +35,19 @@ Pill {
         const minutes = Math.floor(seconds % 3600 / 60);
         return hours === 0 && minutes === 0 ? "" : `${hours} h ${minutes} min`;
     }
+    // The tooltip, and the line under the power panel's charge.
+    readonly property string summary: {
+        switch (status) {
+        case "Discharging":
+            return time === "" ? "Discharging" : `Empty in ${time}`;
+        case "Charging":
+            return time === "" ? "Charging" : `Full in ${time}`;
+        case "Plugged":
+            return "Plugged in, not charging";
+        default:
+            return "Full";
+        }
+    }
 
     function sample() {
         energyNow.reload();
@@ -60,6 +73,7 @@ Pill {
 
     visible: device.isLaptopBattery
     lit: panel.active
+    tooltip: summary
     onStatusChanged: sample()
     // Once the paths follow it.
     onSysfsChanged: Qt.callLater(sample)
