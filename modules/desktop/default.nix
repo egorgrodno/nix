@@ -963,10 +963,12 @@ in
             dwindle.preserve_split = true;
             master.new_status = "master";
 
+            # Until swaybg maps, a plain background rather than Hyprland's own
+            # wallpaper.
             misc = {
-              force_default_wallpaper = -1;
-              disable_hyprland_logo = false;
-              disable_splash_rendering = false;
+              disable_hyprland_logo = true;
+              disable_splash_rendering = true;
+              background_color = hyprColor theme.background.main "ff";
             };
 
             animations.enabled = true;
