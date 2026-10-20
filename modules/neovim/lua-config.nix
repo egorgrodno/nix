@@ -70,7 +70,8 @@
   vim.opt.tabstop = 2
   vim.opt.shiftwidth = 2
   vim.opt.ttimeoutlen = 0
-  -- Only reaches floats that pass no border of their own; telescope and cmp keep theirs.
+  -- Only reaches floats that pass no border of their own; telescope keeps its own,
+  -- and cmp's, which default to this, are turned off in its setup.
   vim.opt.winborder = 'rounded'
   vim.opt.wildignore = { '*/tmp/*', '*.so', '*.swp', '*.zip', '*.svg', '*.png', '*.jpg', '*.gif', 'node_modules', 'dist', 'build' }
 
@@ -397,7 +398,11 @@
     sources = cmp.config.sources {
       { name = 'nvim_lsp' },
       { name = 'luasnip' }
-    }
+    },
+    window = {
+      completion = { border = 'none' },
+      documentation = { border = 'none' },
+    },
   }
 
   cmp.setup.cmdline('/', {
