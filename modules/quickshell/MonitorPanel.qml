@@ -7,7 +7,8 @@ import Quickshell.Wayland
 // for the one selected its resolution, refresh rate, scale, rotation, mirror
 // and whether it is on. Apply tries the layout, which reverts after 15 s
 // unless kept; a layout kept, or the current one saved, applies whenever these
-// monitors connect. While it is open each screen shows its name.
+// monitors connect. Stay awake, also per set of monitors, takes effect at once.
+// While it is open each screen shows its name.
 Panel {
     id: panel
 
@@ -40,7 +41,7 @@ Panel {
     }
 
     function load() {
-        draft = Monitors.outputs.map(o => {
+        draft = Monitors.present.map(o => {
             const spec = Monitors.specOf(o);
             const modes = Monitors.modes(o);
             return {
@@ -187,7 +188,7 @@ Panel {
     Connections {
         target: Monitors
 
-        function onOutputsChanged() {
+        function onPresentChanged() {
             if (!panel.edited)
                 panel.load();
         }
@@ -337,6 +338,46 @@ Panel {
                             }
                         }
                     }
+                }
+            }
+
+            Item {
+                width: panel.contentWidth
+                height: Math.max(awakeText.implicitHeight, awakeToggle.height)
+
+                Column {
+                    id: awakeText
+
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: parent.width - awakeToggle.width - 12
+                    spacing: 2
+
+                    BarText {
+                        text: "Stay awake"
+                    }
+
+                    Caption {
+                        width: parent.width
+                        elide: Text.ElideRight
+                        text: "No dim, lock or suspend while these displays are connected"
+                    }
+                }
+
+                Toggle {
+                    id: awakeToggle
+
+                    anchors.right: parent.right
+                    anchors.verticalCenter: parent.verticalCenter
+                    checked: Monitors.stayAwake
+                    hovered: awakeMouse.containsMouse
+                }
+
+                MouseArea {
+                    id: awakeMouse
+
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onClicked: Monitors.setAwake(!Monitors.stayAwake)
                 }
             }
 

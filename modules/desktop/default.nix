@@ -277,10 +277,21 @@ let
         *) ${due idleTimeouts.performance} ;;
       esac
 
+      # With the lid closed on another monitor the laptop stays up, and the
+      # suspend only turns the screens off.
+      clamshell="$(printf 'b true\nb true')"
+
       case $1 in
         dim) [ "$2" -ge "$dim" ] && hyprctl eval '${setScreenShader dimShader}' ;;
         lock) [ "$2" -ge "$lock" ] && loginctl lock-session ;;
-        suspend) [ "$2" -ge "$suspend" ] && systemctl ${suspendVerb} ;;
+        suspend)
+          [ "$2" -ge "$suspend" ] || exit 0
+          if [ "$(busctl get-property org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager LidClosed Docked)" = "$clamshell" ]; then
+            hyprctl dispatch 'hl.dsp.dpms({ action = "off" })'
+          else
+            systemctl ${suspendVerb}
+          fi
+          ;;
       esac
     '';
 
@@ -1385,8 +1396,9 @@ in
             after_sleep_cmd = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'";
           };
           # One listener per distinct step and threshold. The suspend turns the
-          # screen off. Only a dim listener undoes the dim, and only while it is
-          # on, so a return from idle without a dim touches nothing.
+          # screen off, and a suspend listener on again, which input alone does
+          # not. Only a dim listener undoes the dim, and only while it is on, so
+          # a return from idle without a dim touches nothing.
           listener = unique (
             concatLists (
               mapAttrsToList (
@@ -1399,6 +1411,9 @@ in
                   }
                   // optionalAttrs (step == "dim") {
                     on-resume = "hyprctl eval 'if hl.get_config(\"decoration.screen_shader\") ~= \"\" then ${setScreenShader ""} end'";
+                  }
+                  // optionalAttrs (step == "suspend") {
+                    on-resume = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'";
                   }
                 )
               ) idleTimeouts

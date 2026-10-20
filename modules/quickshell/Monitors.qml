@@ -12,12 +12,27 @@ import Quickshell.Io
 // connects to the running bar with no layout saved posts a notification that
 // opens the panel. A layout from the panel applies at once and reverts after
 // 15 s unless kept, which saves it.
+//
+// Clamshell: while the lid is closed on another monitor that the open lid's
+// layout keeps on, the laptop's panel is off and out of the set, which then
+// has a layout of its own. Losing the last other monitor ends it after a 3 s
+// grace, which a TV blinking off rides out. Until the panel is on again a
+// `handle-lid-switch` inhibitor holds logind off, so the laptop never suspends
+// with every screen dark.
 Singleton {
     id: root
 
     property var outputs: []
     // By set key, a spec per monitor, its output and mirror as descriptions.
     property var layouts: ({})
+    // The set keys whose displays keep the session awake: hypridle honours
+    // the systemd idle inhibitor held while one is connected.
+    property var awake: []
+    property bool lidClosed: false
+    // Until logind answers no layout applies, as one taking the lid for open
+    // would light a closed panel.
+    property bool lidRead: false
+    property bool clamshell: false
     // The set whose layout last applied: Hyprland reports a monitor a layout
     // disables or enables as removed or added, which must not apply it again.
     property string appliedKey: ""
@@ -34,8 +49,11 @@ Singleton {
     property var cursor: null
     // The eval waiting on the cursor's position.
     property string chunk
-    readonly property string currentKey: key(outputs)
+    // The outputs to arrange, the laptop's panel left out in clamshell.
+    readonly property var present: clamshell ? outputs.filter(o => !internal(o)) : outputs
+    readonly property string currentKey: key(present)
     readonly property bool saved: currentKey in layouts
+    readonly property bool stayAwake: awake.includes(currentKey)
 
     signal toggleRequested
 
@@ -46,6 +64,21 @@ Singleton {
     // A headless output has no description.
     function describe(output) {
         return output.description || output.name;
+    }
+
+    // The laptop's own panel, told apart by its connector as logind does.
+    function internal(output) {
+        return /^(eDP|LVDS|DSI)-/.test(output.name);
+    }
+
+    // Whether a monitor besides the laptop's panel, and not a headless
+    // output, is on in the layout for all of them, which the open lid has.
+    function docked() {
+        const layout = layouts[key(outputs)];
+        return outputs.some(o => {
+            const s = layout?.find(s => s.output === describe(o));
+            return !internal(o) && o.description && !(s ?? o).disabled;
+        });
     }
 
     // { width, height, rate, mode }, in Hyprland's order, the mode as
@@ -141,7 +174,7 @@ Singleton {
     // A saved layout for the outputs connected now, its descriptions matched
     // to their names, monitors alike taken in the order of their names.
     function resolve(layout) {
-        const free = [...outputs].sort((a, b) => a.name.localeCompare(b.name));
+        const free = [...present].sort((a, b) => a.name.localeCompare(b.name));
         const names = {};
         const specs = layout.map(s => {
             const i = free.findIndex(o => describe(o) === s.output);
@@ -166,8 +199,18 @@ Singleton {
                     mirror: s.mirror === "" ? "" : descriptions[s.mirror]
                 }))
         });
+        store();
+    }
+
+    function setAwake(on) {
+        awake = awake.filter(k => k !== currentKey).concat(on ? [currentKey] : []);
+        store();
+    }
+
+    function store() {
         storage.setText(JSON.stringify({
-            layouts: layouts
+            layouts: layouts,
+            awake: awake
         }));
     }
 
@@ -205,6 +248,21 @@ Singleton {
     }
 
     function settle() {
+        if (!lidRead)
+            return;
+        const closed = lidClosed && outputs.some(internal) && docked();
+        if (closed !== clamshell) {
+            // The other monitors gone with the lid still closed.
+            if (clamshell && lidClosed) {
+                if (!grace.running) {
+                    console.info("Monitors: no other monitor left, clamshell ends in 3 s");
+                    grace.start();
+                }
+                return;
+            }
+            clamshell = closed;
+        }
+        grace.stop();
         const changed = currentKey !== appliedKey;
         if (!changed && !reloaded)
             return;
@@ -217,17 +275,43 @@ Singleton {
         }
         appliedKey = currentKey;
         reloaded = false;
-        if (saved)
-            apply(resolve(layouts[currentKey]), false);
-        else if (fresh && outputs.length > 1)
+        console.info(`Monitors: ${present.map(describe).join(", ")}${saved ? "" : ", no layout saved"}`);
+        const specs = saved ? resolve(layouts[currentKey]) : [];
+        // Beyond the layout: the laptop's panel, off in clamshell and on again
+        // after it, and whatever mirrors the panel while it is off.
+        for (const o of outputs.filter(o => !specs.some(s => s.output === o.name))) {
+            const s = specOf(o);
+            if (internal(o) && clamshell)
+                specs.push(Object.assign(s, {
+                    disabled: true,
+                    mirror: ""
+                }));
+            else if (internal(o) && o.disabled)
+                specs.push(Object.assign(spec(o.name, "preferred", 0, 0, "auto", 0, false, ""), {
+                    position: "auto"
+                }));
+            else if (clamshell && s.mirror !== "" && internal(outputs.find(m => m.name === s.mirror)))
+                specs.push(Object.assign(s, {
+                    mirror: ""
+                }));
+        }
+        apply(specs, false);
+        if (!saved && fresh && present.length > 1)
             notifier.running = true;
     }
 
+    // In the bar's journal, with the layouts applied and any Hyprland rejects,
+    // to trace a lid or monitor change after the fact.
+    onLidClosedChanged: console.info(`Monitors: lid ${lidClosed ? "closed" : "open"}`)
+    onClamshellChanged: console.info(`Monitors: clamshell ${clamshell ? "on" : "off"}`)
+
     Component.onCompleted: {
         try {
-            layouts = JSON.parse(storage.text()).layouts ?? {};
+            const state = JSON.parse(storage.text());
+            layouts = state.layouts ?? {};
+            awake = state.awake ?? [];
         } catch (e) {}
-        refresh();
+        lidReader.running = true;
     }
 
     FileView {
@@ -254,7 +338,9 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
-                    root.outputs = JSON.parse(text);
+                    // Without FALLBACK, Hyprland's stand-in while no monitor
+                    // is on, which no layout covers.
+                    root.outputs = JSON.parse(text).filter(o => o.name !== "FALLBACK");
                 } catch (e) {
                     return;
                 }
@@ -288,9 +374,20 @@ Singleton {
                 } catch (e) {
                     root.cursor = null;
                 }
-                Quickshell.execDetached([Programs.hyprctl, "eval", root.chunk]);
+                console.info(`Monitors: applying ${root.chunk}`);
+                evaluator.running = true;
                 root.refresh();
             }
+        }
+    }
+
+    Process {
+        id: evaluator
+
+        command: [Programs.hyprctl, "eval", root.chunk]
+        stdout: StdioCollector {
+            onStreamFinished: if (text.trim() !== "ok")
+                console.warn(`Monitors: Hyprland rejected the layout: ${text.trim()}`)
         }
     }
 
@@ -304,6 +401,56 @@ Singleton {
             } else if (event.name === "monitoradded" || event.name === "monitorremoved")
                 root.refresh();
         }
+    }
+
+    Timer {
+        id: grace
+
+        interval: 3000
+        onTriggered: {
+            root.clamshell = false;
+            root.refresh();
+        }
+    }
+
+    // logind's lid as the bar starts, then each change.
+    Process {
+        id: lidReader
+
+        command: [Programs.gdbus, "call", "--system", "--dest", "org.freedesktop.login1", "--object-path", "/org/freedesktop/login1", "--method", "org.freedesktop.DBus.Properties.Get", "org.freedesktop.login1.Manager", "LidClosed"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.lidClosed = text.includes("true");
+                root.lidRead = true;
+                root.refresh();
+            }
+        }
+    }
+
+    Process {
+        running: true
+        command: [Programs.gdbus, "monitor", "--system", "--dest", "org.freedesktop.login1", "--object-path", "/org/freedesktop/login1"]
+        stdout: SplitParser {
+            onRead: line => {
+                const m = line.match(/'LidClosed': <(true|false)>/);
+                if (!m)
+                    return;
+                root.lidClosed = m[1] === "true";
+                root.refresh();
+            }
+        }
+    }
+
+    Process {
+        running: root.lidClosed && root.outputs.some(o => root.internal(o) && o.disabled)
+        command: [Programs.systemdInhibit, "--what=handle-lid-switch", "--who=Quickshell", "--why=The laptop's panel is off", "--mode=block", Programs.sleep, "infinity"]
+        onRunningChanged: console.info(`Monitors: lid switch ${running ? "held" : "released"}`)
+    }
+
+    Process {
+        running: root.stayAwake
+        command: [Programs.systemdInhibit, "--what=idle", "--who=Quickshell", "--why=Stay awake on these displays", "--mode=block", Programs.sleep, "infinity"]
+        onRunningChanged: console.info(`Monitors: stay awake ${running ? "on" : "off"}`)
     }
 
     Timer {
