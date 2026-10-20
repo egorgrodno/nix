@@ -39,6 +39,16 @@ PanelWindow {
         grab.active = false;
     }
 
+    // Hyprland hands the keyboard to the focused window whenever another layer
+    // surface unmaps, as the OSD does, grab or not; a new grab takes it back.
+    // Only the newest panel does, so two open never trade it.
+    function retake() {
+        if (!open || Notifications.panels[Notifications.panels.length - 1] !== panel)
+            return;
+        grab.active = false;
+        grab.active = true;
+    }
+
     screen: bar?.screen ?? null
     // The strip between the bars, reaching over each as far as the box slides,
     // so the box moves unclipped and the surface never resizes: Hyprland draws
@@ -99,6 +109,8 @@ PanelWindow {
         Rectangle {
             id: box
 
+            readonly property bool windowActive: Window.active
+
             width: parent.width
             height: column.implicitHeight + 2 * panel.padding
             // Starting under the bar's edge.
@@ -111,6 +123,8 @@ PanelWindow {
             clip: true
             focus: true
             Keys.onEscapePressed: panel.close()
+            onWindowActiveChanged: if (!windowActive)
+                Qt.callLater(panel.retake)
             onOpacityChanged: if (!panel.open && opacity === 0)
                 panel.dismissed()
 
