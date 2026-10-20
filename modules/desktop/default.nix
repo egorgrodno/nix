@@ -1330,7 +1330,10 @@ in
               }) do
                 hl.bind(step[1], grow(step[2], step[3]), { repeating = true })
               end
-              hl.bind("Escape", hl.dsp.submap("reset"))
+              -- The bind that enters the submap leaves it too.
+              for _, key in ipairs({ "Escape", "Return", mod .. " + R" }) do
+                hl.bind(key, hl.dsp.submap("reset"))
+              end
             end)
           '';
       };
