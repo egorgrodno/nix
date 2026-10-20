@@ -1386,13 +1386,20 @@ in
 
       # Idle and suspend handling. `lock_cmd` answers logind's Lock signal, and
       # `before_sleep_cmd` raises the lock before the machine suspends so a
-      # resume never lands on an unlocked desktop.
+      # resume never lands on an unlocked desktop. It first moves the pointer
+      # a pixel and back, Hyprland ignoring a move of zero, which restarts the
+      # idle timers: a wake is not input, so a step nearly due at the suspend
+      # would run the moment the machine wakes.
       services.hypridle = {
         enable = true;
         settings = {
           general = {
             lock_cmd = "pidof hyprlock || hyprlock";
-            before_sleep_cmd = "loginctl lock-session";
+            before_sleep_cmd =
+              let
+                wlrctl = lib.getExe' pkgs.wlrctl "wlrctl";
+              in
+              "${wlrctl} pointer move 1 0; ${wlrctl} pointer move -1 0; loginctl lock-session";
             after_sleep_cmd = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'";
           };
           # One listener per distinct step and threshold. The suspend turns the
