@@ -971,6 +971,12 @@ in
               background_color = hyprColor theme.background.main "ff";
             };
 
+            # No donation or update-news windows at login.
+            ecosystem = {
+              no_donation_nag = true;
+              no_update_news = true;
+            };
+
             animations.enabled = true;
           };
 
