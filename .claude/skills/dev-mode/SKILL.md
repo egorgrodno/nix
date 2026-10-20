@@ -134,5 +134,5 @@ The subtler case: if an unlocked file happens to be byte-identical to the store 
 
 - **Inhibitor.** A laptop is a host whose `hostnamectl chassis` reads `laptop`, which `base.isLaptop` pins. There `on` starts a `systemd-inhibit` against idle, sleep and the lid switch, so the screen stays up for screenshots and a suspend cannot strand a session; its PID is in `~/.local/state/nix-devmode/inhibit.pid`. Other hosts get none.
 - `on` only touches symlinks whose immediate target matches `/nix/store/*-home-manager-files/*`. Restoring anything else — a fully resolved store path, for instance — makes the next activation treat the file as foreign and abort.
-- Runtime state is out of scope. The wallpaper is set by `waypaper`, not by a config file.
+- Runtime state is out of scope. The wallpaper is set by Quickshell's picker through awww, not by a config file.
 - System-level files under `/etc` are not home-manager's and are not covered.

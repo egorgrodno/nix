@@ -61,6 +61,31 @@ ShellRoot {
         }
     }
 
+    // On the screen focused as it opens, over the bottom bar.
+    LazyLoader {
+        id: wallpapers
+
+        property ShellScreen screen
+
+        WallpaperPanel {
+            screen: wallpapers.screen
+            onDismissed: wallpapers.active = false
+        }
+    }
+
+    Connections {
+        target: Wallpapers
+
+        function onToggleRequested() {
+            if (wallpapers.active)
+                wallpapers.item.close();
+            else {
+                wallpapers.screen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0];
+                wallpapers.active = true;
+            }
+        }
+    }
+
     Connections {
         target: Quickshell
 
@@ -69,6 +94,8 @@ ShellRoot {
                 monitors.active = false;
                 monitors.open();
             }
+            if (wallpapers.active && !Quickshell.screens.includes(wallpapers.screen))
+                wallpapers.item.close();
         }
     }
 

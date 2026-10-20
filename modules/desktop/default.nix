@@ -604,17 +604,6 @@ in
         wlsunset
         xdg-desktop-portal-hyprland
 
-        swaybg
-        # Pinned on every launch; a folder picked in the GUI lasts the session.
-        (symlinkJoin {
-          name = "waypaper";
-          paths = [ waypaper ];
-          nativeBuildInputs = [ makeWrapper ];
-          postBuild = ''
-            wrapProgram $out/bin/waypaper --add-flags "--folder ${wallpaperDir u}"
-          '';
-        })
-
         vivaldi
         ungoogled-chromium
         firefox
@@ -963,7 +952,7 @@ in
             dwindle.preserve_split = true;
             master.new_status = "master";
 
-            # Until swaybg maps, a plain background rather than Hyprland's own
+            # Until awww maps, a plain background rather than Hyprland's own
             # wallpaper.
             misc = {
               disable_hyprland_logo = true;
@@ -1041,6 +1030,13 @@ in
               no_anim = true;
               order = 1;
             }
+            # awww animates its own changes, so its first image shows the
+            # moment `openlayer` reports it.
+            {
+              name = "awww";
+              match.namespace = "^(awww-daemon)$";
+              no_anim = true;
+            }
           ];
 
           window_rule =
@@ -1062,7 +1058,6 @@ in
               ".blueman-manager-wrapped"
               "galculator"
               "nm-connection-editor"
-              "waypaper"
             ]
 
             # One piece of content, sized by its own aspect ratio.
@@ -1161,7 +1156,6 @@ in
 
             startup = [
               "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
-              "${lib.getExe pkgs.waypaper} --restore"
               # NetworkManager's secret agent, which asks for VPN, 802.1X and
               # changed Wi-Fi secrets. Quickshell hides its tray icon.
               "${waitForSni} && ${lib.getExe pkgs.networkmanagerapplet}"
@@ -1230,6 +1224,7 @@ in
             hl.bind(mod .. " + SHIFT + grave", exec("quickshell ipc call notifications dismissAll"))
             hl.bind(mod .. " + CTRL + grave", exec("quickshell ipc call notifications toggle"))
             hl.bind(mod .. " + SHIFT + S", exec("quickshell ipc call monitors toggle"))
+            hl.bind(mod .. " + SHIFT + W", exec("quickshell ipc call wallpapers toggle"))
             hl.bind(mod .. " + R", hl.dsp.submap("resize"))
             hl.bind(mod .. " + 0", exec("quickshell ipc call session toggle"))
 
@@ -1541,6 +1536,10 @@ in
         Service.ExecStart = "${lib.getExe pkgs.wlsunset} -S 07:00 -s 18:30 -T 6500 -t 3500 -d 7200";
         Install.WantedBy = [ "graphical-session.target" ];
       };
+
+      # The wallpaper, which Quickshell's picker sets. The daemon restores each
+      # output's last image from its cache, which an awww update empties.
+      services.awww.enable = true;
     });
   };
 }

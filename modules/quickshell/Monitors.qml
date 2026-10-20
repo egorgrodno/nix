@@ -56,6 +56,8 @@ Singleton {
     readonly property bool stayAwake: awake.includes(currentKey)
 
     signal toggleRequested
+    // A layout went to Hyprland.
+    signal applied
 
     function key(list) {
         return list.map(describe).sort().join("\n");
@@ -377,6 +379,7 @@ Singleton {
                 console.info(`Monitors: applying ${root.chunk}`);
                 evaluator.running = true;
                 root.refresh();
+                root.applied();
             }
         }
     }

@@ -70,6 +70,7 @@ let
     import Quickshell
 
     Singleton {
+        readonly property string awww: "${lib.getExe pkgs.awww}"
         readonly property string bluemanManager: "${lib.getExe' pkgs.blueman "blueman-manager"}"
         readonly property string brightnessctl: "${lib.getExe pkgs.brightnessctl}"
         readonly property string cliphist: "${lib.getExe pkgs.cliphist}"
@@ -173,12 +174,19 @@ in
 
       xdg.configFile = configFiles;
 
-      # The monitor panel, from the launcher as from its bind.
+      # The panels without a module, from the launcher as from their binds.
       xdg.desktopEntries.displays = {
         name = "Displays";
         genericName = "Monitor layout";
         exec = "${lib.getExe pkgs.quickshell} ipc call monitors toggle";
         icon = "preferences-desktop-display";
+        categories = [ "Settings" ];
+      };
+      xdg.desktopEntries.wallpapers = {
+        name = "Wallpapers";
+        genericName = "Wallpaper picker";
+        exec = "${lib.getExe pkgs.quickshell} ipc call wallpapers toggle";
+        icon = "preferences-desktop-wallpaper";
         categories = [ "Settings" ];
       };
 

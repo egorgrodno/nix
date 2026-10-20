@@ -5,12 +5,13 @@ import Quickshell.Wayland
 
 // A panel opened from a bar module: against the bar, centred on the module
 // unless that would cross the outer gap, or, opened without one, centred on
-// its screen under the top bar. A layer surface rather than a popup, since
-// Hyprland drops a popup's grab whenever another layer surface unmaps, as an
-// expiring notification does. A click outside closes it, through Hyprland's
-// focus grab, as Escape does. It slides out of the bar as it fades in, and
-// back, and eases to a new height when its content changes. On `overlay`,
-// above the notification popups, which it holds while it is open.
+// its screen under the top bar, or over the bottom one if `upward`. A layer
+// surface rather than a popup, since Hyprland drops a popup's grab whenever
+// another layer surface unmaps, as an expiring notification does. A click
+// outside closes it, through Hyprland's focus grab, as Escape does. It slides
+// out of the bar as it fades in, and back, and eases to a new height when its
+// content changes. On `overlay`, above the notification popups, which it holds
+// while it is open.
 PanelWindow {
     id: panel
 
@@ -19,7 +20,8 @@ PanelWindow {
     default property alias content: column.data
     readonly property alias contentWidth: column.width
     readonly property PanelWindow bar: module?.QsWindow.window ?? null
-    readonly property bool upward: bar?.anchors.bottom === true && bar?.anchors.top !== true
+    // A module's bar decides, else the owner.
+    property bool upward: bar?.anchors.bottom === true && bar?.anchors.top !== true
     // False from the start of the close.
     property bool open: false
     // True from just after the first layout, from when height changes ease:
