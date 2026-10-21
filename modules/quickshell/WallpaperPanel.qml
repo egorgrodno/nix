@@ -56,7 +56,7 @@ Panel {
 
     upward: true
     padding: 12
-    implicitWidth: columns * (tileWidth + gap) - gap + 2 * padding
+    boxWidth: columns * (tileWidth + gap) - gap + 2 * padding
 
     onOpenChanged: {
         if (open)

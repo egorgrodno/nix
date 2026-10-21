@@ -15,7 +15,7 @@ Panel {
         Quickshell.execDetached(action.command);
     }
 
-    implicitWidth: 240
+    boxWidth: 240
     // With the rows' own 8 px inset, the text sits 20 px in, as any panel's
     // content does.
     padding: 12

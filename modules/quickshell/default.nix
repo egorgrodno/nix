@@ -55,6 +55,8 @@ let
         readonly property int radius: 8
         // How far panels and tooltips slide out of the bar as they fade in.
         readonly property int slide: 24
+        // How far a panel's or popup's shadow reaches past its box.
+        readonly property int shadow: 14
 
         function alpha(color, a) {
             return Qt.rgba(color.r, color.g, color.b, a);

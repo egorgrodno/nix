@@ -29,7 +29,8 @@ PanelWindow {
         bottom: Theme.barHeight + 4
     }
     exclusionMode: ExclusionMode.Ignore
-    implicitWidth: 360 + Theme.outerGap
+    // With room for the cards' shadows on the left.
+    implicitWidth: Theme.shadow + 360 + Theme.outerGap
     color: "transparent"
     mask: Region {
         item: list.contentItem
@@ -66,6 +67,7 @@ PanelWindow {
     ListView {
         id: list
 
+        x: Theme.shadow
         y: Theme.slide
         width: 360
         height: parent.height - Theme.slide
@@ -75,7 +77,9 @@ PanelWindow {
             // An array rather than the list property, which it cannot take.
             values: [...Notifications.popups]
         }
-        delegate: NotificationCard {}
+        delegate: NotificationCard {
+            raised: true
+        }
 
         displaced: Transition {
             NumberAnimation {

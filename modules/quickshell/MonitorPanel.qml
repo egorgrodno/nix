@@ -178,7 +178,7 @@ Panel {
         return list.reduce((best, v) => Math.abs(v - value) < Math.abs(best - value) ? v : best);
     }
 
-    implicitWidth: 600
+    boxWidth: 600
 
     Component.onCompleted: {
         load();

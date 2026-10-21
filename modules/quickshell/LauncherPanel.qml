@@ -91,7 +91,7 @@ Panel {
         select(index, -1);
     }
 
-    implicitWidth: 440
+    boxWidth: 440
     // With the rows' own 8 px inset, their text sits 20 px in, as any panel's
     // content does.
     padding: 12

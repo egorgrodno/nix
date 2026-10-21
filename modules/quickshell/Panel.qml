@@ -10,13 +10,17 @@ import Quickshell.Wayland
 // another layer surface unmaps, as an expiring notification does. A click
 // outside closes it, through Hyprland's focus grab, as Escape does. It slides
 // out of the bar as it fades in, and back, and eases to a new height when its
-// content changes. On `overlay`, above the notification popups, which it holds
-// while it is open.
+// content changes, casting a shadow over the windows. On `overlay`, above the
+// notification popups, which it holds while it is open.
 PanelWindow {
     id: panel
 
     // Null for a panel whose owner sets its screen.
     property Item module: null
+    property int boxWidth: 360
+    // The box's left edge on screen. The surface reaches past it on both sides
+    // for the shadow, within the screen.
+    property real boxX: 0
     default property alias content: column.data
     readonly property alias contentWidth: column.width
     readonly property PanelWindow bar: module?.QsWindow.window ?? null
@@ -60,11 +64,12 @@ PanelWindow {
         bottom: true
     }
     margins {
+        left: Math.max(0, boxX - Theme.shadow)
         top: Theme.barHeight + 4 - Theme.slide
         bottom: Theme.barHeight + 4 - Theme.slide
     }
     exclusionMode: ExclusionMode.Ignore
-    implicitWidth: 360
+    implicitWidth: Math.min(screen?.width ?? Infinity, boxX + boxWidth + Theme.shadow) - margins.left
     color: "transparent"
     focusable: true
     mask: Region {
@@ -79,9 +84,9 @@ PanelWindow {
     Component.onCompleted: {
         if (module) {
             const x = module.mapToItem(null, 0, 0).x;
-            margins.left = Math.max(Theme.outerGap, Math.min(x + (module.width - implicitWidth) / 2, bar.width - Theme.outerGap - implicitWidth));
+            boxX = Math.max(Theme.outerGap, Math.min(x + (module.width - boxWidth) / 2, bar.width - Theme.outerGap - boxWidth));
         } else
-            margins.left = Qt.binding(() => Math.max(0, (screen?.width ?? implicitWidth) - implicitWidth) / 2);
+            boxX = Qt.binding(() => Math.max(0, (screen?.width ?? boxWidth) - boxWidth) / 2);
         open = true;
         Qt.callLater(() => settled = true);
         Notifications.panels = [...Notifications.panels, panel];
@@ -102,9 +107,14 @@ PanelWindow {
     // panel asks rather than as the window is, whose width passes through 0
     // as the surface is configured, which would wrap the content tall.
     Item {
-        width: panel.implicitWidth
+        x: panel.boxX - panel.margins.left
+        width: panel.boxWidth
         height: box.height
         y: panel.upward ? parent.height - Theme.slide - height : Theme.slide
+
+        Shadow {
+            target: box
+        }
 
         Rectangle {
             id: box

@@ -10,7 +10,8 @@ import Quickshell.Widgets
 // there is none; a right-click dismisses, as does a drag right past a third of
 // the width. Hovering holds the timer, as replying does.
 // The panel shows each card's age, without the app's name and icon under a
-// group's header, and slides in only those that arrive while it is open.
+// group's header, and slides in only those that arrive while it is open. A
+// popup casts a shadow over the windows.
 Item {
     id: card
 
@@ -20,6 +21,7 @@ Item {
     property bool showTime: false
     property bool showApp: true
     property bool slideIn: true
+    property bool raised: false
     property color fill: Theme.alpha(Theme.backgroundMain, 0.97)
     // Set once created, so the card slides out of the bar as it fades in.
     property bool arrived: !slideIn
@@ -110,6 +112,11 @@ Item {
         to: 0
         duration: 200
         easing.type: Easing.OutExpo
+    }
+
+    Shadow {
+        visible: card.raised
+        target: box
     }
 
     Rectangle {
