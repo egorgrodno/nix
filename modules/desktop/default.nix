@@ -42,49 +42,86 @@ let
         r = "L";
       };
 
-  # tuigreet writes ANSI to a pty, which a bare Wayland compositor cannot hand
-  # it, so the greeter runs inside foot.
-  greeterTerminal =
+  # The keyboard and pointer, at the greeter as in the session.
+  hyprInput = {
+    repeat_delay = 300;
+    repeat_rate = 30;
+    kb_layout = if config.base.keyboard.layout == "hallmack" then "us" else "us,ru";
+    kb_options = concatStringsSep "," (
+      optional (config.base.keyboard.layout != "hallmack") "grp:win_space_toggle"
+      ++ optional config.base.keyboard.swapCapsEscape "caps:swapescape"
+    );
+    follow_mouse = 1;
+    # Hyprland applies these to every pointer, the touchpad included;
+    # scoping them to the mouse would take a per-device section, whose
+    # name is host-specific.
+    sensitivity = 0.4;
+    accel_profile = "flat";
+    touchpad = {
+      natural_scroll = false;
+      # Hyprland defaults tap-to-click on, which fires clicks from palm
+      # brushes while typing.
+      tap_to_click = false;
+      middle_button_emulation = false;
+      disable_while_typing = true;
+    };
+  };
+
+  # The primary screen always leads, anchored at the origin; everything else
+  # follows it.
+  monitors = [
+    {
+      output = cfg.primaryScreen;
+      mode = cfg.primaryMode;
+      position = "0x0";
+      scale = 1;
+    }
+  ]
+  ++ cfg.extraMonitors;
+
+  cursor = {
+    package = pkgs.bibata-cursors;
+    name = "Bibata-Modern-Classic";
+  };
+
+  # greetd's greeter: Quickshell's login screen in a Hyprland of its own, with
+  # the session's screens, keys, pointer and background, which exits once
+  # Quickshell does, as it does on launching the session. These monitor rules
+  # are its defaults, over which Quickshell applies the last user's layout.
+  greeterHyprland =
     let
-      hex = removePrefix "#";
+      lua = generators.toLua { };
+      hyprctl = getExe' config.programs.hyprland.package "hyprctl";
     in
-    pkgs.writeText "foot-greeter.ini" ''
-      font=${theme.fontMono}:size=14
-      # Without this a desktop appearance preference can select the empty
-      # `colors-light` section.
-      initial-color-theme=dark
-      # Without this foot maps at its 700x500 default and is only then resized
-      # by cage, which reads on screen as the greeter snapping to size.
-      initial-window-mode=fullscreen
+    pkgs.writeText "greeter.lua" ''
+      ${concatMapStrings (m: "hl.monitor(${lua m})\n") monitors}
+      hl.env("XCURSOR_PATH", "${cursor.package}/share/icons")
+      hl.env("XCURSOR_THEME", "${cursor.name}")
+      hl.env("XCURSOR_SIZE", "24")
 
-      [colors-dark]
-      background=${hex theme.background.main}
-      foreground=${hex theme.foreground.main}
+      hl.config(${
+        lua {
+          input = hyprInput;
+          misc = {
+            disable_hyprland_logo = true;
+            disable_splash_rendering = true;
+            background_color = hyprColor theme.background.main "ff";
+          };
+          ecosystem = {
+            no_donation_nag = true;
+            no_update_news = true;
+          };
+          # Off the card while the password is typed.
+          cursor.hide_on_key_press = true;
+          # The login screen fades itself in.
+          animations.enabled = false;
+        }
+      })
 
-      regular0=${hex theme.background.light}
-      regular1=${hex theme.red}
-      regular2=${hex theme.green}
-      regular3=${hex theme.yellow}
-      regular4=${hex theme.blue}
-      regular5=${hex theme.magenta}
-      regular6=${hex theme.cyan}
-      regular7=${hex theme.foreground.muted}
-
-      bright0=${hex theme.foreground.dark}
-      bright1=${hex theme.bright.red}
-      bright2=${hex theme.bright.green}
-      bright3=${hex theme.bright.yellow}
-      bright4=${hex theme.bright.blue}
-      bright5=${hex theme.bright.magenta}
-      bright6=${hex theme.bright.cyan}
-      bright7=${hex theme.foreground.light}
+      hl.on("hyprland.start", function()
+        hl.exec_cmd(${lua "${getExe pkgs.quickshell} -p ${config.my.quickshell.greeter}; ${hyprctl} dispatch 'hl.dsp.exit()'"})
+      end)
     '';
-
-  # tuigreet names ANSI roles, not colours, so these resolve against the palette
-  # above: `black` is its regular0, `gray` regular7, `white` bright7. Restyling
-  # means naming a different role, never a hex value. `title` follows `border`
-  # and `greet` follows `text`, which is why neither is listed.
-  greeterTheme = "container=black;border=blue;text=gray;time=cyan;prompt=cyan;input=white;action=gray;button=yellow";
 
   waitForSni = pkgs.writeShellScript "wait-for-sni" ''
     until ${lib.getExe' pkgs.dbus "dbus-send"} --session --print-reply \
@@ -412,38 +449,24 @@ in
       jack.enable = true;
     };
 
-    # cage rather than the kernel console: fbcon locks its character grid in at
-    # boot and never re-probes, so a monitor swapped between power-on and login
-    # leaves the greeter sized for the display that is gone. A host driving its
-    # outputs from a discrete card must pin `WLR_DRM_DEVICES` in
-    # `environment.sessionVariables` for the greeter to reach that card too.
-    #
-    # `withUWSM` publishes both a plain and a uwsm-managed Hyprland session and
-    # the plain one sorts first; picking it leaves the compositor a child of
-    # greetd, logging to the VT instead of the journal, with no systemd user
-    # units. `--remember-session` makes one deliberate choice stick.
-    #
-    # A script, since greetd parses its config line by line and fails on the
-    # `'''` block the TOML generator writes for a multi-line command. Without
-    # an explicit UID range tuigreet lists the nix build users (30001 up).
+    # A Hyprland of its own rather than the kernel console, whose fbcon locks
+    # its character grid in at boot and never re-probes, or cage, which spans
+    # one window across every screen. The greeter's home keeps what Hyprland
+    # and Quickshell write, the last user and session among it.
     services.greetd = {
       enable = true;
-      settings.default_session.command = "${pkgs.writeShellScript "greeter" ''
-        exec ${lib.getExe pkgs.cage} -d -s -- \
-          ${lib.getExe pkgs.foot} \
-            --config=${greeterTerminal} \
-            --term=xterm-256color \
-            -e ${lib.getExe pkgs.tuigreet} \
-              --time \
-              --asterisks \
-              --user-menu \
-              --user-menu-min-uid ${toString config.security.loginDefs.settings.UID_MIN} \
-              --user-menu-max-uid ${toString config.security.loginDefs.settings.UID_MAX} \
-              --remember-session \
-              --theme '${greeterTheme}' \
-              --sessions ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions
-      ''}";
+      settings.default_session.command = "${getExe' config.programs.hyprland.package "start-hyprland"} -- --config ${greeterHyprland}";
     };
+    users.users.greeter = {
+      home = "/var/lib/greeter";
+      createHome = true;
+    };
+
+    # What the greeter offers a user it has not seen log in. `withUWSM`
+    # publishes both a plain and a uwsm-managed Hyprland session; the plain one
+    # leaves the compositor a child of greetd, logging to the VT instead of the
+    # journal, with no systemd user units.
+    services.displayManager.defaultSession = "hyprland-uwsm";
 
     # Kernel chatter makes the plain TTYs behind the greeter unreadable. This
     # must go through consoleLogLevel rather than kernelParams: NixOS appends
@@ -865,18 +888,9 @@ in
         # name it. Binds, the resize submap and startup are code, in
         # `extraConfig`.
         settings = {
-          # The primary screen always leads, anchored at the origin; everything
-          # else follows it. A layout saved from the bar's monitor panel
-          # replaces these for its set of monitors, and again after a reload.
-          monitor = [
-            {
-              output = cfg.primaryScreen;
-              mode = cfg.primaryMode;
-              position = "0x0";
-              scale = 1;
-            }
-          ]
-          ++ cfg.extraMonitors;
+          # A layout saved from the bar's monitor panel replaces these for its
+          # set of monitors, and again after a reload.
+          monitor = monitors;
 
           env = [
             {
@@ -925,29 +939,7 @@ in
               };
             };
 
-            input = {
-              repeat_delay = 300;
-              repeat_rate = 30;
-              kb_layout = if config.base.keyboard.layout == "hallmack" then "us" else "us,ru";
-              kb_options = concatStringsSep "," (
-                optional (config.base.keyboard.layout != "hallmack") "grp:win_space_toggle"
-                ++ optional config.base.keyboard.swapCapsEscape "caps:swapescape"
-              );
-              follow_mouse = 1;
-              # Hyprland applies these to every pointer, the touchpad included;
-              # scoping them to the mouse would take a per-device section, whose
-              # name is host-specific.
-              sensitivity = 0.4;
-              accel_profile = "flat";
-              touchpad = {
-                natural_scroll = false;
-                # Hyprland defaults tap-to-click on, which fires clicks from palm
-                # brushes while typing.
-                tap_to_click = false;
-                middle_button_emulation = false;
-                disable_while_typing = true;
-              };
-            };
+            input = hyprInput;
 
             gestures = {
               workspace_swipe_distance = 500;
@@ -1486,8 +1478,7 @@ in
       home.pointerCursor = {
         enable = true;
         gtk.enable = true;
-        package = pkgs.bibata-cursors;
-        name = "Bibata-Modern-Classic";
+        inherit (cursor) package name;
         size = 17;
       };
 

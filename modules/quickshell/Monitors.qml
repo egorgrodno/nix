@@ -11,7 +11,8 @@ import Quickshell.Io
 // the configuration's own monitor rules, the set's layout applies. A set that
 // connects to the running bar with no layout saved posts a notification that
 // opens the panel. A layout from the panel applies at once and reverts after
-// 15 s unless kept, which saves it.
+// 15 s unless kept, which saves it. The greeter runs this too, on the layouts
+// SharedLayouts loads for the last user.
 //
 // Clamshell: while the lid is closed on another monitor that the open lid's
 // layout keeps on, the laptop's panel is off and out of the set, which then

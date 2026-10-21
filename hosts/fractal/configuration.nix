@@ -52,12 +52,9 @@ in
     # Unpinned, aquamarine renders on the Raphael iGPU and copies every frame
     # across PCIe to the card that drives HDMI-A-2, which speckles the screen
     # with artifacts. The cost of the pin: the board's own outputs go dark.
+    # The greeter's Hyprland takes it too: greetd builds the greeter's
+    # environment from PAM, which reads these, and discards its own.
     AQ_DRM_DEVICES = discreteGpu;
-    # The greeter's cage is wlroots, not aquamarine, so the same pin arrives a
-    # second time under wlroots' name. It belongs here rather than on
-    # greetd.service: greetd builds the greeter's environment from PAM, which
-    # reads these, and discards its own.
-    WLR_DRM_DEVICES = discreteGpu;
   };
 
   boot.loader.efi = {

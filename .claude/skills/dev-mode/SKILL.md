@@ -61,7 +61,7 @@ Any name not in `list` falls back to `~/.config/<name>`.
 
 A QML error on save leaves the running bar in place and posts a critical "Quickshell failed to reload" notice with the error. A Lua syntax error in `hyprland.lua` is rejected by `hyprctl reload` with the error printed, leaving the running config intact.
 
-The lock screen is part of the bar, raised by `quickshell ipc call lock lock`, and unlocks only with the real password.
+The lock screen is part of the bar, raised by `quickshell ipc call lock lock`, and unlocks only with the real password. The greeter is not: greetd runs its QML, `modules/quickshell/greeter/`, from the store, so dev mode cannot reach it and a change shows at the next login after a rebuild.
 
 ## Porting the edits back
 

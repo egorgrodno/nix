@@ -25,6 +25,10 @@ ShellRoot {
 
     Lock {}
 
+    SharedLayouts {
+        writes: true
+    }
+
     // On the focused screen, which they follow.
     NotificationPopups {}
 

@@ -95,6 +95,11 @@ let
     }
   '';
 
+  normalUsers = lib.filterAttrs (_: u: u.isNormalUser) config.users.users;
+
+  # Each user's saved monitor layouts, copied by the bar for the greeter.
+  sharedLayouts = "/var/lib/monitor-layouts";
+
   # What the host can do, from its NixOS configuration.
   hostQml = pkgs.writeText "Host.qml" ''
     pragma Singleton
@@ -103,6 +108,7 @@ let
 
     Singleton {
         readonly property bool hibernate: ${lib.boolToString config.base.hibernate}
+        readonly property string sharedLayouts: "${sharedLayouts}"
     }
   '';
 
@@ -144,6 +150,47 @@ let
       ${lib.getExe' config.systemd.package "systemctl"} --user start quickshell.service
   '';
 
+  # The greeter's users and sessions: the normal users, and each
+  # wayland-sessions entry's name, command and desktop names, which tuigreet
+  # also passed on as XDG_CURRENT_DESKTOP.
+  loginsJson =
+    pkgs.runCommand "logins.json"
+      {
+        nativeBuildInputs = [ pkgs.jq ];
+        users = builtins.toJSON (lib.mapAttrsToList (name: _: { inherit name; }) normalUsers);
+        defaultSession = toString config.services.displayManager.defaultSession;
+      }
+      ''
+        for f in ${config.services.displayManager.sessionData.desktops}/share/wayland-sessions/*.desktop; do
+          key() { sed -n "s/^$1=//p" "$f" | head -n 1; }
+          jq -n --arg slug "$(basename "$f" .desktop)" --arg name "$(key Name)" \
+            --arg exec "$(key Exec)" --arg desktops "$(key DesktopNames)" \
+            '{ $slug, $name, $exec, desktops: ($desktops | split(";") | map(select(. != "")) | join(":")) }'
+        done | jq -s --argjson users "$users" --arg default "$defaultSession" \
+          '{ $users, sessions: ., defaultSession: $default }' >$out
+      '';
+
+  # Its own config directory, with the files it shares with the bar.
+  greeterConfig = pkgs.runCommand "quickshell-greeter" { } ''
+    mkdir $out
+    cp ${./greeter}/*.qml $out/
+    ${lib.concatMapStrings (f: "cp ${./. + "/${f}"} $out/${f}\n") [
+      "BarText.qml"
+      "BigClock.qml"
+      "CapsLock.qml"
+      "Figure.qml"
+      "KeyBuffer.qml"
+      "LoginCard.qml"
+      "Monitors.qml"
+      "PasswordField.qml"
+      "SharedLayouts.qml"
+    ]}
+    cp ${themeQml} $out/Theme.qml
+    cp ${hostQml} $out/Host.qml
+    cp ${programsQml} $out/Programs.qml
+    cp ${loginsJson} $out/logins.json
+  '';
+
   # One link per file rather than one for the directory, so dev mode can swap
   # each for a writable copy.
   configFiles =
@@ -178,10 +225,33 @@ in
       default = "${lockCommand}";
       description = "Command that locks the session through the bar's lock screen, starting the bar should it be down.";
     };
+
+    greeter = lib.mkOption {
+      type = lib.types.path;
+      readOnly = true;
+      default = greeterConfig;
+      description = "Quickshell config directory of the greetd greeter, which runs inside a Hyprland of its own.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
     security.pam.services.quickshell-lock = { };
+
+    # The directory root's and each file its user's, so a user writes only their
+    # own layouts and the greeter reads them all.
+    systemd.tmpfiles.settings.monitor-layouts = {
+      ${sharedLayouts}.d.mode = "0755";
+    }
+    // lib.mapAttrs' (
+      name: u:
+      lib.nameValuePair "${sharedLayouts}/${name}.json" {
+        f = {
+          user = name;
+          inherit (u) group;
+          mode = "0644";
+        };
+      }
+    ) normalUsers;
 
     home-manager.users = forAllUsers {
       programs.quickshell = {
