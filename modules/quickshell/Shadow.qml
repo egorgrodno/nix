@@ -12,5 +12,5 @@ RectangularShadow {
     opacity: target.opacity
     blur: Theme.shadow - 2
     offset.y: 2
-    color: Qt.rgba(0, 0, 0, 0.7)
+    color: Qt.rgba(0, 0, 0, Theme.light ? 0.3 : 0.7)
 }

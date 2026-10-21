@@ -96,7 +96,7 @@ Never skip step 4. A port that looks right and a port that regenerates the file 
 ### What flattening destroys
 
 - **Interpolated store paths.** `pcmanfm: "${lib.getExe pkgs.pcmanfm}"` in `Programs.qml` renders as `pcmanfm: "/nix/store/6rkhi5…-pcmanfm-1.3.2/bin/pcmanfm"`. Porting that back verbatim pins a store path that dies at the next garbage collection. Restore the `${pkgs.…}` form.
-- **Theme colors.** A hex value in a diff is almost always a `theme.*` reference rendered out — `#16191D` is `theme.background.main`, `#61AFEF` is `theme.blue`. A literal undoes the theme routing. If the color is genuinely new, add it to `theme` in `flake.nix`.
+- **Theme colors.** A hex value in a diff is almost always a `theme.*` reference rendered out — `#16191D` is `theme.dark.background.main`, `#61AFEF` is `theme.dark.blue`. A literal undoes the theme routing and ignores the color scheme. In QML a color is a `Theme.*` property and an overlay is `Theme.tint(a)`, both of which follow it. If the color is genuinely new, add it to both palettes in `flake.nix`.
 - **Attrsets rendered as text.** Kitty's config and Hyprland's settings, monitors and rules come from Nix attrsets; Hyprland's binds, submap and startup are Lua in `extraConfig` and port back as Lua. `font_size 12.0` is `programs.kitty.settings.font_size = 12.0`, not a string to paste into a text block.
 - **Resolved conditionals.** The live file contains one branch. The others are invisible in the diff and are the easiest thing to break — see below.
 

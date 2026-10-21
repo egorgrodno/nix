@@ -50,7 +50,7 @@ Panel {
                 Rectangle {
                     anchors.fill: parent
                     radius: Theme.radius - 4
-                    color: hover.hovered ? Qt.rgba(1, 1, 1, 0.07) : "transparent"
+                    color: hover.hovered ? Theme.tint(0.07) : "transparent"
 
                     Behavior on color {
                         ColorAnimation {

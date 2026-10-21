@@ -14,7 +14,7 @@ Item {
     property bool hoverable: true
     // Lit regardless, as while its popup is open.
     property bool lit: false
-    property color hoverFill: Qt.rgba(1, 1, 1, 0.07)
+    property color hoverFill: Theme.tint(0.07)
     property int leftPadding: 12
     property int rightPadding: 12
     readonly property bool hovered: hover.hovered

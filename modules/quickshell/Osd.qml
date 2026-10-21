@@ -99,7 +99,7 @@ PanelWindow {
         y: osd.shown ? 0 : Theme.slide
         opacity: osd.shown ? 1 : 0
         color: Theme.alpha(Theme.backgroundMain, 0.97)
-        border.color: Qt.rgba(1, 1, 1, 0.08)
+        border.color: Theme.tint(0.08)
         border.width: 1
         radius: Theme.radius
         onOpacityChanged: if (!osd.shown && opacity === 0)
@@ -158,7 +158,7 @@ PanelWindow {
                         return capsLock.locked ? Theme.blue : Theme.foregroundMuted;
                     if (osd.kind === "mic" && osd.micMuted || osd.dimmed)
                         return Theme.red;
-                    return "#ffffff";
+                    return Theme.foregroundStrong;
                 }
             }
 
@@ -168,7 +168,7 @@ PanelWindow {
                 width: parent.width - glyph.width - percent.width - 2 * parent.spacing
                 graded: false
                 value: osd.percent / 100
-                fill: osd.dimmed ? Theme.foregroundDark : Theme.foregroundMuted
+                fill: osd.dimmed ? Theme.foregroundFaint : Theme.foregroundMuted
             }
 
             Figure {
@@ -179,7 +179,7 @@ PanelWindow {
                 horizontalAlignment: Text.AlignRight
                 widest: "100%"
                 text: `${osd.percent}%`
-                color: osd.dimmed ? Theme.foregroundMuted : "#ffffff"
+                color: osd.dimmed ? Theme.foregroundMuted : Theme.foregroundStrong
             }
 
             BarText {

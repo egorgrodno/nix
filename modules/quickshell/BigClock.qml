@@ -15,13 +15,13 @@ Column {
         anchors.horizontalCenter: parent.horizontalCenter
         text: Qt.locale("C").toString(time.date, "HH:mm")
         font.pixelSize: 96
-        color: Theme.alpha(Theme.foregroundLight, 0.9)
+        color: Theme.alpha(Theme.foregroundStrong, 0.9)
     }
 
     BarText {
         anchors.horizontalCenter: parent.horizontalCenter
         text: Qt.locale("C").toString(time.date, "dddd, d MMMM yyyy")
         font.pixelSize: 22
-        color: Theme.alpha(Theme.foregroundLight, 0.7)
+        color: Theme.alpha(Theme.foregroundStrong, 0.7)
     }
 }

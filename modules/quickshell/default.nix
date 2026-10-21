@@ -10,59 +10,61 @@
 let
   cfg = config.my.quickshell;
 
-  # `theme` as QML properties, nested names joined in camelCase, so
-  # `background.main` reads as `Theme.backgroundMain`. A hex value is a color.
-  themeProperties =
+  # The palettes as QML colors, nested names joined in camelCase, so
+  # `background.main` reads as `Theme.backgroundMain`. Each takes the light
+  # palette's value while `light` holds, which the light palette must define.
+  colorProperties =
     let
-      join =
-        prefix: name:
-        if prefix == "" then
-          name
-        else
-          prefix + lib.toUpper (lib.substring 0 1 name) + lib.substring 1 (-1) name;
-      flatten =
-        prefix: attrs:
-        lib.concatLists (
-          lib.mapAttrsToList (
-            name: value:
-            if lib.isAttrs value then
-              flatten (join prefix name) value
-            else
-              [ (lib.nameValuePair (join prefix name) value) ]
-          ) attrs
-        );
+      camel = lib.concatImapStrings (
+        i: s: if i == 1 then s else lib.toUpper (lib.substring 0 1 s) + lib.substring 1 (-1) s
+      );
     in
-    map (
-      p:
-      ''readonly property ${
-        if lib.hasPrefix "#" p.value then "color" else "string"
-      } ${p.name}: "${p.value}"''
-    ) (flatten "" theme);
+    lib.collect lib.isString (
+      lib.mapAttrsRecursive (
+        path: dark:
+        ''readonly property color ${camel path}: light ? "${lib.getAttrFromPath path theme.light}" : "${dark}"''
+      ) theme.dark
+    );
 
-  themeQml = pkgs.writeText "Theme.qml" ''
-    pragma Singleton
+  # `light` is a QML expression: the color scheme the bar follows, or `false`
+  # for the greeter, which has no user's to follow.
+  mkThemeQml =
+    light:
+    pkgs.writeText "Theme.qml" ''
+      pragma Singleton
 
-    import QtQuick
-    import Quickshell
+      import QtQuick
+      import Quickshell
 
-    Singleton {
-        ${lib.concatStringsSep "\n    " themeProperties}
+      Singleton {
+          readonly property bool light: ${light}
+          readonly property string fontMono: "${theme.fontMono}"
+          readonly property string fontUI: "${theme.fontUI}"
+          ${lib.concatStringsSep "\n    " colorProperties}
 
-        // Also the exclusive zone.
-        readonly property int barHeight: ${toString cfg.barHeight}
-        // The windows' outer gap, which the segments line up with at the sides.
-        readonly property int outerGap: ${toString cfg.outerGap}
-        readonly property int radius: 8
-        // How far panels and tooltips slide out of the bar as they fade in.
-        readonly property int slide: 24
-        // How far a panel's or popup's shadow reaches past its box.
-        readonly property int shadow: 14
+          // Also the exclusive zone.
+          readonly property int barHeight: ${toString cfg.barHeight}
+          // The windows' outer gap, which the segments line up with at the sides.
+          readonly property int outerGap: ${toString cfg.outerGap}
+          readonly property int radius: 8
+          // How far panels and tooltips slide out of the bar as they fade in.
+          readonly property int slide: 24
+          // How far a panel's or popup's shadow reaches past its box.
+          readonly property int shadow: 14
 
-        function alpha(color, a) {
-            return Qt.rgba(color.r, color.g, color.b, a);
-        }
-    }
-  '';
+          function alpha(color, a) {
+              return Qt.rgba(color.r, color.g, color.b, a);
+          }
+
+          // What lifts a fill or a border off the background: white over the
+          // dark palette, black over the light one.
+          function tint(a) {
+              return light ? Qt.rgba(0, 0, 0, a) : Qt.rgba(1, 1, 1, a);
+          }
+      }
+    '';
+
+  themeQml = mkThemeQml "ColorScheme.light";
 
   # Absolute paths: the bar runs as a systemd user service, whose PATH carries
   # a few core utilities and nothing else.
@@ -76,6 +78,7 @@ let
         readonly property string bluemanManager: "${lib.getExe' pkgs.blueman "blueman-manager"}"
         readonly property string brightnessctl: "${lib.getExe pkgs.brightnessctl}"
         readonly property string cliphist: "${lib.getExe pkgs.cliphist}"
+        readonly property string colorScheme: "${config.my.desktop.colorSchemeCommand}"
         readonly property string df: "${lib.getExe' pkgs.coreutils "df"}"
         readonly property string gdbus: "${lib.getExe' pkgs.glib "gdbus"}"
         readonly property string hyprctl: "${lib.getExe' config.programs.hyprland.package "hyprctl"}"
@@ -187,7 +190,7 @@ let
       "PasswordField.qml"
       "SharedLayouts.qml"
     ]}
-    cp ${themeQml} $out/Theme.qml
+    cp ${mkThemeQml "false"} $out/Theme.qml
     cp ${hostQml} $out/Host.qml
     cp ${programsQml} $out/Programs.qml
     cp ${loginsJson} $out/logins.json
@@ -271,12 +274,13 @@ in
         icon = "preferences-desktop-display";
         categories = [ "Settings" ];
       };
-      xdg.desktopEntries.wallpapers = {
-        name = "Wallpapers";
-        genericName = "Wallpaper picker";
+      xdg.desktopEntries.appearance = {
+        name = "Appearance";
+        genericName = "Wallpaper, light and dark mode";
         exec = "${lib.getExe pkgs.quickshell} ipc call wallpapers toggle";
         icon = "preferences-desktop-wallpaper";
         categories = [ "Settings" ];
+        settings.Keywords = "wallpaper;background;theme;light;dark;night light;";
       };
 
       # Quickshell is the notification daemon: a notification sent while the

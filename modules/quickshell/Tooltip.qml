@@ -79,7 +79,7 @@ PopupWindow {
         implicitWidth: (body.item?.implicitWidth ?? label.implicitWidth) + 2 * 16
         implicitHeight: (body.item?.implicitHeight ?? label.implicitHeight) + 2 * 12
         color: Theme.alpha(Theme.backgroundMain, 0.97)
-        border.color: Qt.rgba(1, 1, 1, 0.08)
+        border.color: Theme.tint(0.08)
         border.width: 1
         radius: Theme.radius
         y: tip.shown ? 0 : tip.upward ? Theme.slide : -Theme.slide

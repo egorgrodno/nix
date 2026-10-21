@@ -14,9 +14,9 @@ Rectangle {
     implicitWidth: 300
     implicitHeight: 40
     radius: Theme.radius - 4
-    color: Qt.rgba(1, 1, 1, 0.06)
+    color: Theme.tint(0.06)
     border.width: 1
-    border.color: Window.active ? Theme.blue : Qt.rgba(1, 1, 1, 0.12)
+    border.color: Window.active ? Theme.blue : Theme.tint(0.12)
     clip: true
 
     Behavior on border.color {
@@ -67,7 +67,7 @@ Rectangle {
                 width: 8
                 height: 8
                 radius: 4
-                color: Theme.foregroundLight
+                color: Theme.foregroundStrong
             }
         }
     }

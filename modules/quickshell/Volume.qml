@@ -63,28 +63,28 @@ Pill {
         anchors.verticalCenter: parent.verticalCenter
         width: micGlyphs.implicitWidth + 4
         text: volume.source?.audio.muted ? "\u{F036D}" : "\u{EC1C}"
-        color: volume.source?.audio.muted ? Theme.red : "#ffffff"
+        color: volume.source?.audio.muted ? Theme.red : Theme.foregroundStrong
     }
 
     BarText {
         anchors.verticalCenter: parent.verticalCenter
         width: speakerGlyphs.implicitWidth
         text: volume.icon
-        color: volume.muted ? Theme.red : "#ffffff"
+        color: volume.muted ? Theme.red : Theme.foregroundStrong
     }
 
     Meter {
         anchors.verticalCenter: parent.verticalCenter
         graded: false
         value: volume.level / 100
-        fill: volume.muted ? Theme.foregroundDark : Theme.foregroundMuted
+        fill: volume.muted ? Theme.foregroundFaint : Theme.foregroundMuted
     }
 
     Figure {
         anchors.verticalCenter: parent.verticalCenter
         widest: "100%"
         text: `${volume.level}%`
-        color: volume.muted ? Theme.foregroundMuted : "#ffffff"
+        color: volume.muted ? Theme.foregroundMuted : Theme.foregroundStrong
     }
 
     PwObjectTracker {

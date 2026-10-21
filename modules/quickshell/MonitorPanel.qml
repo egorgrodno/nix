@@ -223,7 +223,7 @@ Panel {
                 radius: Theme.radius
                 color: Theme.alpha(Theme.backgroundMain, 0.94)
                 border.width: 1
-                border.color: modelData?.name === panel.selected?.name ? Theme.blue : Qt.rgba(1, 1, 1, 0.08)
+                border.color: modelData?.name === panel.selected?.name ? Theme.blue : Theme.tint(0.08)
 
                 BarText {
                     id: label
@@ -272,9 +272,9 @@ Panel {
                 width: panel.contentWidth
                 height: 220
                 radius: Theme.radius - 4
-                color: Qt.rgba(1, 1, 1, 0.03)
+                color: Theme.tint(0.03)
                 border.width: 1
-                border.color: Qt.rgba(1, 1, 1, 0.06)
+                border.color: Theme.tint(0.06)
 
                 Repeater {
                     model: panel.placed
@@ -292,9 +292,9 @@ Panel {
                         width: logical.width * canvas.factor
                         height: logical.height * canvas.factor
                         radius: 4
-                        color: current ? Theme.alpha(Theme.blue, 0.22) : Qt.rgba(1, 1, 1, 0.07)
+                        color: current ? Theme.alpha(Theme.blue, 0.22) : Theme.tint(0.07)
                         border.width: 1
-                        border.color: current ? Theme.blue : Qt.rgba(1, 1, 1, 0.2)
+                        border.color: current ? Theme.blue : Theme.tint(0.2)
 
                         Column {
                             anchors.centerIn: parent
@@ -588,8 +588,8 @@ Panel {
 
                     text: choices.text(modelData)
                     lit: choices.chosen(modelData)
-                    hoverFill: lit ? Theme.blue : Qt.rgba(1, 1, 1, 0.12)
-                    textColor: lit ? Theme.backgroundMain : "#ffffff"
+                    hoverFill: lit ? Theme.blue : Theme.tint(0.12)
+                    textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
                     onClicked: choices.picked(modelData)
                 }
             }

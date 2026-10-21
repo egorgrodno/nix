@@ -131,13 +131,13 @@ Item {
 
                     anchors.verticalCenter: parent.verticalCenter
                     text: group.expanded ? "\u{F0143}" : "\u{F0140}"
-                    color: headerMouse.containsMouse ? "#ffffff" : Theme.foregroundMuted
+                    color: headerMouse.containsMouse ? Theme.foregroundStrong : Theme.foregroundMuted
                 }
 
                 BarText {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "\u{F0156}"
-                    color: clearMouse.containsMouse ? "#ffffff" : Theme.foregroundMuted
+                    color: clearMouse.containsMouse ? Theme.foregroundStrong : Theme.foregroundMuted
 
                     MouseArea {
                         id: clearMouse
@@ -188,7 +188,7 @@ Item {
                 showTime: true
                 showApp: !group.headed
                 slideIn: group.slideIn && entry.time > Notifications.seenAt
-                fill: Qt.rgba(1, 1, 1, 0.04)
+                fill: Theme.tint(0.04)
             }
 
             displaced: Transition {

@@ -12,7 +12,7 @@ Rectangle {
     width: 28
     height: 4
     radius: 2
-    color: Qt.rgba(1, 1, 1, 0.1)
+    color: Theme.tint(0.1)
 
     Rectangle {
         width: Math.max(parent.height, parent.width * Math.min(1, meter.value))

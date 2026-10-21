@@ -73,7 +73,7 @@ Pill {
         width: glyphs.implicitWidth
         horizontalAlignment: Text.AlignHCenter
         text: !bluetooth.shownOn ? "\u{F00B2}" : bluetooth.connected.length > 0 ? "\u{F00B1}" : "\u{F00AF}"
-        color: !bluetooth.shownOn ? Theme.foregroundDark : bluetooth.connected.length > 0 ? Theme.blue : "#ffffff"
+        color: !bluetooth.shownOn ? Theme.foregroundFaint : bluetooth.connected.length > 0 ? Theme.blue : Theme.foregroundStrong
     }
 
     Connections {

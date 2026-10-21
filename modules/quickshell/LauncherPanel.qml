@@ -174,7 +174,7 @@ Panel {
             verticalAlignment: TextInput.AlignVCenter
             placeholderText: panel.current.placeholder
             placeholderTextColor: Theme.foregroundMuted
-            color: "#ffffff"
+            color: Theme.foregroundStrong
             selectionColor: Theme.blue
             selectedTextColor: Theme.backgroundMain
             font.family: Theme.fontUI
@@ -231,9 +231,9 @@ Panel {
 
             background: Rectangle {
                 radius: Theme.radius - 4
-                color: Qt.rgba(1, 1, 1, 0.06)
+                color: Theme.tint(0.06)
                 border.width: 1
-                border.color: field.activeFocus ? Theme.blue : Qt.rgba(1, 1, 1, 0.12)
+                border.color: field.activeFocus ? Theme.blue : Theme.tint(0.12)
             }
 
             BarText {
@@ -282,7 +282,7 @@ Panel {
                         anchors.fill: parent
                         visible: !row.header
                         radius: Theme.radius - 4
-                        color: row.current ? Qt.rgba(1, 1, 1, 0.07) : "transparent"
+                        color: row.current ? Theme.tint(0.07) : "transparent"
                     }
 
                     MouseArea {

@@ -15,8 +15,106 @@ let
 
   hyprColor = import ../../lib/hypr-color.nix lib;
 
-  # The focused-window accent.
-  activeBorder = hyprColor theme.blue "ff";
+  # Hyprland's colors under each color scheme. The background is the one
+  # Quickshell's login curtain maps in.
+  hyprColors = mapAttrs (_: p: {
+    general.col = {
+      active_border = hyprColor p.blue "ff";
+      inactive_border = hyprColor p.foreground.faint "aa";
+    };
+    misc.background_color = hyprColor p.background.main "ff";
+  }) { inherit (theme) dark light; };
+
+  # kitty's colors under each color scheme. Its own cursor and selection are
+  # made for a dark background, so the light scheme sets them too.
+  kittyColors =
+    let
+      colors = p: {
+        background = p.background.main;
+        foreground = p.foreground.main;
+        color0 = p.black;
+        color1 = p.red;
+        color2 = p.green;
+        color3 = p.yellow;
+        color4 = p.blue;
+        color5 = p.magenta;
+        color6 = p.cyan;
+        color7 = p.white;
+        color8 = p.bright.black;
+        color9 = p.bright.red;
+        color10 = p.bright.green;
+        color11 = p.bright.yellow;
+        color12 = p.bright.blue;
+        color13 = p.bright.magenta;
+        color14 = p.bright.cyan;
+        color15 = p.bright.white;
+      };
+    in
+    {
+      dark = colors theme.dark;
+      light = colors theme.light // {
+        cursor = theme.light.foreground.main;
+        cursor_text_color = theme.light.background.main;
+        selection_background = theme.light.bright.white;
+        selection_foreground = "none";
+      };
+    };
+  kittyTheme = colors: concatStrings (mapAttrsToList (k: v: "${k} ${v}\n") colors);
+
+  gtkSchemes = {
+    dark = {
+      theme = "Materia-dark-compact";
+      icons = "Papirus-Dark";
+    };
+    light = {
+      theme = "Materia-light-compact";
+      icons = "Papirus-Light";
+    };
+  };
+
+  # Quickshell and Hyprland's config read the saved scheme; kitty, libadwaita
+  # and the browsers follow GTK's `color-scheme` through the portal.
+  colorScheme = pkgs.writeShellApplication {
+    name = "color-scheme";
+    runtimeInputs = [
+      pkgs.dconf
+      config.programs.hyprland.package
+    ];
+    text =
+      let
+        values =
+          scheme:
+          "gtk=${gtkSchemes.${scheme}.theme} icons=${gtkSchemes.${scheme}.icons} hypr=${escapeShellArg "hl.config(${generators.toLua { multiline = false; } hyprColors.${scheme}})"}";
+      in
+      ''
+        file=''${XDG_STATE_HOME:-$HOME/.local/state}/color-scheme
+        saved=$(cat "$file" 2>/dev/null || true)
+        [ "$saved" = light ] || saved=dark
+
+        case ''${1:-$saved} in
+          light | dark) scheme=''${1:-$saved} ;;
+          toggle) if [ "$saved" = light ]; then scheme=dark; else scheme=light; fi ;;
+          *)
+            echo "usage: color-scheme [light | dark | toggle]" >&2
+            exit 2
+            ;;
+        esac
+        if [ "$scheme" = light ]; then
+          ${values "light"}
+        else
+          ${values "dark"}
+        fi
+
+        mkdir -p "$(dirname "$file")"
+        echo "$scheme" >"$file"
+
+        printf '%s\n' '[/]' "color-scheme='prefer-$scheme'" "gtk-theme='$gtk'" "icon-theme='$icons'" |
+          dconf load /org/gnome/desktop/interface/
+        if [ -n "''${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+          hyprctl eval "$hypr" >/dev/null
+        fi
+      '';
+  };
 
   # Hyprland's directional keys: focus, move, and the resize submap.
   dirs =
@@ -98,7 +196,7 @@ let
           misc = {
             disable_hyprland_logo = true;
             disable_splash_rendering = true;
-            background_color = hyprColor theme.background.main "ff";
+            background_color = hyprColor theme.dark.background.main "ff";
           };
           ecosystem = {
             no_donation_nag = true;
@@ -413,6 +511,13 @@ in
         placed to the right; replace it to position additional screens exactly.
       '';
     };
+
+    colorSchemeCommand = mkOption {
+      type = types.str;
+      readOnly = true;
+      default = getExe colorScheme;
+      description = "Command that sets the color scheme, `light`, `dark` or `toggle`, or with no argument sets the saved one again.";
+    };
   };
 
   imports = [
@@ -616,8 +721,25 @@ in
     # either way.
     environment.sessionVariables.UWSM_SILENT_START = "1";
 
+    # `color-scheme` owns the color scheme's dconf keys, which a fresh home lacks.
+    home-manager.sharedModules = [
+      (
+        { lib, ... }:
+        {
+          home.activation.colorScheme = lib.hm.dag.entryAfter [ "dconfSettings" ] ''
+            if [[ -v DBUS_SESSION_BUS_ADDRESS ]]; then
+              run ${getExe colorScheme}
+            else
+              run ${getExe' pkgs.dbus "dbus-run-session"} --dbus-daemon=${getExe' pkgs.dbus "dbus-daemon"} ${getExe colorScheme}
+            fi
+          '';
+        }
+      )
+    ];
+
     home-manager.users = forAllUsers (u: {
       home.packages = with pkgs; [
+        colorScheme
         hyprgraphics
         hyprpicker
         grim
@@ -722,34 +844,17 @@ in
         name = theme.fontMono;
         size = 11;
       };
-      # The terminal is the only surface that consumes ANSI colors, so it is
-      # where the accent half of `theme` earns its keep.
-      programs.kitty.settings = {
+      programs.kitty.settings = kittyColors.dark // {
         # Inconsolata LGC 3.x cut its line height from 1.48 em to 1.11 em; this
         # restores the 1.x spacing.
         modify_font = "cell_height 133%";
-
-        background = theme.background.main;
-        foreground = theme.foreground.main;
-
-        color0 = theme.background.light;
-        color1 = theme.red;
-        color2 = theme.green;
-        color3 = theme.yellow;
-        color4 = theme.blue;
-        color5 = theme.magenta;
-        color6 = theme.cyan;
-        color7 = theme.foreground.muted;
-
-        color8 = theme.foreground.dark;
-        color9 = theme.bright.red;
-        color10 = theme.bright.green;
-        color11 = theme.bright.yellow;
-        color12 = theme.bright.blue;
-        color13 = theme.bright.magenta;
-        color14 = theme.bright.cyan;
-        color15 = theme.foreground.light;
       };
+      # kitty follows the portal's `color-scheme`, which `color-scheme` sets,
+      # and tells the programs inside, Neovim among them. Each file replaces
+      # every color kitty.conf sets.
+      xdg.configFile."kitty/dark-theme.auto.conf".text = kittyTheme kittyColors.dark;
+      xdg.configFile."kitty/no-preference-theme.auto.conf".text = kittyTheme kittyColors.dark;
+      xdg.configFile."kitty/light-theme.auto.conf".text = kittyTheme kittyColors.light;
       programs.kitty.keybindings = {
         "ctrl+shift+enter" = "no_op";
         "ctrl+shift+]" = "no_op";
@@ -847,7 +952,7 @@ in
           # empties when it exits.
           general.copy-command = "wl-copy";
           font.family = theme.fontUI;
-          color-palette.palette = with theme; [
+          color-palette.palette = with theme.dark; [
             red
             yellow
             green
@@ -905,10 +1010,6 @@ in
               gaps_in = 5;
               gaps_out = outerGap;
               border_size = 2;
-              col = {
-                active_border = activeBorder;
-                inactive_border = hyprColor theme.foreground.dark "aa";
-              };
               resize_on_border = false;
               allow_tearing = false;
               layout = "dwindle";
@@ -943,13 +1044,11 @@ in
             master.new_status = "master";
 
             # Until awww maps, a plain background rather than Hyprland's own
-            # wallpaper, in the colour Quickshell's login curtain maps in. The
-            # bar holds the session lock, and one restarted under it takes the
-            # lock back.
+            # wallpaper, whose colour `extraConfig` sets. The bar holds the
+            # session lock, and one restarted under it takes the lock back.
             misc = {
               disable_hyprland_logo = true;
               disable_splash_rendering = true;
-              background_color = hyprColor theme.background.main "ff";
               allow_session_lock_restore = true;
             };
 
@@ -1177,6 +1276,21 @@ in
           ''
             local mod = "ALT"
             local exec = hl.dsp.exec_cmd
+
+            -- The borders and background under the color scheme
+            -- `color-scheme` saved, which sets them again on a change.
+            do
+              local state = os.getenv("XDG_STATE_HOME")
+              if not state or state == "" then
+                state = os.getenv("HOME") .. "/.local/state"
+              end
+              local file = io.open(state .. "/color-scheme")
+              local scheme = file and file:read("l")
+              if file then
+                file:close()
+              end
+              hl.config(scheme == "light" and ${lua hyprColors.light} or ${lua hyprColors.dark})
+            end
 
             -- The pointer stays hidden until Quickshell's login curtain fades,
             -- which shows it again; the timer does should the bar never get
@@ -1424,11 +1538,19 @@ in
         # Keys are dconf paths: the separator is a slash, and a dotted name is
         # written verbatim into a group no schema reads.
         settings."org/gnome/desktop/wm/preferences".button-layout = "appmenu:close";
-        settings."org/gnome/desktop/interface" = {
-          overlay-scrolling = false;
-          # libadwaita ignores gtk.theme; dark mode comes from this preference.
-          color-scheme = "prefer-dark";
-        };
+        # Forced over the gtk module's, which also sets the theme and icons:
+        # `color-scheme` owns those and the color scheme, which a switch must
+        # not reset.
+        settings."org/gnome/desktop/interface" =
+          let
+            inherit (config.home-manager.users.${u.name}) gtk;
+          in
+          mkForce {
+            overlay-scrolling = false;
+            font-name = "${gtk.font.name} ${toString gtk.font.size}";
+            cursor-theme = gtk.cursorTheme.name;
+            cursor-size = gtk.cursorTheme.size;
+          };
       };
 
       gtk = {
@@ -1492,7 +1614,7 @@ in
           After = [ "graphical-session.target" ];
           PartOf = [ "graphical-session.target" ];
           ConditionEnvironment = "WAYLAND_DISPLAY";
-          # The power panel's night-light toggle writes `off` here and stops
+          # The Appearance panel's night-light toggle writes `off` here and stops
           # the unit, or empties the file and starts it.
           ConditionFileNotEmpty = "!%S/night-light";
         };

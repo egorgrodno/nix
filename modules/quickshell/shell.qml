@@ -76,7 +76,7 @@ ShellRoot {
 
         property ShellScreen screen
 
-        WallpaperPanel {
+        AppearancePanel {
             screen: wallpapers.screen
             onDismissed: wallpapers.active = false
         }

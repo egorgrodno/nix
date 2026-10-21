@@ -107,7 +107,7 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         widest: "100%"
                         text: `${Stats.disk}%`
-                        color: Stats.disk >= 90 ? Theme.red : "#ffffff"
+                        color: Stats.disk >= 90 ? Theme.red : Theme.foregroundStrong
                     }
                 }
             }

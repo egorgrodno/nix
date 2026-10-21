@@ -4,7 +4,7 @@ import QtQuick
 // Curve rendering keeps it greyscale: native rendering takes subpixel order
 // from the output.
 Text {
-    color: "#ffffff"
+    color: Theme.foregroundStrong
     font.family: Theme.fontUI
     font.pixelSize: 16
     font.hintingPreference: Font.PreferFullHinting

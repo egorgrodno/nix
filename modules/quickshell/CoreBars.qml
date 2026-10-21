@@ -5,7 +5,7 @@ import QtQuick
 Rectangle {
     implicitWidth: columns.implicitWidth
     height: 18
-    color: Qt.rgba(1, 1, 1, 0.06)
+    color: Theme.tint(0.06)
 
     Row {
         id: columns

@@ -55,7 +55,7 @@ Column {
                 BarText {
                     anchors.centerIn: parent
                     text: cell.modelData.text
-                    color: cell.modelData.kind === "weekday" ? Theme.foregroundMuted : cell.modelData.kind === "today" ? Theme.backgroundMain : "#ffffff"
+                    color: cell.modelData.kind === "weekday" ? Theme.foregroundMuted : cell.modelData.kind === "today" ? Theme.backgroundMain : Theme.foregroundStrong
                     font.family: cell.modelData.kind === "weekday" ? Theme.fontUI : Theme.fontMono
                     font.pixelSize: cell.modelData.kind === "weekday" ? 13 : 15
                 }

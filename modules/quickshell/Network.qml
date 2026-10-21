@@ -24,7 +24,7 @@ Pill {
             return "\u{F05AA}";
         return wifi ? "\u{F092E}" : "\u{F0202}";
     }
-    readonly property color glyphColor: wifiOff ? Theme.foregroundDark : !device || limited ? Theme.yellow : "#ffffff"
+    readonly property color glyphColor: wifiOff ? Theme.foregroundFaint : !device || limited ? Theme.yellow : Theme.foregroundStrong
     readonly property string name: wifiNetwork?.name ?? (device ? "Ethernet" : wifiOff ? "Wi-Fi off" : "No network")
     readonly property string detail: {
         const parts = [];
@@ -146,7 +146,7 @@ Pill {
         width: shields.implicitWidth
         horizontalAlignment: Text.AlignHCenter
         text: Vpn.active.length > 0 ? "\u{F099D}" : "\u{F0CCC}"
-        color: Vpn.active.length > 0 ? Theme.blue : Theme.foregroundDark
+        color: Vpn.active.length > 0 ? Theme.blue : Theme.foregroundFaint
     }
 
     BarText {

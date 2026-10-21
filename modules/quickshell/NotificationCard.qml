@@ -127,7 +127,7 @@ Item {
         y: card.arrived ? 0 : -Theme.slide
         opacity: card.arrived ? 1 : 0
         color: card.fill
-        border.color: card.entry.urgency === NotificationUrgency.Critical ? Theme.red : Qt.rgba(1, 1, 1, 0.08)
+        border.color: card.entry.urgency === NotificationUrgency.Critical ? Theme.red : Theme.tint(0.08)
         border.width: 1
         radius: Theme.radius
         clip: true
@@ -242,7 +242,7 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: card.expanded || summary.truncated || body.truncated
                         text: card.expanded ? "\u{F0143}" : "\u{F0140}"
-                        color: expanderMouse.containsMouse ? "#ffffff" : Theme.foregroundMuted
+                        color: expanderMouse.containsMouse ? Theme.foregroundStrong : Theme.foregroundMuted
                         font.pixelSize: 16
 
                         MouseArea {
@@ -329,7 +329,7 @@ Item {
                         width: parent.width
                         height: 32
                         radius: Theme.radius - 4
-                        color: Qt.rgba(1, 1, 1, 0.06)
+                        color: Theme.tint(0.06)
                         border.color: card.replying ? Theme.blue : "transparent"
                         border.width: 1
 
@@ -342,7 +342,7 @@ Item {
                             anchors.rightMargin: 8
                             anchors.verticalCenter: parent.verticalCenter
                             clip: true
-                            color: "#ffffff"
+                            color: Theme.foregroundStrong
                             selectionColor: Theme.blue
                             selectByMouse: true
                             font.family: Theme.fontUI
@@ -378,7 +378,7 @@ Item {
                             anchors.rightMargin: 10
                             anchors.verticalCenter: parent.verticalCenter
                             text: "\u{F048A}"
-                            color: field.text !== "" && sendMouse.containsMouse ? "#ffffff" : Theme.foregroundMuted
+                            color: field.text !== "" && sendMouse.containsMouse ? Theme.foregroundStrong : Theme.foregroundMuted
 
                             MouseArea {
                                 id: sendMouse

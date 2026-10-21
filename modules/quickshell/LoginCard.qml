@@ -28,7 +28,7 @@ Rectangle {
 
         property string text
         property bool steps: false
-        property color textColor: "#ffffff"
+        property color textColor: Theme.foregroundStrong
         property int pixelSize: 16
 
         signal stepped(int by)
@@ -47,7 +47,7 @@ Rectangle {
                 x: modelData < 0 ? 0 : stepper.width - width
                 text: modelData < 0 ? "\u{F0141}" : "\u{F0142}"
                 font.pixelSize: 20
-                color: hover.hovered ? "#ffffff" : Theme.foregroundMuted
+                color: hover.hovered ? Theme.foregroundStrong : Theme.foregroundMuted
 
                 HoverHandler {
                     id: hover
@@ -74,7 +74,7 @@ Rectangle {
     implicitHeight: column.implicitHeight + 48
     radius: Theme.radius
     color: Theme.alpha(Theme.backgroundMain, 0.97)
-    border.color: Qt.rgba(1, 1, 1, 0.08)
+    border.color: Theme.tint(0.08)
     border.width: 1
 
     Column {

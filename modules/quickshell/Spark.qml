@@ -39,6 +39,6 @@ Shape {
         y: parent.height - 1
         width: parent.width
         height: 1
-        color: Qt.rgba(1, 1, 1, 0.12)
+        color: Theme.tint(0.12)
     }
 }

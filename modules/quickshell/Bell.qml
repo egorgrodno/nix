@@ -56,7 +56,7 @@ Pill {
         width: glyphs.implicitWidth
         horizontalAlignment: Text.AlignHCenter
         text: Notifications.dnd ? "\u{F009B}" : "\u{F009A}"
-        color: Notifications.dnd ? Theme.blue : "#ffffff"
+        color: Notifications.dnd ? Theme.blue : Theme.foregroundStrong
     }
 
     Figure {
@@ -65,7 +65,7 @@ Pill {
         anchors.verticalCenter: parent.verticalCenter
         widest: "99"
         text: `${Math.min(bell.count, 99)}`
-        color: bell.critical ? Theme.red : bell.count > 0 ? "#ffffff" : Theme.foregroundDark
+        color: bell.critical ? Theme.red : bell.count > 0 ? Theme.foregroundStrong : Theme.foregroundFaint
     }
 
     LazyLoader {

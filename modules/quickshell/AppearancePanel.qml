@@ -10,7 +10,8 @@ import Quickshell.Widgets
 // circle closing back into the tile it grew out of. Left and Right move, Page
 // Up and Page Down by a strip's width, Home and End to either end; the wheel
 // and a drag scroll without moving. Open folder opens the folder in pcmanfm,
-// making it first if it is missing, as on a fresh install.
+// making it first if it is missing, as on a fresh install. Below the strip,
+// the color scheme and the night light, which apply at once.
 Panel {
     id: panel
 
@@ -139,7 +140,7 @@ Panel {
                     ClippingRectangle {
                         anchors.fill: parent
                         radius: Theme.radius - 4
-                        color: Qt.rgba(1, 1, 1, 0.06)
+                        color: Theme.tint(0.06)
 
                         Image {
                             anchors.fill: parent
@@ -156,7 +157,7 @@ Panel {
                         radius: Theme.radius - 4
                         color: "transparent"
                         border.width: tile.current ? 2 : 1
-                        border.color: tile.current ? Theme.blue : mouse.containsMouse ? Qt.rgba(1, 1, 1, 0.35) : Qt.rgba(1, 1, 1, 0.1)
+                        border.color: tile.current ? Theme.blue : mouse.containsMouse ? Theme.tint(0.35) : Theme.tint(0.1)
                     }
 
                     // The one applied, which a close without keeping sets back.
@@ -222,9 +223,77 @@ Panel {
             width: parent.width
             height: folderButton.height
 
+            Row {
+                id: settings
+
+                spacing: 8
+
+                Repeater {
+                    model: [
+                        {
+                            scheme: "light",
+                            label: "\u{F05A8} Light"
+                        },
+                        {
+                            scheme: "dark",
+                            label: "\u{F0594} Dark"
+                        }
+                    ]
+
+                    TextButton {
+                        required property var modelData
+
+                        text: modelData.label
+                        lit: (modelData.scheme === "light") === ColorScheme.light
+                        hoverFill: lit ? Theme.blue : Theme.tint(0.12)
+                        textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
+                        onClicked: if (!lit)
+                            ColorScheme.set(modelData.scheme)
+                    }
+                }
+
+                Item {
+                    width: 16
+                    height: 1
+                }
+
+                Item {
+                    width: nightLabel.implicitWidth + 12 + nightToggle.width
+                    height: parent.height
+
+                    BarText {
+                        id: nightLabel
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Night light"
+                        font.pixelSize: 14
+                    }
+
+                    Toggle {
+                        id: nightToggle
+
+                        anchors.right: parent.right
+                        anchors.verticalCenter: parent.verticalCenter
+                        checked: NightLight.on
+                        hovered: nightMouse.containsMouse
+                    }
+
+                    MouseArea {
+                        id: nightMouse
+
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        onClicked: NightLight.toggle()
+                    }
+                }
+            }
+
+            // Beside the button, while it fits.
             Caption {
+                anchors.right: folderButton.left
+                anchors.rightMargin: 16
                 anchors.verticalCenter: parent.verticalCenter
-                visible: Wallpapers.count > 0
+                visible: Wallpapers.count > 0 && settings.width + 16 + implicitWidth + 16 <= folderButton.x
                 text: "Left Right preview · Enter keep · Escape revert"
             }
 

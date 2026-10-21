@@ -28,7 +28,7 @@ Row {
                 anchors.fill: parent
                 anchors.margins: 4
                 radius: Theme.radius - 4
-                color: button.modelData.urgent ? Theme.alpha(Theme.red, 0.6) : mouse.containsMouse ? Qt.rgba(1, 1, 1, 0.07) : "transparent"
+                color: button.modelData.urgent ? Theme.alpha(Theme.red, 0.6) : mouse.containsMouse ? Theme.tint(0.07) : "transparent"
 
                 Behavior on color {
                     ColorAnimation {
@@ -45,7 +45,7 @@ Row {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.verticalCenterOffset: -3
                 text: button.modelData.name
-                color: button.windows === 0 && !button.modelData.urgent ? Theme.foregroundMuted : "#ffffff"
+                color: button.windows === 0 && !button.modelData.urgent ? Theme.foregroundMuted : Theme.foregroundStrong
                 font.family: Theme.fontMono
             }
 

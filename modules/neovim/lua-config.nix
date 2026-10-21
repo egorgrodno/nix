@@ -770,21 +770,26 @@
   -- Theme & Status line
   --------------------------------------------------------------------------------
 
-  require'onenord'.setup {
-    theme = 'dark'
-  }
+  -- Dark or light by 'background', which follows the terminal's. Setting it
+  -- loads the colorscheme again, and lualine with it.
+  require'onenord'.setup {}
 
   require'lualine'.setup {
     options = { theme = 'onenord' },
     tabline = { lualine_a = { 'buffers' } }
   }
-  vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
-  vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none' })
 
-  -- Below onenord.setup, which defines both groups itself and would win otherwise.
-  local float_palette = require('onenord.colors').load()
-  vim.api.nvim_set_hl(0, 'FloatBorder', { fg = float_palette.light_gray, bg = 'none' })
-  vim.api.nvim_set_hl(0, 'FloatTitle', { fg = float_palette.blue, bg = 'none', bold = true })
+  -- Over onenord's own groups, so after each of its loads.
+  local function onenord_overrides()
+    vim.api.nvim_set_hl(0, 'Normal', { bg = 'none' })
+    vim.api.nvim_set_hl(0, 'NormalFloat', { bg = 'none' })
+    local palette = require('onenord.colors').load()
+    vim.api.nvim_set_hl(0, 'FloatBorder', { fg = palette.light_gray, bg = 'none' })
+    vim.api.nvim_set_hl(0, 'FloatTitle', { fg = palette.blue, bg = 'none', bold = true })
+  end
+
+  onenord_overrides()
+  vim.api.nvim_create_autocmd('ColorScheme', { callback = onenord_overrides })
 
   --------------------------------------------------------------------------------
   -- GitSigns staged highlights

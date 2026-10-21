@@ -149,7 +149,7 @@ Panel {
             Rectangle {
                 anchors.fill: parent
                 radius: Theme.radius - 4
-                color: hover.hovered ? Qt.rgba(1, 1, 1, 0.07) : "transparent"
+                color: hover.hovered ? Theme.tint(0.07) : "transparent"
 
                 Behavior on color {
                     ColorAnimation {
@@ -174,7 +174,7 @@ Panel {
                 x: 8
                 anchors.verticalCenter: parent.verticalCenter
                 text: row.glyph
-                color: row.modelData.connected ? Theme.blue : "#ffffff"
+                color: row.modelData.connected ? Theme.blue : Theme.foregroundStrong
                 font.pixelSize: 18
             }
 
@@ -186,7 +186,7 @@ Panel {
                 anchors.verticalCenter: parent.verticalCenter
                 text: row.modelData.name
                 elide: Text.ElideRight
-                color: row.modelData.connected ? Theme.blue : "#ffffff"
+                color: row.modelData.connected ? Theme.blue : Theme.foregroundStrong
             }
 
             Row {
@@ -277,7 +277,7 @@ Panel {
                 echoMode: TextInput.Password
                 placeholderText: "Password"
                 placeholderTextColor: Theme.foregroundMuted
-                color: "#ffffff"
+                color: Theme.foregroundStrong
                 selectionColor: Theme.blue
                 selectedTextColor: Theme.backgroundMain
                 font.family: Theme.fontUI
@@ -286,9 +286,9 @@ Panel {
 
                 background: Rectangle {
                     radius: Theme.radius - 4
-                    color: Qt.rgba(1, 1, 1, 0.06)
+                    color: Theme.tint(0.06)
                     border.width: 1
-                    border.color: password.activeFocus ? Theme.blue : Qt.rgba(1, 1, 1, 0.12)
+                    border.color: password.activeFocus ? Theme.blue : Theme.tint(0.12)
                 }
             }
 
@@ -477,7 +477,7 @@ Panel {
         width: panel.contentWidth
         height: 36
         radius: Theme.radius - 4
-        color: settingsMouse.containsMouse ? Qt.rgba(1, 1, 1, 0.1) : Qt.rgba(1, 1, 1, 0.05)
+        color: settingsMouse.containsMouse ? Theme.tint(0.1) : Theme.tint(0.05)
 
         Behavior on color {
             ColorAnimation {

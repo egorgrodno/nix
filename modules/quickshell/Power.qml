@@ -19,7 +19,7 @@ Pill {
     }
 
     text: "⏻"
-    textColor: hovered || lit ? "#ffffff" : Theme.red
+    textColor: hovered || lit ? Theme.foregroundStrong : Theme.red
     hoverFill: Theme.alpha(Theme.red, 0.5)
     lit: panel.active
     tooltip: {
