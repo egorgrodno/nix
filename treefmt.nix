@@ -11,6 +11,7 @@
   programs.nixfmt.priority = 1;
   programs.stylua.enable = true;
   programs.shfmt.enable = true;
+  programs.gofmt.enable = true;
 
   # A LuaSnip data table laid out by hand. stylua breaks every parse() carrying
   # a [[...]] string across four lines, which no setting suppresses.

@@ -27,7 +27,7 @@ nix flake show /etc/nixos     # show outputs
 nix fmt                       # format the tree
 ```
 
-`treefmt.nix` defines the formatters: nixfmt and deadnix for `*.nix`, deadnix removing unused bindings and arguments, stylua for `*.lua`, shfmt for shell. Markdown is deliberately excluded and stays hand-formatted against the conventions below.
+`treefmt.nix` defines the formatters: nixfmt and deadnix for `*.nix`, deadnix removing unused bindings and arguments, stylua for `*.lua`, shfmt for shell, gofmt for Go. Markdown is deliberately excluded and stays hand-formatted against the conventions below.
 
 A pre-commit hook in `.githooks/` rejects a commit whose staged files are not formatted or carry dead Nix code, and fixes them in place so recovering is `git add` and commit again. It runs `nix fmt`, so it cannot drift from `checks.formatting` or from the editor, whose `<leader>f` runs nixfmt alone while nil marks the dead code deadnix removes.
 
@@ -57,7 +57,7 @@ users/<name>.nix                           # identity + optional homeModules
 - `modules/` — Feature modules. Each owns both its NixOS and home-manager configuration, applying `hm.nix` to every user through `forAllUsers`.
 - `profiles/` — Home-manager profiles attached to a single user. See `profiles/README.md`.
 - `users/` — One file per user: `name`, `homedir`, `stateVersion`, optional `homeModules`. A host lists them by name in `host.nix`; the flake imports them into `specialArgs.users`.
-- `pkgs/` — Flake packages, one directory each: a `writeShellApplication` in `default.nix` and its script beside it. `checks` builds them, so shellcheck runs under `nix flake check`. `install` and `repair-boot` run as root from a NixOS ISO; `nx-setup` reaches every user through `modules/nixtools`, and `craft-update` through `modules/craft`.
+- `pkgs/` — Flake packages, one directory each: a `writeShellApplication` in `default.nix` and its script beside it, or a `buildGoModule` for a tool that parses more than shell holds well. `checks` builds them, so shellcheck and the Go tests run under `nix flake check`. `install` and `repair-boot` run as root from a NixOS ISO; `nx-setup` reaches every user through `modules/nixtools`, `craft-update` through `modules/craft`, and `carve` through `modules/git`. `carve` splits the working tree's changes into commits by hunk, in a scratch worktree with hooks, for the commit skill; `carve apply -h` documents the plan.
 - `lib/` — Pure helper functions, not modules: each file takes `lib` and returns a value, and is used with `import ../../lib/<name>.nix lib`. Nothing here reads `config` or sets an option.
 - `home.nix` — Generates each `home-manager.users.*` entry: identity plus that user's `homeModules`.
 

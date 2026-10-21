@@ -227,8 +227,11 @@
         nx-setup = pkgs.callPackage ./pkgs/nx-setup { };
         # Installed for every user by modules/craft.
         craft-update = pkgs.callPackage ./pkgs/craft-update { };
+        # Installed for every user by modules/git.
+        carve = pkgs.callPackage ./pkgs/carve { };
       };
-      # The packages are listed so their build-time shellcheck runs here too.
+      # The packages are listed so their build-time shellcheck and carve's tests
+      # run here too.
       checks.${system} = {
         formatting = treefmtEval.config.build.check self;
       }

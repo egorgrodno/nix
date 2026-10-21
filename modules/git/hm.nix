@@ -1,6 +1,8 @@
 { pkgs, config, ... }:
 
 {
+  home.packages = [ (pkgs.callPackage ../../pkgs/carve { }) ];
+
   programs.git = {
     enable = true;
     package = pkgs.gitSVN;
