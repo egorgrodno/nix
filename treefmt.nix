@@ -4,6 +4,11 @@
   # nixfmt is the same derivation nil_ls delegates to in modules/neovim, so
   # `nix fmt` and <leader>f on a .nix buffer cannot disagree.
   programs.nixfmt.enable = true;
+  # Unused bindings and arguments, removed in place, so the pre-commit hook and
+  # checks.formatting catch dead code. nixfmt runs after it, to lay out what
+  # its edits leave.
+  programs.deadnix.enable = true;
+  programs.nixfmt.priority = 1;
   programs.stylua.enable = true;
   programs.shfmt.enable = true;
 

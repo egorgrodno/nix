@@ -13,7 +13,6 @@ with lib;
 let
   cfg = config.my.desktop;
 
-  rgba = import ../../lib/rgba.nix lib;
   hyprColor = import ../../lib/hypr-color.nix lib;
 
   # The focused-window accent.

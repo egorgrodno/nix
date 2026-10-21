@@ -135,13 +135,10 @@
       homeConfigurationModules = [
         home-manager.nixosModules.home-manager
 
-        (
-          { pkgs, ... }:
-          {
-            home-manager.useGlobalPkgs = true;
-            home-manager.useUserPackages = true;
-          }
-        )
+        {
+          home-manager.useGlobalPkgs = true;
+          home-manager.useUserPackages = true;
+        }
 
         ./home.nix
       ];

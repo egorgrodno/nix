@@ -27,9 +27,9 @@ nix flake show /etc/nixos     # show outputs
 nix fmt                       # format the tree
 ```
 
-`treefmt.nix` defines the formatters: nixfmt for `*.nix`, stylua for `*.lua`, shfmt for shell. Markdown is deliberately excluded and stays hand-formatted against the conventions below.
+`treefmt.nix` defines the formatters: nixfmt and deadnix for `*.nix`, deadnix removing unused bindings and arguments, stylua for `*.lua`, shfmt for shell. Markdown is deliberately excluded and stays hand-formatted against the conventions below.
 
-A pre-commit hook in `.githooks/` rejects a commit whose staged files are not formatted, and reformats them in place so recovering is `git add` and commit again. It runs `nix fmt`, so it cannot drift from `checks.formatting` or from the editor.
+A pre-commit hook in `.githooks/` rejects a commit whose staged files are not formatted or carry dead Nix code, and fixes them in place so recovering is `git add` and commit again. It runs `nix fmt`, so it cannot drift from `checks.formatting` or from the editor, whose `<leader>f` runs nixfmt alone while nil marks the dead code deadnix removes.
 
 ## Architecture
 
