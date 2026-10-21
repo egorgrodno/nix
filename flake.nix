@@ -45,6 +45,9 @@
         blue = "#61AFEF";
         magenta = "#C678DD";
         cyan = "#56B6C2";
+        # One Dark's dark yellow and dark red, outside the ANSI eight.
+        orange = "#D19A66";
+        darkRed = "#BE5046";
         # The ANSI bright half, for terminals. Each is its accent above carried
         # through One Dark Pro's own normal-to-bright step — +0.08 lightness and
         # +0.24 saturation in HSL — so bright text gains vividness, not pallor,
