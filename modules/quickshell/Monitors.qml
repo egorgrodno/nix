@@ -37,6 +37,8 @@ Singleton {
     // disables or enables as removed or added, which must not apply it again.
     property string appliedKey: ""
     property bool reloaded: false
+    // From the first layout sent to Hyprland, or the first found unneeded.
+    property bool settled: false
     // While a layout from the panel waits to be kept, the specs it replaced.
     property var previous: null
     property var pending: null
@@ -139,8 +141,10 @@ Singleton {
             const output = outputs.find(o => o.name === s.output);
             return !output || !same(s, specOf(output));
         });
-        if (changed.length === 0)
+        if (changed.length === 0) {
+            settled = true;
             return;
+        }
         chunk = changed.map(s => `hl.monitor(${lua(s)})`).join("\n");
         locator.running = true;
     }
@@ -380,6 +384,7 @@ Singleton {
                 evaluator.running = true;
                 root.refresh();
                 root.applied();
+                root.settled = true;
             }
         }
     }

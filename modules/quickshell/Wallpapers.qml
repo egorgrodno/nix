@@ -36,6 +36,8 @@ Singleton {
     property var next: null
     // Every output's, so no frame is skipped.
     readonly property int fps: Math.round(Math.max(60, ...Monitors.outputs.filter(o => !o.disabled).map(o => o.refreshRate)))
+    // From a layout or a new monitor until awww has the image sent after it.
+    readonly property bool settling: settle.running || redrawer.running
 
     signal toggleRequested
 
@@ -113,7 +115,8 @@ Singleton {
         if (file === "")
             return;
         shown = file;
-        Quickshell.execDetached([Programs.awww, "img", "--transition-type", "none", file]);
+        redrawer.command = [Programs.awww, "img", "--transition-type", "none", file];
+        redrawer.running = true;
     }
 
     FolderListModel {
@@ -153,6 +156,10 @@ Singleton {
 
         onExited: if (root.next)
             root.send()
+    }
+
+    Process {
+        id: redrawer
     }
 
     Process {

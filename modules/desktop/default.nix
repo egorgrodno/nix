@@ -953,7 +953,7 @@ in
             master.new_status = "master";
 
             # Until awww maps, a plain background rather than Hyprland's own
-            # wallpaper.
+            # wallpaper, in the colour Quickshell's login curtain maps in.
             misc = {
               disable_hyprland_logo = true;
               disable_splash_rendering = true;
@@ -1036,6 +1036,14 @@ in
               name = "awww";
               match.namespace = "^(awww-daemon)$";
               no_anim = true;
+            }
+            # The login curtain, above every other layer, maps unseen over the
+            # plain background and fades itself.
+            {
+              name = "quickshell-curtain";
+              match.namespace = "^(quickshell-curtain)$";
+              no_anim = true;
+              order = -1;
             }
           ];
 
@@ -1169,7 +1177,14 @@ in
             local mod = "ALT"
             local exec = hl.dsp.exec_cmd
 
+            -- The pointer stays hidden until Quickshell's login curtain fades,
+            -- which shows it again; the timer does should the bar never get
+            -- that far. A reload resets the option and drops the timer.
             hl.on("hyprland.start", function()
+              hl.config({ cursor = { invisible = true } })
+              hl.timer(function()
+                hl.config({ cursor = { invisible = false } })
+              end, { timeout = 10000, type = "oneshot" })
             ${concatMapStrings (command: "  hl.exec_cmd(${lua command})\n") startup}end)
 
             -- `togglefloating` floats a window at whatever geometry its tile
@@ -1539,7 +1554,9 @@ in
 
       # The wallpaper, which Quickshell's picker sets. The daemon restores each
       # output's last image from its cache, which an awww update empties.
+      # Quickshell starts it, once its login curtain covers the screens.
       services.awww.enable = true;
+      systemd.user.services.awww.Install.WantedBy = mkForce [ ];
     });
   };
 }

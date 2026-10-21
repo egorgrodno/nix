@@ -20,6 +20,9 @@ ShellRoot {
     // Once for the shell, not per screen.
     PowerSaverDim {}
 
+    // Over every screen, once for the Hyprland instance.
+    Curtain {}
+
     // On the focused screen, which they follow.
     NotificationPopups {}
 
