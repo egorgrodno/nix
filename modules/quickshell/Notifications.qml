@@ -62,6 +62,17 @@ Singleton {
         return entry.appName === "notify-send" ? "" : entry.appName;
     }
 
+    // Quickshell asks its icon provider for an `image-path` that is not a
+    // URL, which draws a checkerboard for one it cannot find. A path becomes a
+    // file URL instead, which fails to the card, and an icon name stays only
+    // where the theme has it.
+    function imageUrl(source) {
+        if (!source.startsWith("image://icon/"))
+            return source;
+        const name = source.slice("image://icon/".length);
+        return name.startsWith("/") ? `file://${name}` : Quickshell.iconPath(name, true);
+    }
+
     function remove(entry) {
         if (entries.includes(entry))
             entries = entries.filter(e => e !== entry);
@@ -122,10 +133,14 @@ Singleton {
         property string summary
         property string body
         // As the sender gave it. An `image-data` image's URL dies with the
-        // notification, so a card that shows one saves it to `imageFile`.
+        // notification, and a file can go with its sender, as a browser's
+        // temporary ones do, so a card that shows either saves it to
+        // `imageFile`.
         property string imageSource
         property string imageFile
-        readonly property string image: imageFile !== "" ? `file://${imageFile}` : imageSource
+        readonly property string sourceUrl: root.imageUrl(imageSource)
+        readonly property bool imageFleeting: sourceUrl.startsWith("image://qsimage/") || sourceUrl.startsWith("file://") && !sourceUrl.startsWith("file:///nix/store/")
+        readonly property string image: imageFile !== "" ? `file://${imageFile}` : sourceUrl
         property int urgency: NotificationUrgency.Normal
         // A `value` hint from 0 to 100, or -1.
         property int value: -1

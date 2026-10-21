@@ -160,7 +160,8 @@ Item {
             ClippingRectangle {
                 id: picture
 
-                visible: card.picture !== ""
+                // Also none for a file gone since, as a sender's temporary one.
+                visible: card.picture !== "" && image.status !== Image.Error
                 width: 48
                 height: 48
                 radius: Theme.radius - 4
@@ -176,12 +177,13 @@ Item {
                     fillMode: Image.PreserveAspectCrop
                     asynchronous: true
 
-                    // An `image-data` image dies with its notification, so the
-                    // first card to show one saves it for the history.
+                    // An `image-data` image dies with its notification, and a
+                    // file may, so the first card to show one saves it for the
+                    // history.
                     onStatusChanged: {
                         const entry = card.entry;
                         const source = entry.imageSource;
-                        if (status !== Image.Ready || !source.startsWith("image://qsimage/") || entry.imageFile !== "")
+                        if (status !== Image.Ready || !entry.imageFleeting || entry.imageFile !== "")
                             return;
                         const path = Quickshell.statePath(`notifications/${Math.round(entry.time)}-${Math.random().toString(36).slice(2, 8)}.png`);
                         grabToImage(result => {
