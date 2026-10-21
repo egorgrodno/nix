@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell
 
 // Under the bell: do-not-disturb, then every notification as the popups' cards
-// with their age, grouped by app, newest group first, and Clear. Opening it
+// with their age, grouped by app, the latest app first, and Clear. Opening it
 // ends the popups, which it lists, and while it is open new notifications land
 // here instead. Every group starts open.
 Panel {
@@ -10,8 +10,8 @@ Panel {
 
     // As tall as the strip between the bars allows, the list scrolling beyond.
     readonly property real listMax: (screen?.height ?? 800) - 2 * (Theme.barHeight + 4) - 2 * 20 - dnd.height - footer.height - 2 * 20
-    // Entries by desktop entry, else app name, in the order of each app's
-    // newest. A Map, as an object puts integer keys first.
+    // Entries by desktop entry, else app name. A Map, as an object puts
+    // integer keys first.
     readonly property var groups: {
         const groups = new Map();
         for (const entry of Notifications.entries) {
@@ -20,10 +20,26 @@ Panel {
         }
         return groups;
     }
+    // Each group's newest arrival since the panel opened, which a dismissal
+    // leaves standing, so only a new notification moves a group, to the top.
+    property var latest: new Map()
+    readonly property var order: [...groups.keys()].sort((a, b) => rankOf(b) - rankOf(a))
     // Kept here, as the list destroys a group scrolled out of view.
     property var collapsed: []
 
-    Component.onCompleted: Notifications.panelOpened()
+    function rankOf(key) {
+        return Math.max(latest.get(key) ?? 0, ...groups.get(key).map(e => e.time));
+    }
+
+    function remember() {
+        latest = new Map([...groups.keys()].map(key => [key, rankOf(key)]));
+    }
+
+    onGroupsChanged: remember()
+    Component.onCompleted: {
+        remember();
+        Notifications.panelOpened();
+    }
     Component.onDestruction: Notifications.panelClosed()
 
     Item {
@@ -82,7 +98,7 @@ Panel {
         // Keys rather than the groups themselves: ScriptModel keeps the old
         // value of an item it moves, as a group with a new entry moves.
         model: ScriptModel {
-            values: [...panel.groups.keys()]
+            values: panel.order
         }
 
         // A removal drops contentHeight at once, while what follows eases up
