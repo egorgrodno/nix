@@ -2,7 +2,7 @@
 
 **Role.** A composable NixOS module that bundles related configuration, so a host pulls in a whole capability through one import.
 
-```
+```text
 flake.nix
   └── hosts/<host>/configuration.nix      hardware + one top-level role
         └── roles/role-*.nix              module bundles + option values

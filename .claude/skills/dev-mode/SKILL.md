@@ -121,7 +121,7 @@ The same applies to any option gated on `isDesktop`, `keyboardLayout`, or the ho
 
 Home-manager's activation refuses to clobber a file it does not own. With a config unlocked and edited, `nxs` aborts at `checkLinkTargets`:
 
-```
+```text
 Existing file '/home/egor/.config/quickshell/Bar.qml' would be clobbered
 ```
 

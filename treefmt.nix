@@ -17,10 +17,11 @@
   # a [[...]] string across four lines, which no setting suppresses.
   settings.formatter.stylua.excludes = [ "modules/neovim/snippets.lua" ];
 
-  # Markdown stays hand-formatted: the documentation conventions in CLAUDE.md
-  # are prose rules no formatter expresses, and prettier reflows against them.
+  # Markdown's mechanics only; the prose conventions in CLAUDE.md stay by hand.
+  # prettier and deno fmt would pad every table into aligned columns.
+  programs.rumdl-format.enable = true;
+
   settings.global.excludes = [
-    "*.md"
     "*.json"
     "flake.lock"
     ".gitignore"
