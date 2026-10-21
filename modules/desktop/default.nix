@@ -289,6 +289,15 @@ let
           if [ "$(busctl get-property org.freedesktop.login1 /org/freedesktop/login1 org.freedesktop.login1.Manager LidClosed Docked)" = "$clamshell" ]; then
             hyprctl dispatch 'hl.dsp.dpms({ action = "off" })'
           else
+            # A block-mode sleep lock, as Claude Code's awake plugin holds,
+            # refuses the suspend and hypridle never asks again, so one step
+            # waits it out until input ends the idle; a second would suspend
+            # again on the wake.
+            exec 9>"$XDG_RUNTIME_DIR/idle-suspend.lock"
+            flock -n 9 || exit 0
+            while systemd-inhibit --list --json=short | ${lib.getExe pkgs.jq} -e 'any(.[]; .mode == "block" and (.what | split(":") | index("sleep")))' >/dev/null; do
+              sleep 5
+            done
             systemctl ${suspendVerb}
           fi
           ;;
@@ -1425,8 +1434,10 @@ in
           };
           # One listener per distinct step and threshold. The suspend turns the
           # screen off, and a suspend listener on again, which input alone does
-          # not. Only a dim listener undoes the dim, and only while it is on, so
-          # a return from idle without a dim touches nothing.
+          # not, and ends a suspend step still waiting on a sleep lock; the
+          # bracket keeps pkill off the shell running it. Only a dim listener
+          # undoes the dim, and only while it is on, so a return from idle
+          # without a dim touches nothing.
           listener = unique (
             concatLists (
               mapAttrsToList (
@@ -1441,7 +1452,7 @@ in
                     on-resume = "hyprctl eval 'if hl.get_config(\"decoration.screen_shader\") ~= \"\" then ${setScreenShader ""} end'";
                   }
                   // optionalAttrs (step == "suspend") {
-                    on-resume = "hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'";
+                    on-resume = "pkill -f '[i]dle-step suspend'; hyprctl dispatch 'hl.dsp.dpms({ action = \"on\" })'";
                   }
                 )
               ) idleTimeouts
