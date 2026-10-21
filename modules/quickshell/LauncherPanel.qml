@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Controls.Basic
 import Quickshell
+import Quickshell.Wayland
 import Quickshell.Widgets
 
 // Over the apps module: a tab per mode, a search field, and the mode's rows,
@@ -106,6 +107,37 @@ Panel {
         if (mode === "clipboard")
             Clipboard.refresh();
         field.forceActiveFocus();
+    }
+
+    // The screen dimmed behind it, easing as the box fades, so both start
+    // either way at once. Beneath the popups and the panels by a layer rule,
+    // and taking no input, so a click outside still reaches the focus grab.
+    PanelWindow {
+        screen: panel.screen
+        anchors {
+            top: true
+            bottom: true
+            left: true
+            right: true
+        }
+        exclusionMode: ExclusionMode.Ignore
+        color: "transparent"
+        mask: Region {}
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.namespace: "quickshell-dim"
+
+        Rectangle {
+            anchors.fill: parent
+            color: "black"
+            opacity: panel.open ? 0.4 : 0
+
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: 200
+                    easing.type: Easing.OutExpo
+                }
+            }
+        }
     }
 
     Column {

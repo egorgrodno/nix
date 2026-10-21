@@ -1030,6 +1030,14 @@ in
               no_anim = true;
               order = 1;
             }
+            # The launcher's dim, beneath the popups and the panels, fades
+            # itself with the launcher.
+            {
+              name = "quickshell-dim";
+              match.namespace = "^(quickshell-dim)$";
+              no_anim = true;
+              order = 2;
+            }
             # awww animates its own changes, so its first image shows the
             # moment `openlayer` reports it.
             {
