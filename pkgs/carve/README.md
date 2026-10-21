@@ -29,11 +29,13 @@ modules/desktop/hm.nix  -1 +3
 A plan gives each commit a message and the hunks it takes, by ID, line range or path. `carve apply -h` documents the format.
 
 ```json
-{"commits": [
-  {"message": "make the focused-window border solid", "take": ["a3f1c2"]},
-  {"message": "put the notification popups under the panels", "take": ["9c02aa", "modules/quickshell/"]}
- ],
- "leave": ["TODO.md"]}
+{
+  "commits": [
+    {"message": "make the focused-window border solid", "take": ["a3f1c2"]},
+    {"message": "put the notification popups under the panels", "take": ["9c02aa", "modules/quickshell/"]}
+  ],
+  "leave": ["TODO.md"]
+}
 ```
 
 ## Guarantees
