@@ -17,13 +17,7 @@ let
   hyprColor = import ../../lib/hypr-color.nix lib;
 
   # The focused-window accent.
-  activeBorder = {
-    colors = [
-      (hyprColor theme.blue "ff")
-      (hyprColor theme.cyan "ff")
-    ];
-    angle = 45;
-  };
+  activeBorder = hyprColor theme.blue "ff";
 
   # Hyprland's directional keys: focus, move, and the resize submap.
   dirs =
