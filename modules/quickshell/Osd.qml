@@ -18,7 +18,6 @@ PanelWindow {
     property string kind: "volume"
     // False from the start of the fade out.
     property bool shown: false
-    property bool capsLock: false
     readonly property PwNode sink: Pipewire.defaultAudioSink
     readonly property PwNode source: Pipewire.defaultAudioSource
     readonly property bool muted: sink?.audio.muted ?? false
@@ -62,7 +61,7 @@ PanelWindow {
         // Read once the bind fires, on the key's release, when the lock has
         // already toggled.
         function caps(): void {
-            capsReader.running = true;
+            capsLock.update();
         }
     }
 
@@ -75,17 +74,10 @@ PanelWindow {
         }
     }
 
-    Process {
-        id: capsReader
+    CapsLock {
+        id: capsLock
 
-        command: [Programs.hyprctl, "devices", "-j"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                const keyboards = JSON.parse(text).keyboards;
-                osd.capsLock = (keyboards.find(k => k.main) ?? keyboards[0])?.capsLock ?? false;
-                osd.show("caps");
-            }
-        }
+        onRead: osd.show("caps")
     }
 
     Timer {
@@ -163,7 +155,7 @@ PanelWindow {
                 // Red while muted, as on the volume module.
                 color: {
                     if (osd.kind === "caps")
-                        return osd.capsLock ? Theme.blue : Theme.foregroundMuted;
+                        return capsLock.locked ? Theme.blue : Theme.foregroundMuted;
                     if (osd.kind === "mic" && osd.micMuted || osd.dimmed)
                         return Theme.red;
                     return "#ffffff";
@@ -193,7 +185,7 @@ PanelWindow {
             BarText {
                 anchors.verticalCenter: parent.verticalCenter
                 visible: !osd.metered
-                text: osd.kind === "mic" ? (osd.micMuted ? "Microphone muted" : "Microphone on") : (osd.capsLock ? "Caps Lock on" : "Caps Lock off")
+                text: osd.kind === "mic" ? (osd.micMuted ? "Microphone muted" : "Microphone on") : (capsLock.locked ? "Caps Lock on" : "Caps Lock off")
             }
         }
     }

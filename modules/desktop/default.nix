@@ -16,8 +16,7 @@ let
   rgba = import ../../lib/rgba.nix lib;
   hyprColor = import ../../lib/hypr-color.nix lib;
 
-  # The focused-window accent, reused by hyprlock's password field so the lock
-  # screen and the session agree on what "active" looks like.
+  # The focused-window accent.
   activeBorder = {
     colors = [
       (hyprColor theme.blue "ff")
@@ -247,8 +246,8 @@ let
     };
   };
 
-  # In seconds. A suspend in the lock's minute trails it by 5 s, so hyprlock
-  # is up before the outputs go dark.
+  # In seconds. A suspend in the lock's minute trails it by 5 s, so the lock
+  # screen is up before the outputs go dark.
   idleTimeouts = mapAttrs (_: m: {
     dim = m.dim * 60;
     lock = m.lock * 60;
@@ -404,8 +403,6 @@ in
     # option trees are gated on `services.xserver.enable` in nixpkgs, so they
     # are inert on Wayland; pointer behaviour lives in Hyprland's `input` block.
     services.libinput.enable = true;
-
-    security.pam.services.hyprlock = { };
 
     security.rtkit.enable = true;
     services.pipewire = {
@@ -605,7 +602,6 @@ in
 
     home-manager.users = forAllUsers (u: {
       home.packages = with pkgs; [
-        hyprlock
         hyprgraphics
         hyprpicker
         grim
@@ -962,11 +958,14 @@ in
             master.new_status = "master";
 
             # Until awww maps, a plain background rather than Hyprland's own
-            # wallpaper, in the colour Quickshell's login curtain maps in.
+            # wallpaper, in the colour Quickshell's login curtain maps in. The
+            # bar holds the session lock, and one restarted under it takes the
+            # lock back.
             misc = {
               disable_hyprland_logo = true;
               disable_splash_rendering = true;
               background_color = hyprColor theme.background.main "ff";
+              allow_session_lock_restore = true;
             };
 
             # No donation or update-news windows at login.
@@ -1313,7 +1312,7 @@ in
             hl.bind("XF86AudioPause", exec("playerctl play-pause"), { locked = true })
             hl.bind("XF86AudioPrev", exec("playerctl previous"), { locked = true })
             hl.bind("XF86AudioNext", exec("playerctl next"), { locked = true })
-            hl.bind(mod .. " + SHIFT + 0", exec("pidof hyprlock || hyprlock"), { locked = true })
+            hl.bind(mod .. " + SHIFT + 0", exec("${config.my.quickshell.lockCommand}"), { locked = true })
 
             -- On release, once the lock has toggled, and passed through, so the
             -- key still reaches the client. Ignoring mods, since the held key's
@@ -1357,63 +1356,6 @@ in
           '';
       };
 
-      programs.hyprlock = {
-        enable = true;
-        settings = {
-          general = {
-            hide_cursor = true;
-          };
-          background = [
-            {
-              monitor = "";
-              path = "screenshot";
-              blur_passes = 3;
-              blur_size = 7;
-              brightness = 0.5;
-            }
-          ];
-          input-field = [
-            {
-              monitor = "";
-              size = "300, 50";
-              outline_thickness = 2;
-              dots_spacing = 0.3;
-              outer_color = "${concatStringsSep " " activeBorder.colors} ${toString activeBorder.angle}deg";
-              inner_color = "rgba(0, 0, 0, 0.0)";
-              font_color = hyprColor theme.foreground.main "ff";
-              fade_on_empty = false;
-              placeholder_text = "Password...";
-              rounding = 15;
-              position = "0, -60";
-              halign = "center";
-              valign = "center";
-            }
-          ];
-          label = [
-            {
-              monitor = "";
-              text = "$TIME";
-              color = "rgba(255, 255, 255, 0.9)";
-              font_size = 72;
-              font_family = theme.fontMono;
-              position = "0, 200";
-              halign = "center";
-              valign = "center";
-            }
-            {
-              monitor = "";
-              text = ''cmd[update:60000] date +"%A, %d %B %Y"'';
-              color = "rgba(255, 255, 255, 0.7)";
-              font_size = 24;
-              font_family = theme.fontMono;
-              position = "0, 120";
-              halign = "center";
-              valign = "center";
-            }
-          ];
-        };
-      };
-
       # Idle and suspend handling. `lock_cmd` answers logind's Lock signal, and
       # `before_sleep_cmd` raises the lock before the machine suspends so a
       # resume never lands on an unlocked desktop. It first moves the pointer
@@ -1424,7 +1366,10 @@ in
         enable = true;
         settings = {
           general = {
-            lock_cmd = "pidof hyprlock || hyprlock";
+            lock_cmd = config.my.quickshell.lockCommand;
+            # Holds a suspend until Hyprland reports the session locked; the
+            # default does so only for a lock_cmd naming hyprlock.
+            inhibit_sleep = 3;
             before_sleep_cmd =
               let
                 wlrctl = lib.getExe' pkgs.wlrctl "wlrctl";

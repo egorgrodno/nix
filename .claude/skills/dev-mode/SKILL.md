@@ -6,9 +6,8 @@ description: >
   the program on change, then ports the edits back into the Nix source and relocks.
   Trigger on "dev mode", "live edit", "tweak the bar", "iterate on the quickshell
   QML", "iterate on the hyprland config", "try some colors", or any request to see a
-  config change quickly instead of rebuilding. Covers quickshell, hyprland, hyprlock,
-  kitty, nvim, zsh, gtk and anything else home-manager writes
-  into ~/.config.
+  config change quickly instead of rebuilding. Covers quickshell, hyprland,
+  kitty, nvim, zsh, gtk and anything else home-manager writes into ~/.config.
 ---
 
 # Dev mode for home-manager configs
@@ -58,10 +57,11 @@ Any name not in `list` falls back to `~/.config/<name>`.
 | `kitty` | `pkill -USR1 kitty`. All windows, live. |
 | `hypridle` | `systemctl --user restart hypridle` |
 | `quickshell` | `systemctl --user restart quickshell`. It reloads on save by itself, but only once restarted after `on`, and a text-rendering change needs a restart regardless. |
-| `hyprlock` | No signal — config is read at launch, so just launch it again. |
 | `nvim`, `zsh` | No signal — new instances pick it up (`exec zsh` for the current shell). |
 
 A QML error on save leaves the running bar in place and posts a critical "Quickshell failed to reload" notice with the error. A Lua syntax error in `hyprland.lua` is rejected by `hyprctl reload` with the error printed, leaving the running config intact.
+
+The lock screen is part of the bar, raised by `quickshell ipc call lock lock`, and unlocks only with the real password.
 
 ## Porting the edits back
 
@@ -71,7 +71,6 @@ This is the part that matters — dev mode is scratch space, and nothing survive
 |---|---|
 | `.config/quickshell/*.qml` | `modules/quickshell/`, the same name; `Theme.qml`, `Programs.qml` and `Host.qml` from its `default.nix` |
 | `.config/hypr/hyprland.lua` | `modules/desktop/default.nix` — `wayland.windowManager.hyprland` (~887): `settings` for the `hl.config`, monitor and rule calls, `extraConfig` for the Lua after them |
-| `.config/hypr/hyprlock.conf` | `modules/desktop/default.nix` — `programs.hyprlock` (~912) |
 | `.config/hypr/hypridle.conf` | `modules/desktop/default.nix` — `services.hypridle` (~969) |
 | `.config/kitty/*` | `modules/desktop/default.nix` — `programs.kitty` (~411) |
 | `.config/gtk-3.0/settings.ini`, `gtk-4.0` | `modules/desktop/default.nix` — `gtk` (~1011) |

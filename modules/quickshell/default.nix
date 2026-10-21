@@ -136,6 +136,14 @@ let
         } | jq -R -s -c 'split("\n") | map(select(. != "") | split("\t"))' > $out
       '';
 
+  # The flag first, which a bar starting under it locks on, so a lock asked for
+  # while the bar is down still happens once it is back.
+  lockCommand = pkgs.writeShellScript "lock" ''
+    printf %s "$HYPRLAND_INSTANCE_SIGNATURE" >"$XDG_RUNTIME_DIR/quickshell-lock"
+    ${lib.getExe pkgs.quickshell} ipc call lock lock ||
+      ${lib.getExe' config.systemd.package "systemctl"} --user start quickshell.service
+  '';
+
   # One link per file rather than one for the directory, so dev mode can swap
   # each for a writable copy.
   configFiles =
@@ -163,9 +171,18 @@ in
       type = lib.types.int;
       description = "Hyprland's outer gap in logical pixels, which the bars' segments line up with at the sides.";
     };
+
+    lockCommand = lib.mkOption {
+      type = lib.types.str;
+      readOnly = true;
+      default = "${lockCommand}";
+      description = "Command that locks the session through the bar's lock screen, starting the bar should it be down.";
+    };
   };
 
   config = lib.mkIf cfg.enable {
+    security.pam.services.quickshell-lock = { };
+
     home-manager.users = forAllUsers {
       programs.quickshell = {
         enable = true;

@@ -23,6 +23,8 @@ ShellRoot {
     // Over every screen, once for the Hyprland instance.
     Curtain {}
 
+    Lock {}
+
     // On the focused screen, which they follow.
     NotificationPopups {}
 
