@@ -165,6 +165,31 @@ let
         } | jq -R -s -c 'split("\n") | map(select(. != "") | split("\t"))' > $out
       '';
 
+  # The disk tooltip's drive health, which takes root to read: each drive's
+  # smartctl report in /run/drive-health/<drive>.json. A report without a
+  # verdict, as from a drive asleep, keeps the last one.
+  driveHealth = pkgs.writeShellApplication {
+    name = "drive-health";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gnugrep
+      pkgs.smartmontools
+      pkgs.util-linux
+    ];
+    text = ''
+      cd /run/drive-health
+      lsblk --nodeps --noheadings --output NAME,TYPE | while read -r name type; do
+        case $type:$name in disk:zram* | disk:loop*) continue ;; disk:*) ;; *) continue ;; esac
+        smartctl --json=c --all --nocheck=standby "/dev/$name" >"$name.json.new" || :
+        if grep -q '"smart_status"' "$name.json.new"; then
+          mv "$name.json.new" "$name.json"
+        else
+          rm "$name.json.new"
+        fi
+      done
+    '';
+  };
+
   # The flag first, which a bar starting under it locks on, so a lock asked for
   # while the bar is down still happens once it is back.
   lockCommand = pkgs.writeShellScript "lock" ''
@@ -271,6 +296,29 @@ in
 
   config = lib.mkIf cfg.enable {
     security.pam.services.quickshell-lock = { };
+
+    systemd.services.drive-health = {
+      description = "SMART report of each drive for the bar";
+      serviceConfig = {
+        Type = "oneshot";
+        ExecStart = lib.getExe driveHealth;
+        RuntimeDirectory = "drive-health";
+        RuntimeDirectoryPreserve = true;
+      };
+    };
+    systemd.timers.drive-health = {
+      wantedBy = [ "timers.target" ];
+      timerConfig = {
+        OnBootSec = "1min";
+        OnUnitActiveSec = "1h";
+      };
+    };
+
+    # A failing drive notifies the session without a hover over the module.
+    services.smartd = {
+      enable = true;
+      notifications.systembus-notify.enable = true;
+    };
 
     # The directory root's and each file its user's, so a user writes only their
     # own layouts and the greeter reads them all.
