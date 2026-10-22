@@ -79,10 +79,13 @@ Pill {
                 }
             }
 
+            // Loaded only once in its window: loaded before, as on a reload, it
+            // misses the fractional scale and takes the theme's size for 20
+            // logical pixels rather than for the pixels it draws.
             IconImage {
                 anchors.centerIn: parent
                 implicitSize: 20
-                source: entry.modelData.icon
+                source: entry.QsWindow.window ? entry.modelData.icon : ""
             }
 
             // At the pointer, as GTK's popup_at_pointer places it, and upward on a
