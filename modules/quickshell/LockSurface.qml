@@ -13,7 +13,7 @@ WlSessionLockSurface {
     property var lock
     readonly property string wallpaper: Wallpapers.saved !== "" ? Wallpapers.saved : Wallpapers.shown
 
-    color: Theme.backgroundMain
+    color: Theme.backgroundDesktop
 
     Item {
         id: content

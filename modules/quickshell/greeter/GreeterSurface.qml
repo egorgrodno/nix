@@ -21,7 +21,7 @@ PanelWindow {
         right: true
     }
     exclusionMode: ExclusionMode.Ignore
-    color: Theme.backgroundMain
+    color: Theme.backgroundDesktop
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-greeter"
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive

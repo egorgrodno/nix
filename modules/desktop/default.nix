@@ -22,7 +22,7 @@ let
       active_border = hyprColor p.blue "ff";
       inactive_border = hyprColor p.foreground.faint "aa";
     };
-    misc.background_color = hyprColor p.background.main "ff";
+    misc.background_color = hyprColor p.background.desktop "ff";
   }) { inherit (theme) dark light; };
 
   # kitty's colors under each color scheme. Its own cursor and selection are
@@ -196,7 +196,7 @@ let
           misc = {
             disable_hyprland_logo = true;
             disable_splash_rendering = true;
-            background_color = hyprColor theme.dark.background.main "ff";
+            background_color = hyprColor theme.dark.background.desktop "ff";
           };
           ecosystem = {
             no_donation_nag = true;

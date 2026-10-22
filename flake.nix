@@ -27,9 +27,10 @@
         config.allowUnfree = true;
       };
       # One palette per color scheme, under the same names. `background.raised`
-      # fills what floats over the windows, panels, popups and tooltips, a step
-      # off `main`, the windows' own: on the dark one a shadow alone barely
-      # shows. Foreground tones run from `strong`, the bar's text, to `faint`;
+      # lifts panels, popups and tooltips off `main`, which the windows share:
+      # a shadow barely shows on the dark one. `background.desktop` is
+      # Hyprland's background, which the curtain, lock screen and greeter must
+      # match. Foreground tones run from `strong`, the bar's text, to `faint`;
       # `black` and `white` are the terminal's.
       theme = {
         fontMono = "Inconsolata LGC Nerd Font Mono";
@@ -37,6 +38,7 @@
         dark = {
           background.main = "#16191D";
           background.raised = "#282C34";
+          background.desktop = "#16191D";
           foreground = {
             strong = "#FFFFFF";
             main = "#DCDFE4";
@@ -74,6 +76,8 @@
         light = {
           background.main = "#FAFAFA";
           background.raised = "#FFFFFF";
+          # One Light's third UI level, as plain white glares.
+          background.desktop = "#DBDBDC";
           foreground = {
             strong = "#202227";
             main = "#383A42";

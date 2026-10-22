@@ -128,7 +128,7 @@ Scope {
                 id: cover
 
                 anchors.fill: parent
-                color: Theme.backgroundMain
+                color: Theme.backgroundDesktop
                 opacity: root.shown ? 1 : 0
                 onOpacityChanged: if (!root.shown && opacity === 0)
                     root.covering = false
