@@ -363,10 +363,15 @@ Singleton {
                     ] : [];
                     return fs.concat(...(device.children ?? []).map(filesystems));
                 };
+                const mounted = d => {
+                    const ours = (d.children ?? []).filter(c => filesystems(c).length > 0);
+                    return ours.length > 0 ? ours.reduce((sum, c) => sum + c.size, 0) : d.size;
+                };
                 const drives = devices.filter(d => d.type === "disk").map(d => ({
                             name: d.name,
                             model: (d.model ?? d.name).replace(/\s+\S*\d\S*-\S+$/, "").trim(),
                             size: d.size,
+                            mounted: mounted(d),
                             temp: Hardware.number(Hardware.diskTemps[d.name], 1000),
                             health: root.health(d.name),
                             filesystems: filesystems(d).sort((a, b) => a.mount.localeCompare(b.mount))

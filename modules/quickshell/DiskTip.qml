@@ -71,6 +71,12 @@ Column {
 
             required property var modelData
             readonly property var io: Stats.io[modelData.name] ?? null
+            // Alignment leaves a drive's edges unpartitioned, so the two are
+            // compared as shown.
+            readonly property string capacity: {
+                const [mounted, size] = [modelData.mounted, modelData.size].map(tip.decimal);
+                return mounted === size ? size : `${mounted} of ${size}`;
+            }
 
             spacing: 8
 
@@ -80,7 +86,7 @@ Column {
                 Facts {
                     size: 16
                     color: Theme.foregroundStrong
-                    parts: [drive.modelData.model, tip.decimal(drive.modelData.size), isNaN(drive.modelData.temp) ? "" : {
+                    parts: [drive.modelData.model, drive.capacity, isNaN(drive.modelData.temp) ? "" : {
                             text: Math.round(drive.modelData.temp),
                             widest: "00",
                             suffix: " °C",
