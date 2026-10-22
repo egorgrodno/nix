@@ -449,6 +449,96 @@ func TestHookJudgesTheCommitNotTheWorkingFile(t *testing.T) {
 	contains(t, err, "commit 1: git commit failed", "main unchanged")
 }
 
+// align pads the first word of each line of the staged .txt files to the
+// longest, as gofmt aligns a struct's fields: whether a line is formatted
+// depends on the others.
+const align = `git diff --cached --name-only --diff-filter=ACMR -- '*.txt' | while read -r f; do
+  awk '{ k[NR] = $1; v[NR] = $2; if (length($1) > w) w = length($1) }
+    END { for (i = 1; i <= NR; i++) printf "%-" w "s %s\n", k[i], v[i] }' "$f" > "$f.tmp"
+  mv "$f.tmp" "$f"
+done`
+
+const aligned = "a          1\nb          2\nc          3\nlongername 4\n"
+
+func TestHookFixToAnInterimVersionStands(t *testing.T) {
+	for _, hook := range []struct{ name, script string }{
+		{"fixes and fails", align + "\ngit diff --quiet"},
+		{"fixes and stages", align + "\ngit add -u"},
+	} {
+		t.Run(hook.name, func(t *testing.T) {
+			f := newRepo(t, map[string]string{"a.txt": "a 1\nb 2\n"})
+			f.hook(hook.script)
+			f.write("a.txt", aligned)
+			id := f.id("a.txt", "c")
+			out := f.mustCarve(plan(nil,
+				Commit{Message: "add c", Take: []string{id + ":5"}},
+				Commit{Message: "add longername", Take: []string{id + ":1-4,6"}},
+			), "apply")
+			contains(t, out, "  add c  (hook rewrote a.txt)\n", "  add longername\n")
+			if got := f.show("main~1", "a.txt"); got != "a 1\nb 2\nc 3\n" {
+				t.Errorf("a.txt after add c = %q", got)
+			}
+			if got := f.show("main", "a.txt"); got != aligned {
+				t.Errorf("a.txt at main = %q", got)
+			}
+			if status := f.git("status", "--porcelain"); status != "" {
+				t.Errorf("the working tree differs from main:\n%s", status)
+			}
+		})
+	}
+}
+
+func TestHookFixToAFinalVersionRefused(t *testing.T) {
+	f := newRepo(t, map[string]string{"a.txt": "a 1\n", "b.txt": "b 1\n"})
+	f.hook(align + "\ngit diff --quiet")
+	f.write("a.txt", "a 1\nlonger 2\n")
+	f.write("b.txt", "b 2\n")
+	p := plan(nil,
+		Commit{Message: "a", Take: []string{"a.txt"}},
+		Commit{Message: "b", Take: []string{"b.txt"}},
+	)
+	err := f.failCarve(p, "apply")
+	contains(t, err, "commit 1: the hook rewrote the final a.txt, so the working tree fails it too")
+	m := regexp.MustCompile(`git diff (\S+) (\S+) -- a\.txt shows the fix`).FindStringSubmatch(err)
+	if m == nil {
+		t.Fatalf("no diff in: %s", err)
+	}
+	patch := filepath.Join(t.TempDir(), "fix.patch")
+	if err := os.WriteFile(patch, []byte(f.git("diff", m[1], m[2], "--", "a.txt")), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	f.git("apply", patch)
+	f.mustCarve(p, "apply")
+	if got := f.show("main~1", "a.txt"); got != "a      1\nlonger 2\n" {
+		t.Errorf("committed a.txt = %q", got)
+	}
+}
+
+func TestCachedHookFixToAFinalVersionRefused(t *testing.T) {
+	f := newRepo(t, map[string]string{"a.txt": "a 1\nb 2\n"})
+	f.hook(align + "\ngit diff --quiet && ! git grep -q --cached FORBIDDEN")
+	f.write("a.txt", aligned)
+	f.write("x.md", "FORBIDDEN\n")
+	id := f.id("a.txt", "c")
+	c := Commit{Message: "add c", Take: []string{id + ":5"}}
+	contains(t, f.failCarve(plan(nil, c, Commit{Message: "rest", Take: []string{id + ":1-4,6", "x.md"}}), "apply"),
+		"commit 2: git commit failed")
+	// The rest left, the fix commit 1 kept is to a.txt's final version.
+	err := f.failCarve(plan([]string{id + ":1-4,6", "x.md"}, c), "apply")
+	contains(t, err, "commit 1: the hook rewrote the final a.txt, so the working tree less its left lines fails it too")
+}
+
+func TestHookThatDoesNotSettleRefused(t *testing.T) {
+	f := newRepo(t, map[string]string{"a.txt": "1\n2\n"})
+	f.hook("echo more >> a.txt\ngit add -u")
+	f.write("a.txt", "one\ntwo\n")
+	err := f.failCarve(plan(nil,
+		Commit{Message: "one", Take: []string{f.id("a.txt", "one") + ":1-2"}},
+		Commit{Message: "two", Take: []string{f.id("a.txt", "one") + ":3-4"}},
+	), "apply")
+	contains(t, err, "commit 1: the hook rewrote its own fix")
+}
+
 func TestRerunReusesPassedCommits(t *testing.T) {
 	f := newRepo(t, map[string]string{"base.txt": "base\n"})
 	log := filepath.Join(t.TempDir(), "hook.log")

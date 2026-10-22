@@ -174,6 +174,20 @@ func runTail(what, dir string, stdin []byte, name string, args ...string) error 
 	return fmt.Errorf("%s failed:\n%s", what, strings.Join(lines[max(0, len(lines)-40):], "\n"))
 }
 
+// hooked stages what a hook changed in the scratch worktree and returns that
+// tree, and whether the commit, where one was made, holds it.
+func (r *repo) hooked(scratch string, committed bool) (string, bool, error) {
+	if _, err := r.git(scratch, nil, "add", "-u"); err != nil {
+		return "", false, err
+	}
+	tree, err := r.out(scratch, "write-tree")
+	if err != nil || !committed {
+		return tree, false, err
+	}
+	head, err := r.out(scratch, "rev-parse", "HEAD^{tree}")
+	return tree, head == tree, err
+}
+
 // build makes the commits on top of head in a scratch worktree and returns
 // the last; the branch is left to the caller.
 func (r *repo) build(changes []*Change, commits []Commit, steps [][]*File, head, verify string, stdout io.Writer) (string, error) {
@@ -190,6 +204,42 @@ func (r *repo) build(changes []*Change, commits []Commit, steps [][]*File, head,
 		return "", err
 	}
 	defer r.git(r.root, nil, "worktree", "remove", "--force", scratch)
+
+	n := len(commits)
+	index := map[string]int{}
+	for i, c := range changes {
+		index[c.Path] = i
+	}
+	// fixes lists the paths a hook changed from tree to hooked in commit k,
+	// and refuses any no later commit changes: its final version fails the
+	// hook, so the working tree needs the fix.
+	fixes := func(what string, k int, tree, hooked string) ([]string, error) {
+		if hooked == tree {
+			return nil, nil
+		}
+		raw, err := r.git(scratch, nil, "diff", "--name-only", "-z", "--no-renames", tree, hooked)
+		if err != nil {
+			return nil, err
+		}
+		paths := strings.Split(strings.TrimSuffix(string(raw), "\x00"), "\x00")
+		var final []string
+		less := ""
+		for _, p := range paths {
+			i, ok := index[p]
+			if ok && !sameFile(steps[k+1][i], steps[n][i]) {
+				continue
+			}
+			final = append(final, p)
+			if ok && !sameFile(steps[n][i], changes[i].Final) {
+				less = " less its left lines"
+			}
+		}
+		if len(final) > 0 {
+			return nil, fmt.Errorf("%s: the hook rewrote the final %s, so the working tree%s fails it too; git diff %s %s -- %s shows the fix",
+				what, strings.Join(final, ", "), less, tree[:12], hooked[:12], strings.Join(final, " "))
+		}
+		return paths, nil
+	}
 
 	parent := head
 	for k, commit := range commits {
@@ -216,20 +266,51 @@ func (r *repo) build(changes []*Change, commits []Commit, steps [][]*File, head,
 		key := hex.EncodeToString(sum[:])
 		sha := cache.get(r, key)
 		cached := sha != ""
+		var fixed []string
 		if cached {
-			if _, err := r.git(scratch, nil, "reset", "-q", "--soft", sha); err != nil {
+			// The commit holds the hook's fix, if any, rather than tree.
+			if _, err := r.git(scratch, nil, "reset", "-q", "--hard", sha); err != nil {
 				return "", err
 			}
-		} else {
-			if err := runTail(what+": git commit", scratch, []byte(message), "git", "commit", "-q", "-F", "-"); err != nil {
-				return "", err
-			}
-			dirty, err := r.git(scratch, nil, "status", "--porcelain", "--untracked-files=no")
+			got, err := r.out(scratch, "rev-parse", sha+"^{tree}")
 			if err != nil {
 				return "", err
 			}
-			if got, _ := r.out(scratch, "rev-parse", "HEAD^{tree}"); len(dirty) > 0 || got != tree {
-				return "", fmt.Errorf("%s: a hook changed its files", what)
+			// A fix an earlier plan kept may be to a final version in this one.
+			if fixed, err = fixes(what, k, tree, got); err != nil {
+				return "", err
+			}
+		} else {
+			// A hook may fix what it judges, staged or not, and pass or fail.
+			// The fix stands until a later commit replaces the file, once the
+			// hook passes it unchanged.
+			failed := runTail(what+": git commit", scratch, []byte(message), "git", "commit", "-q", "-F", "-")
+			hooked, held, err := r.hooked(scratch, failed == nil)
+			if err != nil {
+				return "", err
+			}
+			if failed != nil && hooked == tree {
+				return "", failed
+			}
+			if !held || hooked != tree {
+				if fixed, err = fixes(what, k, tree, hooked); err != nil {
+					return "", err
+				}
+				if failed == nil {
+					if _, err := r.git(scratch, nil, "reset", "-q", "--soft", parent); err != nil {
+						return "", err
+					}
+				}
+				if err := runTail(what+": git commit over the hook's fix", scratch, []byte(message), "git", "commit", "-q", "-F", "-"); err != nil {
+					return "", err
+				}
+				again, held, err := r.hooked(scratch, true)
+				if err != nil {
+					return "", err
+				}
+				if !held || again != hooked {
+					return "", fmt.Errorf("%s: the hook rewrote its own fix", what)
+				}
 			}
 			if verify != "" {
 				if err := runTail(what+": "+verify, scratch, nil, "sh", "-c", verify); err != nil {
@@ -243,11 +324,18 @@ func (r *repo) build(changes []*Change, commits []Commit, steps [][]*File, head,
 				return "", err
 			}
 		}
-		tag := ""
+		var tags []string
 		if cached {
-			tag = "  (cached)"
+			tags = append(tags, "cached")
 		}
-		fmt.Fprintf(stdout, "%d/%d  %s  %s%s\n", k+1, len(commits), sha[:7], subject(message), tag)
+		if len(fixed) > 0 {
+			tags = append(tags, "hook rewrote "+strings.Join(fixed, ", "))
+		}
+		tag := ""
+		if len(tags) > 0 {
+			tag = "  (" + strings.Join(tags, "; ") + ")"
+		}
+		fmt.Fprintf(stdout, "%d/%d  %s  %s%s\n", k+1, n, sha[:7], subject(message), tag)
 		parent = sha
 	}
 	return parent, nil

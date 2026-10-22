@@ -42,7 +42,7 @@ A plan gives each commit a message and the hunks it takes, by ID, line range or 
 
 - **The working tree is never touched.** Each commit is built in a scratch worktree from HEAD and the hunks the plan takes. The index ends matching the new HEAD.
 - **All or nothing.** The branch moves only once every commit passes, and only while HEAD and the working tree still hold what carve read.
-- **Hooks judge the commit.** Each commit is a real `git commit` over its own content, so a pre-commit hook sees what is committed, not the working file.
+- **Hooks judge the commit.** Each commit is a real `git commit` over its own content, so a pre-commit hook sees what is committed, not the working file. A hook may fix an interim version of a file, as a formatter realigns a block a later commit widens: the fix stands until that commit, once the hook passes it unchanged. A fix to a file's final version stops the run, and the error prints the diff the working tree needs.
 - **Every line is accounted for.** Each changed line lands in exactly one commit or in `leave`. A plan that misses or doubles one is refused, with every problem listed at once.
 - **Reruns are cheap.** A commit that passed, with the same parent, tree, message and `--verify` command, is reused from a cache in the git directory.
 - **IDs are stable.** An ID derives from the hunk's path and content, so an edit elsewhere keeps it.
