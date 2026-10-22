@@ -61,7 +61,7 @@ Pill {
 
     BarText {
         anchors.verticalCenter: parent.verticalCenter
-        width: micGlyphs.implicitWidth + 4
+        width: micGlyphs.implicitWidth + 10
         text: volume.source?.audio.muted ? "\u{F036D}" : "\u{EC1C}"
         color: volume.source?.audio.muted ? Theme.red : Theme.foregroundStrong
     }
