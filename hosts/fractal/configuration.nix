@@ -21,12 +21,16 @@ in
     # ../../roles/role-vm-host.nix
   ];
 
-  my.desktop = {
-    # By description: the kernel numbers HDMI connectors across both cards in
-    # the order their drivers load, which varies between boots.
-    primaryScreen = "desc:LG Electronics LG ULTRAGEAR 401MAKRGS029";
-    primaryMode = "2560x1440@120";
-  };
+  my.desktop.monitors = [
+    {
+      # By description: the kernel numbers HDMI connectors across both cards
+      # in the order their drivers load, which varies between boots.
+      output = "desc:LG Electronics LG ULTRAGEAR 401MAKRGS029";
+      mode = "2560x1440@120"; # capped below the 144 Hz it also offers
+      position = "0x0";
+      scale = 1;
+    }
+  ];
 
   # NVIDIA on a hybrid AMD/NVIDIA board. No `prime`: it emits Xorg
   # provider-offload configuration, and no Xorg runs here. `AQ_DRM_DEVICES`

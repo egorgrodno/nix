@@ -15,8 +15,6 @@
     swapCapsEscape = true;
   };
 
-  my.desktop.primaryScreen = "eDP-1";
-
   # Wifi and Bluetooth firmware, and the AMD microcode the hardware file wires up.
   hardware.enableRedistributableFirmware = true;
 

@@ -43,20 +43,6 @@ onlyLabelled() {
   echo "${devices[0]}"
 }
 
-connectedScreen() {
-  local status name first=""
-  for status in /sys/class/drm/card*-*/status; do
-    [[ -e $status ]] || continue
-    [[ $(<"$status") == connected ]] || continue
-    name=${status%/status}
-    name=${name##*/}
-    name=${name#card*-}
-    [[ $name == eDP-* ]] && echo "$name" && return
-    first=${first:-$name}
-  done
-  echo "${first:-eDP-1}"
-}
-
 askNewHost() {
   host=$(gum input --header "Hostname of the new host")
   [[ $host =~ ^[a-z][a-z0-9-]*$ ]] || die "a hostname is lowercase letters, digits and dashes"
@@ -82,8 +68,6 @@ askNewHost() {
   grep -q 8086 <<<"$vendors" && gpu=intel
   grep -q 10de <<<"$vendors" && gpu=nvidia
   gpu=$(gum choose --header "GPU vendor" --selected "$gpu" amd intel nvidia)
-
-  screen=$(gum input --header "Primary screen connector" --value "$(connectedScreen)")
 
   local all
   mapfile -t all < <(find "$clone/users" -name '*.nix' -printf '%f\n' | sed 's/\.nix$//' | sort)
@@ -134,8 +118,6 @@ EOF
     layout = "$layout";
     swapCapsEscape = $swapCaps;
   };
-
-  my.desktop.primaryScreen = "$screen";
 
   hardware.enableRedistributableFirmware = true;
 EOF

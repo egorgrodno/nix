@@ -158,17 +158,15 @@ let
     };
   };
 
-  # The primary screen always leads, anchored at the origin; everything else
-  # follows it.
-  monitors = [
+  # `output = ""` matches any display without a rule of its own.
+  monitors = cfg.monitors ++ [
     {
-      output = cfg.primaryScreen;
-      mode = cfg.primaryMode;
-      position = "0x0";
+      output = "";
+      mode = "preferred";
+      position = "auto";
       scale = 1;
     }
-  ]
-  ++ cfg.extraMonitors;
+  ];
 
   cursor = {
     package = pkgs.bibata-cursors;
@@ -466,49 +464,21 @@ in
   options.my.desktop = {
     enable = mkEnableOption "Wayland Hyprland desktop environment";
 
-    primaryScreen = mkOption {
-      type = types.str;
-      default = "eDP-1";
-      description = "Wayland connector name of the screen that carries the bar and tray, or `desc:` and the start of its description.";
-    };
-
-    primaryMode = mkOption {
-      type = types.str;
-      default = "preferred";
-      example = "2560x1440@120";
-      description = ''
-        Mode for the primary screen, as Hyprland's `<width>x<height>@<rate>`.
-        The keywords `preferred`, `highres` and `highrr` are also accepted.
-        Pinning a rate here is worthwhile whenever the EDID preferred mode is
-        not the one wanted, since `preferred` follows the display rather than
-        the configuration.
-      '';
-    };
-
-    extraMonitors = mkOption {
+    monitors = mkOption {
       type = types.listOf (types.attrsOf types.anything);
-      default = [
-        {
-          output = "";
-          mode = "preferred";
-          position = "auto";
-          scale = 1;
-        }
-      ];
+      default = [ ];
       example = [
         {
-          output = "DP-1";
-          mode = "1920x1080@60";
-          position = "2560x0";
+          output = "desc:LG Electronics LG ULTRAGEAR";
+          mode = "2560x1440@120";
+          position = "0x0";
           scale = 1;
         }
       ];
       description = ''
-        `hl.monitor` specs for the outputs other than the primary, emitted
-        after it. The primary is always generated from `primaryScreen` and
-        `primaryMode`, so populating this list cannot silently drop it.
-        The default catch-all gives any further display its preferred mode,
-        placed to the right; replace it to position additional screens exactly.
+        `hl.monitor` specs for particular displays, ahead of a catch-all for
+        the rest. Hyprland applies them at start and on reload, until the bar's
+        saved layout for the set of displays replaces them.
       '';
     };
 

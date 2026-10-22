@@ -35,5 +35,5 @@ The installer writes a new host; see the root `README.md`. By hand:
 
 1. Create `hosts/<host>/` with `host.nix` (`users`, `stateVersion`), `configuration.nix`, and `hardware-configuration.nix` without `fileSystems`. At least one of the users needs `admin = true` in `users/<name>.nix`, or nobody can sudo.
 2. Import a top-level role from `configuration.nix`. Role selection **must not** live in the flake.
-3. Set `base.keyboard.layout`, which the desktop role defaults to `hallmack`. On a laptop, set `base.isLaptop`. Unless the primary screen is `eDP-1`, set `my.desktop.primaryScreen`.
+3. Set `base.keyboard.layout`, which the desktop role defaults to `hallmack`. On a laptop, set `base.isLaptop`.
 4. `git add` the directory: the flake sees only tracked files.
