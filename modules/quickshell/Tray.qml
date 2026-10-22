@@ -29,7 +29,7 @@ Pill {
 
             required property SystemTrayItem modelData
 
-            width: 24
+            width: 20
             height: tray.height - 10
             anchors.verticalCenter: parent.verticalCenter
 
@@ -81,7 +81,7 @@ Pill {
 
             IconImage {
                 anchors.centerIn: parent
-                implicitSize: 24
+                implicitSize: 20
                 source: entry.modelData.icon
             }
 
