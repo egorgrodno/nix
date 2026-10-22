@@ -91,10 +91,11 @@ Singleton {
         onExited: Qt.callLater(queue.flush)
     }
 
-    // device,class,current,percent,max
+    // device,class,current,percent,max. Without a class, brightnessctl falls
+    // back to a keyboard LED where there is no backlight.
     Process {
         running: true
-        command: [Programs.brightnessctl, "-m"]
+        command: [Programs.brightnessctl, "-m", "-c", "backlight"]
         stdout: StdioCollector {
             onStreamFinished: {
                 const fields = text.trim().split(",");
