@@ -1,20 +1,22 @@
 import QtQuick
 
-// Sections of tasks under their titles, scrolling past `maxHeight`, with one
-// task's quick menu open at a time. A section without tasks is left out.
+// Sections of tasks under their titles, at least `minHeight` tall and scrolling
+// past `maxHeight`, with one task's quick menu open at a time. A section
+// without tasks is left out.
 Flickable {
     id: list
 
     // [{ title, tasks, showDay, action: { label, run } }]
     required property var sections
     readonly property var shown: sections.filter(s => s.tasks.length > 0)
+    property real minHeight: 0
     property real maxHeight: 360
     property bool showProject: true
     property Item dragProxy: null
     // The id of the task whose menu is open.
     property string expanded: ""
 
-    height: Math.min(contentHeight, maxHeight)
+    height: Math.min(Math.max(contentHeight, minHeight), maxHeight)
     contentHeight: column.height
     clip: true
     boundsBehavior: Flickable.StopAtBounds

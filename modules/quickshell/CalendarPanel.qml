@@ -27,6 +27,19 @@ Panel {
     readonly property int cellHeight: 28
     // Months since the start of year 0.
     readonly property int thisMonth: Dates.month(today)
+    // Rows for the busiest day in the selected day's month, today's counting
+    // what is overdue and its title, so the panel keeps its height from day to
+    // day.
+    readonly property int taskRows: {
+        const month = Dates.month(selected);
+        let rows = 1;
+        for (const day in Todoist.byDay)
+            if (Dates.month(day) === month)
+                rows = Math.max(rows, Todoist.byDay[day].length);
+        if (Dates.month(today) === month && Todoist.overdue.length > 0)
+            rows = Math.max(rows, (Todoist.byDay[today]?.length ?? 0) + Todoist.overdue.length + 1);
+        return rows;
+    }
 
     function step(by) {
         if (picking)
@@ -521,7 +534,10 @@ Panel {
         spacing: 8
 
         TaskList {
+            id: list
+
             width: parent.width
+            minHeight: panel.taskRows * 36
             maxHeight: 6 * 36
             showProject: false
             dragProxy: taskDrag
@@ -540,6 +556,14 @@ Panel {
                     tasks: Todoist.byDay[panel.selected] ?? []
                 }
             ]
+
+            Caption {
+                height: 36
+                visible: list.shown.length === 0
+                leftPadding: 8
+                verticalAlignment: Text.AlignVCenter
+                text: "Nothing due"
+            }
         }
 
         TaskField {
