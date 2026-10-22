@@ -3,8 +3,8 @@ import QtQuick
 // A task: a ring in its priority's colour that completes it, its content, a
 // mark if it recurs, its project unless `showProject` is off, and its time, or
 // its day where `showDay`, in red once past. A click opens its quick menu below
-// it: Today, Tomorrow, Next week, No date, and a month to pick a day from. With
-// a `dragProxy`, a drag carries it onto a day of the calendar.
+// it: Today, Tomorrow, Next week, No date, a month to pick a day from, and
+// Delete. With a `dragProxy`, a drag carries it onto a day of the calendar.
 Column {
     id: row
 
@@ -205,6 +205,16 @@ Column {
                 text: "Pick a day"
                 lit: row.picking
                 onClicked: row.picking = !row.picking
+            }
+
+            // The menu closes first, so Undo brings the task back closed.
+            TextButton {
+                text: "Delete"
+                hoverFill: Theme.alpha(Theme.red, 0.5)
+                onClicked: {
+                    row.toggled();
+                    Todoist.remove(row.task);
+                }
             }
         }
 

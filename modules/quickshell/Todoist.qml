@@ -27,11 +27,13 @@ Singleton {
     // Another sync was asked for while one ran.
     property bool again: false
     property string error: ""
-    // The last change while it can be undone: { text, revert }.
+    // The last change while it can be undone: { text, revert, commit }.
     property var lastChange: null
+    // By id, the tasks deleted here whose delete waits for the Undo offer.
+    property var deleting: ({})
     readonly property string today: Dates.of(clock.date)
     readonly property string now: Qt.locale("C").toString(clock.date, "HH:mm")
-    readonly property var tasks: Object.values(items).sort(compare)
+    readonly property var tasks: Object.values(items).filter(t => !deleting[t.id]).sort(compare)
     // ISO day to its tasks, in order.
     readonly property var byDay: {
         const days = {};
@@ -224,13 +226,22 @@ Singleton {
             }, failed);
     }
 
-    // Offers Undo for the last change, until the next or ten seconds pass.
-    function offerUndo(text, revert) {
+    // Offers Undo for the last change, until the next or ten seconds pass,
+    // then makes it final through `commit`, if any.
+    function offerUndo(text, revert, commit) {
+        settle();
         lastChange = {
             text: text,
-            revert: revert
+            revert: revert,
+            commit: commit
         };
         undoTimer.restart();
+    }
+
+    function settle() {
+        const last = lastChange;
+        lastChange = null;
+        last?.commit?.();
     }
 
     function without(id) {
@@ -274,6 +285,42 @@ Singleton {
         const last = lastChange;
         lastChange = null;
         last?.revert();
+    }
+
+    // With its subtasks, as Todoist deletes them. Todoist cannot restore a
+    // deleted task, so the delete is sent only once the Undo offer ends, the
+    // tasks hidden until then; a restart before that brings them back.
+    function remove(task) {
+        const ids = [task.id];
+        for (const id of ids)
+            ids.push(...Object.values(items).filter(t => t.parent_id === id).map(t => t.id));
+        hide(ids, true);
+        const subtasks = ids.length - 1;
+        offerUndo(`Deleted “${task.content}”${subtasks === 0 ? "" : subtasks === 1 ? " and its subtask" : ` and ${subtasks} subtasks`}`, () => hide(ids, false), () => {
+            const items = Object.assign({}, root.items);
+            for (const id of ids)
+                delete items[id];
+            change(items, [
+                {
+                    type: "item_delete",
+                    args: {
+                        id: task.id
+                    }
+                }
+            ]);
+            hide(ids, false);
+        });
+    }
+
+    function hide(ids, hidden) {
+        const deleting = Object.assign({}, root.deleting);
+        for (const id of ids) {
+            if (hidden)
+                deleting[id] = true;
+            else
+                delete deleting[id];
+        }
+        root.deleting = deleting;
     }
 
     // The due object a task takes on an ISO day, keeping its time of day and
@@ -444,7 +491,7 @@ Singleton {
         id: undoTimer
 
         interval: 10000
-        onTriggered: root.lastChange = null
+        onTriggered: root.settle()
     }
 
     // A fixed time zone's task keeps its wall-clock time on the new day,
