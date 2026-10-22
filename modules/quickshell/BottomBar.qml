@@ -131,9 +131,15 @@ PanelWindow {
             }
 
             Segment {
-                BluetoothToggle {}
+                BluetoothToggle {
+                    id: bluetooth
 
-                Volume {}
+                    joinedRight: true
+                }
+
+                Volume {
+                    joinedLeft: bluetooth.visible
+                }
             }
 
             Segment {

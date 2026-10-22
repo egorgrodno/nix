@@ -15,8 +15,13 @@ Item {
     // Lit regardless, as while its popup is open.
     property bool lit: false
     property color hoverFill: Theme.tint(0.07)
-    property int leftPadding: 12
-    property int rightPadding: 12
+    // A side shared with the neighbouring module, which reads as one with it:
+    // less padding there and the fill reaching the edge, so their fills meet,
+    // each keeping the same margin around its content on every side.
+    property bool joinedLeft: false
+    property bool joinedRight: false
+    property int leftPadding: joinedLeft ? 8 : 12
+    property int rightPadding: joinedRight ? 8 : 12
     readonly property bool hovered: hover.hovered
 
     signal clicked(int button)
@@ -30,6 +35,8 @@ Item {
     Rectangle {
         anchors.fill: parent
         anchors.margins: 4
+        anchors.leftMargin: pill.joinedLeft ? 0 : 4
+        anchors.rightMargin: pill.joinedRight ? 0 : 4
         radius: Theme.radius - 4
         color: pill.lit || pill.hoverable && pill.hovered ? pill.hoverFill : "transparent"
 
