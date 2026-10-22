@@ -13,7 +13,8 @@ Pill {
     readonly property bool muted: sink?.audio.muted ?? false
 
     // The sink is matched against these port names in order, and only a name
-    // with icons of its own changes the glyph from the default speaker.
+    // with icons of its own changes the glyph from the default speaker. Whole
+    // words: an ALSA card's icon name, `audio-card-…`, holds `car`.
     readonly property var ports: ["headphone", "speaker", "hdmi", "headset", "hands-free", "portable", "car", "hifi", "phone"]
     readonly property var icons: ({
             headset: [" ", " ", " "],
@@ -25,7 +26,7 @@ Pill {
     // The sink's own icons, or null for the default speaker's.
     readonly property var portIcons: {
         const name = [sink?.name, sink?.properties["device.icon-name"], sink?.properties["device.form-factor"]].join(" ").toLowerCase();
-        return icons[ports.find(p => name.includes(p))] ?? null;
+        return icons[ports.find(p => new RegExp(`\\b${p}\\b`).test(name))] ?? null;
     }
     readonly property string icon: !portIcons && muted ? "\uEEE8" : (portIcons ?? icons.default)[Math.min(Math.trunc(level / 33), 2)]
 
