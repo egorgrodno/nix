@@ -23,6 +23,6 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | Red | A muted speaker or microphone |
 | Green | Charging |
 
-**Greeter.** The greeter's config holds `greeter/` and the files `greeterConfig` copies, nothing else. A bar file the greeter comes to use, directly or through another file, **must** join that list. The build does not catch a missing one, and a rebuild never restarts greetd, so the breakage shows only at the next boot.
+**Greeter.** The greeter's config holds `greeter/` and the files `greeterConfig` copies, nothing else. A bar file the greeter comes to use, directly or through another file, **must** join that list. `ColorScheme.qml` is the exception: `greeter/` has its own, which a copy of the bar's would replace. The build does not catch a missing one, and a rebuild never restarts greetd, so the breakage shows only at the next boot.
 
 **Debugging.** `Monitors.qml`, `Curtain.qml` and `Lock.qml` log to `journalctl --user -u quickshell`, and the greeter to `journalctl -u greetd`.

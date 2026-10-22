@@ -9,8 +9,8 @@ import Quickshell.Services.Greetd
 // next Enter. The last user, and each user's last session, persist in the
 // state directory, under the greeter user's home; a user without one gets
 // the system's default session. The screens take the layouts the last user
-// saved, which SharedLayouts loads into Monitors, clamshell included. Reboot
-// and shut down take their key twice.
+// saved, clamshell included, and their color scheme, which SharedLayouts
+// loads. Reboot and shut down take their key twice.
 Scope {
     id: root
 

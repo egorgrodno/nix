@@ -2,12 +2,12 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Monitors' saved layouts in a file per user under Host.sharedLayouts, for
-// the greeter, which cannot reach a state directory in the user's home. The
-// bar writes it as it starts and whenever a layout is kept; the greeter loads
-// one user's into its own Monitors before the lid is read, so the first
-// layout it applies is theirs. Written in place: the directory is root's, and
-// only the file the user's own.
+// Monitors' saved layouts and the color scheme in a file per user under
+// Host.sharedLayouts, for the greeter, which cannot reach a state directory in
+// the user's home. The greeter loads one user's into its own Monitors and
+// ColorScheme before the lid is read, so the first layout it applies is
+// theirs. Written in place: the directory is root's, and only the file the
+// user's own.
 Scope {
     id: root
 
@@ -17,13 +17,16 @@ Scope {
 
     function load() {
         try {
-            Monitors.layouts = JSON.parse(file.text()).layouts ?? {};
+            const shared = JSON.parse(file.text());
+            Monitors.layouts = shared.layouts ?? {};
+            ColorScheme.light = shared.light === true;
         } catch (e) {}
     }
 
     function write() {
         file.setText(JSON.stringify({
-            layouts: Monitors.layouts
+            layouts: Monitors.layouts,
+            light: ColorScheme.light
         }));
     }
 
@@ -34,6 +37,14 @@ Scope {
         target: root.writes ? Monitors : null
 
         function onLayoutsChanged() {
+            root.write();
+        }
+    }
+
+    Connections {
+        target: root.writes ? ColorScheme : null
+
+        function onLightChanged() {
             root.write();
         }
     }

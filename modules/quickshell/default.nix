@@ -26,45 +26,41 @@ let
       ) theme.dark
     );
 
-  # `light` is a QML expression: the color scheme the bar follows, or `false`
-  # for the greeter, which has no user's to follow.
-  mkThemeQml =
-    light:
-    pkgs.writeText "Theme.qml" ''
-      pragma Singleton
+  # `ColorScheme` is the bar's, which follows the user's file, or the greeter's
+  # own, which holds the last user's.
+  themeQml = pkgs.writeText "Theme.qml" ''
+    pragma Singleton
 
-      import QtQuick
-      import Quickshell
+    import QtQuick
+    import Quickshell
 
-      Singleton {
-          readonly property bool light: ${light}
-          readonly property string fontMono: "${theme.fontMono}"
-          readonly property string fontUI: "${theme.fontUI}"
-          ${lib.concatStringsSep "\n    " colorProperties}
+    Singleton {
+        readonly property bool light: ColorScheme.light
+        readonly property string fontMono: "${theme.fontMono}"
+        readonly property string fontUI: "${theme.fontUI}"
+        ${lib.concatStringsSep "\n    " colorProperties}
 
-          // Also the exclusive zone.
-          readonly property int barHeight: ${toString cfg.barHeight}
-          // The windows' outer gap, which the segments line up with at the sides.
-          readonly property int outerGap: ${toString cfg.outerGap}
-          readonly property int radius: 8
-          // How far panels and tooltips slide out of the bar as they fade in.
-          readonly property int slide: 24
-          // How far a panel's or popup's shadow reaches past its box.
-          readonly property int shadow: 14
+        // Also the exclusive zone.
+        readonly property int barHeight: ${toString cfg.barHeight}
+        // The windows' outer gap, which the segments line up with at the sides.
+        readonly property int outerGap: ${toString cfg.outerGap}
+        readonly property int radius: 8
+        // How far panels and tooltips slide out of the bar as they fade in.
+        readonly property int slide: 24
+        // How far a panel's or popup's shadow reaches past its box.
+        readonly property int shadow: 14
 
-          function alpha(color, a) {
-              return Qt.rgba(color.r, color.g, color.b, a);
-          }
+        function alpha(color, a) {
+            return Qt.rgba(color.r, color.g, color.b, a);
+        }
 
-          // What lifts a fill or a border off the background: white over the
-          // dark palette, black over the light one.
-          function tint(a) {
-              return light ? Qt.rgba(0, 0, 0, a) : Qt.rgba(1, 1, 1, a);
-          }
-      }
-    '';
-
-  themeQml = mkThemeQml "ColorScheme.light";
+        // What lifts a fill or a border off the background: white over the
+        // dark palette, black over the light one.
+        function tint(a) {
+            return light ? Qt.rgba(0, 0, 0, a) : Qt.rgba(1, 1, 1, a);
+        }
+    }
+  '';
 
   nvidia = lib.elem "nvidia" config.services.xserver.videoDrivers;
 
@@ -251,7 +247,7 @@ let
       "PasswordField.qml"
       "SharedLayouts.qml"
     ]}
-    cp ${mkThemeQml "false"} $out/Theme.qml
+    cp ${themeQml} $out/Theme.qml
     cp ${hostQml} $out/Host.qml
     cp ${programsQml} $out/Programs.qml
     cp ${loginsJson} $out/logins.json
