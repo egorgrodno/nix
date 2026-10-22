@@ -5,22 +5,25 @@ import Quickshell
 import Quickshell.Io
 
 // Todoist through its API v1, with the token nx-setup keeps in the login
-// keyring; without one the bar shows no Todoist at all. The active tasks and
-// the projects come from the sync endpoint, incrementally after the first
-// time, at start, every five minutes, as a panel opens and after every change,
-// and persist in Quickshell's state directory, so a restart shows them at
-// once. A change applies here at once and is undone should Todoist refuse it.
-// A recurring task is moved by resending its whole due object with the new
-// date, as any other edit to it would replace the recurrence.
+// keyring; without one the bar shows no Todoist at all. The active tasks, the
+// projects, their sections and the labels come from the sync endpoint,
+// incrementally after the first time, at start, every five minutes, as a panel
+// opens and after every change, and persist in Quickshell's state directory,
+// so a restart shows them at once. A change applies here at once and is undone
+// should Todoist refuse it. A recurring task is moved by resending its whole
+// due object with the new date, as any other edit to it would replace the
+// recurrence.
 Singleton {
     id: root
 
     readonly property string api: "https://api.todoist.com/api/v1"
     property string token: ""
     readonly property bool enabled: token !== ""
-    // By id, the active tasks and the projects.
+    // By id, the active tasks, the projects, the sections and the labels.
     property var items: ({})
     property var projects: ({})
+    property var sections: ({})
+    property var labels: ({})
     property string inbox: ""
     property string syncToken: "*"
     property bool syncing: false
@@ -165,39 +168,42 @@ Singleton {
         };
         request("/sync", {
             sync_token: syncToken,
-            resource_types: ["items", "projects"]
+            resource_types: ["items", "projects", "sections", "labels"]
         }, data => {
             apply(data);
             finish();
         }, finish);
     }
 
-    function apply(data) {
-        const items = data.full_sync ? {} : Object.assign({}, root.items);
-        for (const task of data.items ?? []) {
-            if (task.is_deleted || task.checked)
-                delete items[task.id];
+    // The objects by id with the sync's changes in, those deleted or `gone` out.
+    function merge(old, changed, full, gone) {
+        const merged = full ? {} : Object.assign({}, old);
+        for (const object of changed ?? []) {
+            if (object.is_deleted || gone(object))
+                delete merged[object.id];
             else
-                items[task.id] = task;
+                merged[object.id] = object;
         }
-        const projects = data.full_sync ? {} : Object.assign({}, root.projects);
-        for (const project of data.projects ?? []) {
-            if (project.is_deleted || project.is_archived)
-                delete projects[project.id];
-            else
-                projects[project.id] = project;
-            // Sync leaves the flag out unless it holds.
+        return merged;
+    }
+
+    function apply(data) {
+        items = merge(items, data.items, data.full_sync, t => t.checked);
+        projects = merge(projects, data.projects, data.full_sync, p => p.is_archived);
+        sections = merge(sections, data.sections, data.full_sync, s => s.is_archived);
+        labels = merge(labels, data.labels, data.full_sync, () => false);
+        // Sync leaves the flag out unless it holds.
+        for (const project of data.projects ?? [])
             if (project.inbox_project)
                 inbox = project.id;
-        }
-        root.items = items;
-        root.projects = projects;
         syncToken = data.sync_token;
         storage.setText(JSON.stringify({
             syncToken: syncToken,
             inbox: inbox,
             items: items,
-            projects: projects
+            projects: projects,
+            sections: sections,
+            labels: labels
         }));
     }
 
@@ -447,8 +453,12 @@ Singleton {
             const saved = JSON.parse(storage.text());
             items = saved.items ?? {};
             projects = saved.projects ?? {};
+            sections = saved.sections ?? {};
+            labels = saved.labels ?? {};
             inbox = saved.inbox ?? "";
-            syncToken = saved.syncToken ?? "*";
+            // An incremental sync brings only changes, so state saved without
+            // labels needs a full one to get them.
+            syncToken = saved.labels ? saved.syncToken ?? "*" : "*";
         } catch (e) {}
         readToken();
     }
