@@ -532,6 +532,8 @@ in
     my.quickshell = {
       enable = true;
       inherit barHeight outerGap;
+      firstDayOfWeek = "monday";
+      worldClocks = [ "Europe/Minsk" ];
     };
 
     # Enabled for the libinput udev rules only. The `mouse` and `touchpad`
@@ -1385,6 +1387,7 @@ in
             hl.bind(mod .. " + CTRL + grave", exec("quickshell ipc call notifications toggle"))
             hl.bind(mod .. " + SHIFT + S", exec("quickshell ipc call monitors toggle"))
             hl.bind(mod .. " + SHIFT + W", exec("quickshell ipc call wallpapers toggle"))
+            hl.bind(mod .. " + SHIFT + T", exec("quickshell ipc call todoist toggle"))
             hl.bind(mod .. " + R", hl.dsp.submap("resize"))
             hl.bind(mod .. " + 0", exec("quickshell ipc call session toggle"))
 

@@ -138,6 +138,23 @@ forgejoKey() {
   forgejoHasKey "$key" || die "$forgejo did not accept $pub"
 }
 
+# In the login keyring, where the bar's Todoist module looks it up; without
+# one the bar shows no Todoist.
+todoistToken() {
+  local token
+  if secret-tool lookup service todoist >/dev/null 2>&1; then
+    skip "the keyring holds a Todoist token"
+  fi
+  if ! gum confirm "Connect Todoist to the bar?"; then
+    skip "no Todoist"
+  fi
+  echo "  The token is under Settings > Integrations > Developer at https://app.todoist.com/app/settings/integrations"
+  token=$(gum input --password --prompt "Token: ")
+  [[ -n $token ]] || die "no token given"
+  printf %s "$token" | secret-tool store --label "Todoist API token" service todoist
+  quickshell ipc call todoist refresh >/dev/null 2>&1 || true
+}
+
 neovimPlugins() {
   local compiled=$config/nvim/plugin/packer_compiled.lua
   if [[ -f $compiled ]]; then
@@ -198,6 +215,7 @@ step "Git identity" gitIdentity
 step "GitHub login and SSH key" github
 step "Forgejo login" forgejoLogin
 step "SSH key on Forgejo" forgejoKey
+step "Todoist token" todoistToken
 step "Neovim plugins" neovimPlugins
 step "/etc/nixos remote" nixosRemote
 step "Push /etc/nixos" nixosPush

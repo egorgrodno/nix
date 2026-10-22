@@ -6,6 +6,7 @@
   gnused,
   gum,
   jq,
+  libsecret,
   openssh,
   tea,
 }:
@@ -20,6 +21,7 @@ writeShellApplication {
     gnused
     gum
     jq
+    libsecret
     openssh
     tea
   ];

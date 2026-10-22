@@ -79,6 +79,7 @@ let
         readonly property string brightnessctl: "${lib.getExe pkgs.brightnessctl}"
         readonly property string cliphist: "${lib.getExe pkgs.cliphist}"
         readonly property string colorScheme: "${config.my.desktop.colorSchemeCommand}"
+        readonly property string date: "${lib.getExe' pkgs.coreutils "date"}"
         readonly property string df: "${lib.getExe' pkgs.coreutils "df"}"
         readonly property string gdbus: "${lib.getExe' pkgs.glib "gdbus"}"
         readonly property string hyprctl: "${lib.getExe' config.programs.hyprland.package "hyprctl"}"
@@ -90,6 +91,7 @@ let
         readonly property string pwvucontrol: "${lib.getExe pkgs.pwvucontrol}"
         readonly property string rfkill: "${lib.getExe' pkgs.util-linux "rfkill"}"
         readonly property string rm: "${lib.getExe' pkgs.coreutils "rm"}"
+        readonly property string secretTool: "${lib.getExe' pkgs.libsecret "secret-tool"}"
         readonly property string sh: "${pkgs.runtimeShell}"
         readonly property string sleep: "${lib.getExe' pkgs.coreutils "sleep"}"
         readonly property string systemctl: "${lib.getExe' config.systemd.package "systemctl"}"
@@ -105,7 +107,18 @@ let
   # Each user's saved monitor layouts, copied by the bar for the greeter.
   sharedLayouts = "/var/lib/monitor-layouts";
 
-  # What the host can do, from its NixOS configuration.
+  # In the order `Date.getDay()` numbers them.
+  weekdays = [
+    "sunday"
+    "monday"
+    "tuesday"
+    "wednesday"
+    "thursday"
+    "friday"
+    "saturday"
+  ];
+
+  # What the host can do and how it is set up, from its NixOS configuration.
   hostQml = pkgs.writeText "Host.qml" ''
     pragma Singleton
 
@@ -114,6 +127,11 @@ let
     Singleton {
         readonly property bool hibernate: ${lib.boolToString config.base.hibernate}
         readonly property string sharedLayouts: "${sharedLayouts}"
+        // As `Date.getDay()` numbers it: 0 is Sunday.
+        readonly property int firstDayOfWeek: ${
+          toString (lib.lists.findFirstIndex (d: d == cfg.firstDayOfWeek) null weekdays)
+        }
+        readonly property var worldClocks: ${builtins.toJSON cfg.worldClocks}
     }
   '';
 
@@ -222,6 +240,18 @@ in
     outerGap = lib.mkOption {
       type = lib.types.int;
       description = "Hyprland's outer gap in logical pixels, which the bars' segments line up with at the sides.";
+    };
+
+    firstDayOfWeek = lib.mkOption {
+      type = lib.types.enum weekdays;
+      description = "Day each week starts on in the bar's calendar.";
+    };
+
+    worldClocks = lib.mkOption {
+      type = lib.types.listOf lib.types.str;
+      default = [ ];
+      example = [ "Europe/Minsk" ];
+      description = "Time zones whose time the bar's calendar shows, each named after its city.";
     };
 
     lockCommand = lib.mkOption {

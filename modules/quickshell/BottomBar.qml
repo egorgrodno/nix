@@ -149,7 +149,15 @@ PanelWindow {
             }
 
             Segment {
-                Clock {}
+                Tasks {
+                    id: tasks
+
+                    joinedRight: true
+                }
+
+                Clock {
+                    joinedLeft: tasks.visible
+                }
 
                 Power {}
             }
