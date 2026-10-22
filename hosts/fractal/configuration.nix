@@ -22,7 +22,9 @@ in
   ];
 
   my.desktop = {
-    primaryScreen = "HDMI-A-2";
+    # By description: the kernel numbers HDMI connectors across both cards in
+    # the order their drivers load, which varies between boots.
+    primaryScreen = "desc:LG Electronics LG ULTRAGEAR 401MAKRGS029";
     primaryMode = "2560x1440@120";
   };
 
@@ -50,7 +52,7 @@ in
     GBM_BACKEND = "nvidia-drm";
     __GLX_VENDOR_LIBRARY_NAME = "nvidia";
     # Unpinned, aquamarine renders on the Raphael iGPU and copies every frame
-    # across PCIe to the card that drives HDMI-A-2, which speckles the screen
+    # across PCIe to the card that drives the monitor, which speckles the screen
     # with artifacts. The cost of the pin: the board's own outputs go dark.
     # The greeter's Hyprland takes it too: greetd builds the greeter's
     # environment from PAM, which reads these, and discards its own.

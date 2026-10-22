@@ -469,7 +469,7 @@ in
     primaryScreen = mkOption {
       type = types.str;
       default = "eDP-1";
-      description = "Wayland connector name of the screen that carries the bar and tray.";
+      description = "Wayland connector name of the screen that carries the bar and tray, or `desc:` and the start of its description.";
     };
 
     primaryMode = mkOption {
