@@ -6,13 +6,14 @@ import Quickshell.Wayland
 
 // At the session's first start, every screen under the theme's background,
 // opaque, the colour Hyprland draws without a wallpaper, until the saved layout
-// has applied and awww has drawn the wallpaper after it; then it fades out, so
-// the scale jump and the first draws happen unseen. The pointer, which
-// Hyprland hides from its start, stays hidden until the fade out starts. A bar
-// restarted in the same Hyprland instance skips it, a crash under it included,
-// and shows the pointer again. awww's daemon, which the session leaves to the
-// bar, starts once it maps, or at once without it: a wallpaper drawn first
-// would vanish under it. After 3 s it lifts regardless.
+// has applied and awww has drawn the wallpaper after it, or with no wallpaper
+// the layout alone; then it fades out, so the scale jump and the first draws
+// happen unseen. The pointer, which Hyprland hides from its start, stays hidden
+// until the fade out starts. A bar restarted in the same Hyprland instance
+// skips it, a crash under it included, and shows the pointer again. awww's
+// daemon, which the session leaves to the bar, starts once it maps, or at once
+// without it: a wallpaper drawn first would vanish under it. After 3 s it lifts
+// regardless.
 Scope {
     id: root
 
@@ -24,7 +25,9 @@ Scope {
     // awww's surfaces mapped, one per output.
     property int drawn: 0
     property real start: 0
-    readonly property bool ready: Monitors.settled && drawn >= Quickshell.screens.length && !Wallpapers.settling
+    // awww maps no surface until it draws, so with no wallpaper only the
+    // layout counts.
+    readonly property bool ready: Monitors.settled && (Wallpapers.empty || drawn >= Quickshell.screens.length && !Wallpapers.settling)
 
     function startDaemon() {
         if (daemon)
@@ -41,7 +44,8 @@ Scope {
 
     // For the journal.
     function waiting() {
-        return [Monitors.settled ? "" : "the layout", drawn >= Quickshell.screens.length ? "" : `awww on ${Quickshell.screens.length - drawn} more screens`, Wallpapers.settling ? "the wallpaper's redraw" : ""].filter(s => s !== "").join(", ");
+        const awww = !Wallpapers.empty;
+        return [Monitors.settled ? "" : "the layout", !awww || drawn >= Quickshell.screens.length ? "" : `awww on ${Quickshell.screens.length - drawn} more screens`, awww && Wallpapers.settling ? "the wallpaper's redraw" : ""].filter(s => s !== "").join(", ");
     }
 
     function lift(reason) {

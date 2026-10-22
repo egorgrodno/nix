@@ -25,7 +25,11 @@ Singleton {
     // Unset until `test -d` says so: given a missing folder, the model lists
     // the bar's working directory instead.
     property bool present: false
+    property bool checked: false
     readonly property int count: present ? listing.count : 0
+    // None to give awww, known once the folder is found missing or listed. awww
+    // can still restore one from its cache.
+    readonly property bool empty: checked && (!present || listing.status === FolderListModel.Ready && count === 0)
     readonly property FolderListModel files: listing
     // On the focused output, as awww reported it or as last sent.
     property string shown: ""
@@ -135,7 +139,10 @@ Singleton {
         id: checker
 
         command: [Programs.sh, "-c", 'test -d "$0"', root.folder]
-        onExited: code => root.present = code === 0
+        onExited: code => {
+            root.present = code === 0;
+            root.checked = true;
+        }
     }
 
     // Made first, so the model, which ignores a folder until it exists, then
