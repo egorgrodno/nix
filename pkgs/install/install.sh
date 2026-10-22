@@ -125,10 +125,10 @@ writeConfiguration() {
   imports = [
     ./hardware-configuration.nix
     ../../roles/role-desktop-config.nix
-EOF
-    [[ $form == pc ]] || echo '    ../../roles/role-laptop.nix'
-    cat <<EOF
   ];
+EOF
+    [[ $form == pc ]] || printf '\n  base.isLaptop = true;\n'
+    cat <<EOF
 
   base.keyboard = {
     layout = "$layout";
