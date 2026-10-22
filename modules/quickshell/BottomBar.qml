@@ -35,9 +35,12 @@ PanelWindow {
                 Apps {}
             }
 
+            // The stats sit closer than modules do elsewhere: 8 px of padding on
+            // the sides they share, their fills kept apart.
             Segment {
                 Pill {
                     hoverable: false
+                    rightPadding: 8
                     tooltipContent: Component {
                         CpuTip {}
                     }
@@ -62,6 +65,8 @@ PanelWindow {
 
                 Pill {
                     hoverable: false
+                    leftPadding: 8
+                    rightPadding: 8
                     tooltipContent: Component {
                         MemoryTip {}
                     }
@@ -86,6 +91,8 @@ PanelWindow {
                 }
 
                 Pill {
+                    leftPadding: 8
+                    rightPadding: gpu.visible ? 8 : 12
                     tooltipContent: Component {
                         DiskTip {}
                     }
@@ -119,6 +126,7 @@ PanelWindow {
 
                     visible: Gpus.primary !== null && !isNaN(Gpus.primary.busy)
                     hoverable: false
+                    leftPadding: 8
                     tooltipContent: Component {
                         GpuTip {}
                     }
