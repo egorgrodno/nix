@@ -126,7 +126,7 @@ PanelWindow {
             // Starting under the bar's edge.
             y: panel.open ? 0 : panel.upward ? Theme.slide : -Theme.slide
             opacity: panel.open ? 1 : 0
-            color: Theme.alpha(Theme.backgroundMain, 0.97)
+            color: Theme.alpha(Theme.backgroundRaised, 0.97)
             border.color: Theme.tint(0.08)
             border.width: 1
             radius: Theme.radius

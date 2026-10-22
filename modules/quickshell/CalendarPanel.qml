@@ -456,7 +456,7 @@ Panel {
             opacity: 0.6
             height: 36
             radius: Theme.radius - 4
-            color: Theme.alpha(Theme.backgroundMain, 0.97)
+            color: Theme.alpha(Theme.backgroundRaised, 0.97)
             border.color: Theme.tint(0.12)
             border.width: 1
             Drag.active: dragging

@@ -22,7 +22,7 @@ Item {
     property bool showApp: true
     property bool slideIn: true
     property bool raised: false
-    property color fill: Theme.alpha(Theme.backgroundMain, 0.97)
+    property color fill: Theme.alpha(Theme.backgroundRaised, 0.97)
     // Set once created, so the card slides out of the bar as it fades in.
     property bool arrived: !slideIn
     readonly property var defaultAction: entry.actions.find(a => a.identifier === "default") ?? null

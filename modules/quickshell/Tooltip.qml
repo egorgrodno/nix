@@ -78,7 +78,7 @@ PopupWindow {
 
         implicitWidth: (body.item?.implicitWidth ?? label.implicitWidth) + 2 * 16
         implicitHeight: (body.item?.implicitHeight ?? label.implicitHeight) + 2 * 12
-        color: Theme.alpha(Theme.backgroundMain, 0.97)
+        color: Theme.alpha(Theme.backgroundRaised, 0.97)
         border.color: Theme.tint(0.08)
         border.width: 1
         radius: Theme.radius

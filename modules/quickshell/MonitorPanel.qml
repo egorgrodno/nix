@@ -221,7 +221,7 @@ Panel {
             Rectangle {
                 anchors.fill: parent
                 radius: Theme.radius
-                color: Theme.alpha(Theme.backgroundMain, 0.94)
+                color: Theme.alpha(Theme.backgroundRaised, 0.94)
                 border.width: 1
                 border.color: modelData?.name === panel.selected?.name ? Theme.blue : Theme.tint(0.08)
 

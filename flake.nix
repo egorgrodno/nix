@@ -26,14 +26,17 @@
         inherit system;
         config.allowUnfree = true;
       };
-      # One palette per color scheme, under the same names. Foreground tones
-      # run from `strong`, the bar's text, to `faint`; `black` and `white` are
-      # the terminal's.
+      # One palette per color scheme, under the same names. `background.raised`
+      # fills what floats over the windows, panels, popups and tooltips, a step
+      # off `main`, the windows' own: on the dark one a shadow alone barely
+      # shows. Foreground tones run from `strong`, the bar's text, to `faint`;
+      # `black` and `white` are the terminal's.
       theme = {
         fontMono = "Inconsolata LGC Nerd Font Mono";
         fontUI = "Overpass Nerd Font";
         dark = {
           background.main = "#16191D";
+          background.raised = "#282C34";
           foreground = {
             strong = "#FFFFFF";
             main = "#DCDFE4";
@@ -70,6 +73,7 @@
         # included, as a program printing white text assumes a dark terminal.
         light = {
           background.main = "#FAFAFA";
+          background.raised = "#FFFFFF";
           foreground = {
             strong = "#202227";
             main = "#383A42";

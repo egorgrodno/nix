@@ -98,7 +98,7 @@ PanelWindow {
         height: 48
         y: osd.shown ? 0 : Theme.slide
         opacity: osd.shown ? 1 : 0
-        color: Theme.alpha(Theme.backgroundMain, 0.97)
+        color: Theme.alpha(Theme.backgroundRaised, 0.97)
         border.color: Theme.tint(0.08)
         border.width: 1
         radius: Theme.radius
