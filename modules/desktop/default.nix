@@ -751,8 +751,11 @@ in
           postInstall = (old.postInstall or "") + ''
             ui=$out/opt/vivaldi/resources/vivaldi
             cp ${./vivaldi-color-scheme.js} $ui/color-scheme.js
+            # Deferred: the core fills each window's body as the window opens,
+            # and a window whose body a blocking script holds back opens blank,
+            # as an extension's popup did.
             substituteInPlace $ui/window.html \
-              --replace-fail '</head>' '<script src="color-scheme.js"></script></head>'
+              --replace-fail '</head>' '<script src="color-scheme.js" defer></script></head>'
           '';
         }))
         ungoogled-chromium
