@@ -99,7 +99,7 @@ github() {
   # the public key. gh waits for its browser command to exit, which a browser
   # it had to start does only once closed, so the browser starts in a unit of
   # its own.
-  GH_BROWSER="uwsm app -t service --" gh auth login --hostname github.com --git-protocol ssh --web
+  GH_BROWSER="uwsm app -t service -- xdg-open" gh auth login --hostname github.com --git-protocol ssh --web
 }
 
 forgejoLogin() {
