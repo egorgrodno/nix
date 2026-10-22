@@ -107,7 +107,6 @@ Pill {
                 target: entry
                 text: entry.modelData.tooltipTitle || entry.modelData.title
                 hovered: mouse.containsMouse
-                pointerX: area.x + mouse.mouseX
             }
         }
     }

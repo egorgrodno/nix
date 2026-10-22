@@ -1,11 +1,10 @@
 import QtQuick
 import Quickshell
 
-// Under the module, or over it on a bar along the bottom edge, centred on where
-// the pointer came to rest, after half a second's hover, as GTK places a
-// tooltip. It slides out from the module's side as it fades in, and back once
-// the pointer leaves, clipped at the window's edge: a window reaching over the
-// module would take the hover off it.
+// Under the module, or over it on a bar along the bottom edge, centred on it,
+// after half a second's hover. It slides out from the module's side as it fades
+// in, and back once the pointer leaves, clipped at the window's edge: a window
+// reaching over the module would take the hover off it.
 PopupWindow {
     id: tip
 
@@ -14,9 +13,6 @@ PopupWindow {
     // Built in place of the text.
     property Component content: null
     property bool hovered
-    // Pointer x in the target, read when the tooltip opens.
-    property real pointerX
-    property real openedAt
     // False from the start of the fade out.
     property bool shown: false
     readonly property bool upward: {
@@ -32,9 +28,8 @@ PopupWindow {
     }
 
     anchor.item: target
-    anchor.rect.x: openedAt
     anchor.rect.y: upward ? -4 : 0
-    anchor.rect.width: 1
+    anchor.rect.width: target.width
     anchor.rect.height: upward ? 1 : target.height + 4
     anchor.edges: upward ? Edges.Top : Edges.Bottom
     anchor.gravity: upward ? Edges.Top : Edges.Bottom
@@ -66,7 +61,6 @@ PopupWindow {
         onTriggered: {
             if (tip.text === "" && !tip.content)
                 return;
-            tip.openedAt = tip.pointerX;
             tip.visible = true;
             tip.shown = true;
             Tooltips.shown();

@@ -74,6 +74,5 @@ Item {
         target: label
         text: root.text
         hovered: mouse.containsMouse
-        pointerX: mouse.mouseX - label.x
     }
 }

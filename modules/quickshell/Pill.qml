@@ -95,6 +95,5 @@ Item {
         text: pill.tooltip
         content: pill.tooltipContent
         hovered: mouse.containsMouse
-        pointerX: mouse.mouseX
     }
 }
