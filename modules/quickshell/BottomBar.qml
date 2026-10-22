@@ -3,8 +3,8 @@ import Quickshell
 import Quickshell.Services.UPower
 
 // Along the bottom edge, in a strip as tall as the top bar's: the apps menu,
-// then cpu, ram and disk in the left corner, and the tray, bluetooth, volume,
-// battery, clock and power in the right.
+// then cpu, ram, disk and gpu in the left corner, and the tray, bluetooth,
+// volume, battery, clock and power in the right.
 PanelWindow {
     required property ShellScreen modelData
 
@@ -38,9 +38,8 @@ PanelWindow {
             Segment {
                 Pill {
                     hoverable: false
-                    tooltip: Stats.cpuTooltip
                     tooltipContent: Component {
-                        CoreChart {}
+                        CpuTip {}
                     }
 
                     Caption {
@@ -63,7 +62,9 @@ PanelWindow {
 
                 Pill {
                     hoverable: false
-                    tooltip: Stats.memoryTooltip
+                    tooltipContent: Component {
+                        MemoryTip {}
+                    }
 
                     Caption {
                         anchors.baseline: ramFigure.baseline
@@ -85,7 +86,9 @@ PanelWindow {
                 }
 
                 Pill {
-                    tooltip: Stats.diskTooltip
+                    tooltipContent: Component {
+                        DiskTip {}
+                    }
                     onClicked: button => {
                         if (button === Qt.LeftButton)
                             Launcher.run([Programs.pcmanfm, "/"]);
@@ -107,7 +110,35 @@ PanelWindow {
                         anchors.verticalCenter: parent.verticalCenter
                         widest: "100%"
                         text: `${Stats.disk}%`
-                        color: Stats.disk >= 90 ? Theme.red : Theme.foregroundStrong
+                        color: Stats.diskFull ? Theme.red : Theme.foregroundStrong
+                    }
+                }
+
+                Pill {
+                    id: gpu
+
+                    visible: Gpus.primary !== null && !isNaN(Gpus.primary.busy)
+                    hoverable: false
+                    tooltipContent: Component {
+                        GpuTip {}
+                    }
+
+                    Caption {
+                        anchors.baseline: gpuFigure.baseline
+                        text: "gpu"
+                    }
+
+                    Meter {
+                        anchors.verticalCenter: parent.verticalCenter
+                        value: (Gpus.primary?.busy ?? 0) / 100
+                    }
+
+                    Figure {
+                        id: gpuFigure
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        widest: "100%"
+                        text: `${Gpus.primary?.busy ?? 0}%`
                     }
                 }
             }

@@ -1,48 +1,130 @@
 import QtQuick
 
-// The cpu tooltip: the total, then a meter per core, in two columns past 16.
-Column {
-    spacing: 8
+// A row per physical core: a meter and figure per thread, then the clock its
+// threads share, the higher of their readings, in two columns past twelve
+// cores, each under a header.
+Row {
+    id: chart
 
-    BarText {
-        text: `Total ${Stats.cpu}%`
+    readonly property int columns: Stats.physicalCores.length > 12 ? 2 : 1
+    readonly property int perColumn: Math.ceil(Stats.physicalCores.length / columns)
+    readonly property int threads: Stats.physicalCores[0]?.length ?? 1
+    readonly property int meterWidth: 56
+
+    spacing: 24
+
+    TextMetrics {
+        id: indexSlot
+
+        font.family: Theme.fontMono
+        font.pixelSize: 14
+        font.hintingPreference: Font.PreferFullHinting
+        text: "00"
     }
 
-    Grid {
-        columns: Stats.cores.length > 16 ? 2 : 1
-        columnSpacing: 24
-        rowSpacing: 4
-        flow: Grid.TopToBottom
-        rows: Math.ceil(Stats.cores.length / columns)
+    TextMetrics {
+        id: usageSlot
 
-        Repeater {
-            model: Stats.cores
+        font.family: Theme.fontMono
+        font.pixelSize: 14
+        font.hintingPreference: Font.PreferFullHinting
+        text: "100%"
+    }
+
+    TextMetrics {
+        id: clockSlot
+
+        font.family: Theme.fontMono
+        font.pixelSize: 14
+        font.hintingPreference: Font.PreferFullHinting
+        text: "0.0 GHz"
+    }
+
+    Repeater {
+        model: chart.columns
+
+        Column {
+            id: column
+
+            required property int index
+
+            spacing: 4
 
             Row {
-                required property int modelData
-                required property int index
-
                 spacing: 8
 
-                Figure {
-                    widest: "00"
-                    horizontalAlignment: Text.AlignRight
-                    text: parent.index
-                    color: Theme.foregroundMuted
-                    font.pixelSize: 14
+                Item {
+                    width: indexSlot.advanceWidth
+                    height: 1
                 }
 
-                Meter {
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: 120
-                    value: parent.modelData / 100
+                Caption {
+                    width: chart.threads * (chart.meterWidth + 8 + usageSlot.advanceWidth) + (chart.threads - 1) * 8
+                    text: chart.threads > 1 ? "threads" : "load"
                 }
 
-                Figure {
-                    widest: "100%"
+                Caption {
+                    width: clockSlot.advanceWidth
                     horizontalAlignment: Text.AlignRight
-                    text: `${parent.modelData}%`
-                    font.pixelSize: 14
+                    text: "clock"
+                }
+            }
+
+            Repeater {
+                model: Stats.physicalCores.slice(column.index * chart.perColumn, (column.index + 1) * chart.perColumn)
+
+                Row {
+                    id: core
+
+                    // Its threads, as indices into Stats.cores.
+                    required property var modelData
+                    required property int index
+
+                    spacing: 8
+
+                    Figure {
+                        anchors.verticalCenter: parent.verticalCenter
+                        widest: "00"
+                        horizontalAlignment: Text.AlignRight
+                        text: column.index * chart.perColumn + core.index
+                        color: Theme.foregroundMuted
+                        font.pixelSize: 14
+                    }
+
+                    Repeater {
+                        model: core.modelData
+
+                        Row {
+                            required property int modelData
+                            readonly property int usage: Stats.cores[modelData] ?? 0
+
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: 8
+
+                            Meter {
+                                anchors.verticalCenter: parent.verticalCenter
+                                width: chart.meterWidth
+                                value: parent.usage / 100
+                            }
+
+                            Figure {
+                                anchors.verticalCenter: parent.verticalCenter
+                                widest: "100%"
+                                horizontalAlignment: Text.AlignRight
+                                text: `${parent.usage}%`
+                                font.pixelSize: 14
+                            }
+                        }
+                    }
+
+                    Figure {
+                        anchors.verticalCenter: parent.verticalCenter
+                        widest: "0.0 GHz"
+                        horizontalAlignment: Text.AlignRight
+                        text: `${(Math.max(...core.modelData.map(t => Stats.clocks[t] ?? 0)) / 1000).toFixed(1)} GHz`
+                        color: Theme.foregroundMuted
+                        font.pixelSize: 14
+                    }
                 }
             }
         }

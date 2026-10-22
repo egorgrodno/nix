@@ -66,6 +66,21 @@ let
 
   themeQml = mkThemeQml "ColorScheme.light";
 
+  nvidia = lib.elem "nvidia" config.services.xserver.videoDrivers;
+
+  statsProbe = pkgs.writeShellApplication {
+    name = "stats-probe";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.findutils
+      pkgs.gawk
+      pkgs.gnused
+      config.systemd.package
+    ]
+    ++ lib.optional nvidia config.hardware.nvidia.package.bin;
+    text = builtins.readFile ./stats-probe.sh;
+  };
+
   # Absolute paths: the bar runs as a systemd user service, whose PATH carries
   # a few core utilities and nothing else.
   programsQml = pkgs.writeText "Programs.qml" ''
@@ -80,13 +95,15 @@ let
         readonly property string cliphist: "${lib.getExe pkgs.cliphist}"
         readonly property string colorScheme: "${config.my.desktop.colorSchemeCommand}"
         readonly property string date: "${lib.getExe' pkgs.coreutils "date"}"
-        readonly property string df: "${lib.getExe' pkgs.coreutils "df"}"
         readonly property string gdbus: "${lib.getExe' pkgs.glib "gdbus"}"
         readonly property string hyprctl: "${lib.getExe' config.programs.hyprland.package "hyprctl"}"
         readonly property string loginctl: "${lib.getExe' config.systemd.package "loginctl"}"
+        readonly property string lsblk: "${lib.getExe' pkgs.util-linux "lsblk"}"
         readonly property string nmConnectionEditor: "${lib.getExe' pkgs.networkmanagerapplet "nm-connection-editor"}"
         readonly property string nmcli: "${lib.getExe' config.networking.networkmanager.package "nmcli"}"
         readonly property string notifySend: "${lib.getExe' pkgs.libnotify "notify-send"}"
+        // Empty without the NVIDIA driver.
+        readonly property string nvidiaSmi: "${lib.optionalString nvidia "${config.hardware.nvidia.package.bin}/bin/nvidia-smi"}"
         readonly property string pcmanfm: "${lib.getExe pkgs.pcmanfm}"
         readonly property string pwvucontrol: "${lib.getExe pkgs.pwvucontrol}"
         readonly property string rfkill: "${lib.getExe' pkgs.util-linux "rfkill"}"
@@ -94,6 +111,7 @@ let
         readonly property string secretTool: "${lib.getExe' pkgs.libsecret "secret-tool"}"
         readonly property string sh: "${pkgs.runtimeShell}"
         readonly property string sleep: "${lib.getExe' pkgs.coreutils "sleep"}"
+        readonly property string statsProbe: "${lib.getExe statsProbe}"
         readonly property string systemctl: "${lib.getExe' config.systemd.package "systemctl"}"
         readonly property string systemdInhibit: "${lib.getExe' config.systemd.package "systemd-inhibit"}"
         readonly property string uwsm: "${lib.getExe config.programs.uwsm.package}"
