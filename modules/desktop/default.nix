@@ -802,6 +802,26 @@ in
         notify = true;
       };
 
+      xdg.configFile."cliphist/config".text = ''
+        max-items 300
+      '';
+      # Holds no process: stopping with the graphical session, at logout or
+      # shutdown, wipes the clipboard history. A rebuild never restarts it, so
+      # a cliphist update wipes nothing.
+      systemd.user.services.cliphist-wipe = {
+        Unit = {
+          Description = "Wipe the clipboard history at logout";
+          PartOf = [ "graphical-session.target" ];
+          X-SwitchMethod = "keep-old";
+        };
+        Service = {
+          Type = "oneshot";
+          RemainAfterExit = true;
+          ExecStop = "${lib.getExe pkgs.cliphist} wipe";
+        };
+        Install.WantedBy = [ "graphical-session.target" ];
+      };
+
       xdg.configFile."mimeapps.list".force = true;
       xdg.mimeApps = {
         enable = true;
