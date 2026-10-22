@@ -51,15 +51,15 @@
 
   boot.loader = {
     efi.canTouchEfiVariables = false;
-    timeout = 0;
+    # The hidden menu opens on F4 only while GRUB polls through this timeout:
+    # at zero it polls once, and this firmware never reports a lone Shift.
+    timeout = 1;
     grub = {
       enable = true;
       device = "nodev";
       useOSProber = false;
       efiSupport = true;
       efiInstallAsRemovable = true;
-      # `menu` skips the key check when the timeout is zero; `hidden` still
-      # opens the menu while Shift is held.
       timeoutStyle = "hidden";
     };
   };
