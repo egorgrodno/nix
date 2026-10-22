@@ -12,14 +12,14 @@ Boot a NixOS ISO in UEFI mode, connect to the network, and run:
 sudo nix --extra-experimental-features 'nix-command flakes' run github:egorgrodno/nix#install
 ```
 
-It asks every question first: a host from `hosts/` to reinstall, or a new one with its layout, form factor, CPU and GPU vendor, screen and users, most of them detected. It then writes and evaluates the host, and only after that asks for the disk:
+It asks every question first. The host is either one from `hosts/` to reinstall or a new one, for which it asks the layout, hardware and users, proposing the hardware it detects. It then writes and evaluates the host, and only after that asks for the disk:
 
 | Disk mode | Effect |
 |---|---|
 | Wipe a disk | GPT with a 1 GiB `NIXBOOT` ESP and the rest ext4 `NIXROOT`. A disk with Windows on it is refused unless its device path is typed. |
 | Reuse | Reformats `NIXROOT` and keeps `NIXBOOT` as it is. `fractal` **must** use it, since `nvme0n1` also holds Windows' D:. |
 
-Typing the hostname starts the install. It ends by setting each user's password and leaving `/etc/nixos` as a clone owned by the first admin, with the host committed.
+Typing the hostname starts the install. It ends by setting each user's password and leaving `/etc/nixos` as a clone owned by the first admin, with the host committed. A host needs at least one user with `admin = true` in `users/<name>.nix`.
 
 ### 2. Run nx-setup
 
@@ -36,6 +36,7 @@ nx-setup
 | Git identity | `user.name` and `user.email` in `~/.config/git/config.local`, which the git module includes. |
 | GitHub | `gh auth login` with the SSH protocol, which offers to generate `~/.ssh/id_ed25519` and upload it. |
 | Forgejo | `tea login add` for `http://forgejo.home` with a token or a password, then uploads the SSH key. |
+| Todoist | Optional. The API token in the login keyring, where the bar's Todoist module finds it. |
 | Neovim | Headless `PackerSync`. |
 | `/etc/nixos` | For its owner only: `origin` fetches from GitHub and pushes to GitHub and Forgejo, and unpushed commits are pushed after a confirmation. |
 
@@ -47,7 +48,7 @@ A Windows update can remove GRUB's firmware entry. Boot a NixOS ISO in UEFI mode
 sudo nix --extra-experimental-features 'nix-command flakes' run github:egorgrodno/nix#repair-boot
 ```
 
-It mounts `NIXROOT` and `NIXBOOT`, reinstalls the bootloader from the installed generation without rebuilding, and lists the firmware entries. Offline, the same by hand:
+It mounts `NIXROOT` and `NIXBOOT`, reinstalls the bootloader from the installed generation without rebuilding, and lists the firmware entries. Offline, nearly the same by hand, without its care for initrd secrets:
 
 ```bash
 sudo -i
@@ -69,13 +70,6 @@ home-manager switch --impure --flake github:egorgrodno/nix#neovim-hallmack  # ha
 
 The profile is self-contained: the neovim module bundles its own runtime tools and language servers (`ripgrep`, `fd`, `nodejs`, the LSP servers). Its plugins are not: Packer fetches them, so `:PackerSync` **must** be run once after the first `nvim` start.
 
-## Hosts
-
-| Config | Host | Role |
-|---|---|---|
-| `fractal` | fractal desktop | Hyprland/Wayland, users: egor + forge |
-| `thinkpad` | ThinkPad laptop | Hyprland/Wayland, user: egor |
-
 ## Common Commands
 
 ```bash
@@ -83,5 +77,5 @@ nxs   # nixos-rebuild switch
 nxc   # nixos-rebuild build  (build without activating)
 nxb   # nixos-rebuild boot   (build + add boot entry)
 nxt   # nixos-rebuild test   (no boot entry)
-nxu   # nix flake update
+nxu   # nix flake update, then craft-update
 ```
