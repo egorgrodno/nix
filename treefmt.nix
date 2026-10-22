@@ -17,7 +17,7 @@
   # a [[...]] string across four lines, which no setting suppresses.
   settings.formatter.stylua.excludes = [ "modules/neovim/snippets.lua" ];
 
-  # Markdown's mechanics only; the prose conventions in CLAUDE.md stay by hand.
+  # Markdown's mechanics only; prose follows the writing-docs skill.
   # prettier and deno fmt would pad every table into aligned columns.
   programs.rumdl-format.enable = true;
 
