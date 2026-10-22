@@ -31,13 +31,13 @@ nxs                           # make it real
 
 **The script does the mechanics; Claude does the porting.** `on`/`reload`/`watch`/`off` are pure plumbing — symlink swapping and signals. Turning an edited config file back into Nix is a judgment task, because the live file is a *flattened rendering* of the source: interpolations are already expanded and conditionals already resolved to one branch. No script can invert that. `verify` is what makes the judgment checkable.
 
-`off` saves any edited file to `~/.local/state/nix-devmode/edits/<program>/` with a `.patch` beside it before relocking, so the bytes are never lost by relocking early. That is the only thing the script guarantees to preserve — an edit that is never ported still vanishes from the live tree on the next rebuild.
+`off` saves any edited file to `~/.local/state/nix-devmode/edits/<program>/` with a `.patch` beside it before relocking, so the bytes are never lost by relocking early. That is the only thing the script guarantees to preserve — an edit that is never ported still vanishes from the live tree on the next rebuild. A file created while unlocked, such as a new QML file, is linked into the current generation if that holds it, which an activation in the meantime does; any other is moved into the same directory, since a plain file blocks the activation that adds it. Plain files already there at `on` are left alone.
 
 | Command | Effect |
 |---|---|
 | `on <program>...` | Unlock. Records each store origin in `~/.local/state/nix-devmode/<program>.tsv`. On a laptop, also holds off idle, sleep and the lid switch. |
-| `off <program>...` / `off --all` | Save edits, restore the symlinks, drop the state. Releases the inhibitor once nothing is unlocked. |
-| `status` | Which programs are unlocked, which files are edited, and whether the inhibitor is held. |
+| `off <program>...` / `off --all` | Save edits, restore the symlinks, settle files created while unlocked, drop the state. Releases the inhibitor once nothing is unlocked. |
+| `status` | Which programs are unlocked, which files are edited or new, and whether the inhibitor is held. |
 | `diff [program]` | Unified diff, store original against live file. The input to porting back. |
 | `verify [program]` | Regenerate each file from the Nix source and compare to the live copy. Exit 0 only when the source reproduces the edits byte for byte. |
 | `reload <program>` | Signal the program to re-read its config. |

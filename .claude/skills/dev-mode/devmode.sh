@@ -72,6 +72,22 @@ files_of() {
 
 state_file() { printf '%s/%s.tsv\n' "$STATE" "$1"; }
 
+# The plain files under a name as `on` first found them, which `off` leaves
+# alone: anything else plain was made while unlocked.
+plain_file() { printf '%s/%s.plain\n' "$STATE" "$1"; }
+
+# Plain files made while unlocked: neither recorded nor there at `on`.
+new_files_of() {
+  local name=$1 file plain
+  plain=$(plain_file "$name")
+  while IFS= read -r file; do
+    [ -f "$file" ] && [ ! -L "$file" ] || continue
+    [ -z "$(origin_of "$name" "$file")" ] || continue
+    [ -f "$plain" ] && grep -Fxq -- "$file" "$plain" && continue
+    printf '%s\n' "$file"
+  done < <(files_of "$name")
+}
+
 origin_of() { # name file -> recorded store path, empty if not in dev mode
   local s
   s=$(state_file "$1")
@@ -133,10 +149,16 @@ release() {
 cmd_on() {
   [ $# -gt 0 ] || die "usage: devmode on <program>..."
   mkdir -p "$STATE"
-  local name file origin s
+  local name file origin s plain
   for name in "$@"; do
     s=$(state_file "$name")
     touch "$s"
+    plain=$(plain_file "$name")
+    if [ ! -f "$plain" ]; then
+      files_of "$name" | while IFS= read -r file; do
+        [ -L "$file" ] || printf '%s\n' "$file"
+      done >"$plain"
+    fi
     while IFS= read -r file; do
       [ -n "$file" ] || continue
       if [ -L "$file" ]; then
@@ -158,7 +180,7 @@ cmd_on() {
       fi
     done < <(files_of "$name")
     if [ ! -s "$s" ]; then
-      rm -f "$s"
+      rm -f "$s" "$plain"
       note "$name: no store-managed files under $(paths_of "$name")"
       continue
     fi
@@ -220,7 +242,29 @@ cmd_off() {
       ln -s "$target" "$file"
       printf 'relocked     %s\n' "${file#"$HOME"/}"
     done <"$s"
-    rm -f "$s"
+    # Home-manager skips a plain file that matches what it would link, leaving
+    # it plain, and aborts on one that differs. One the current generation holds
+    # is linked into it, its own bytes saved should they differ; any other is
+    # moved in with the saved edits.
+    while IFS= read -r file; do
+      rel=${file#"$HOME"/}
+      mkdir -p "$EDITS/$name/$(dirname "$rel")"
+      if [ -n "$cur" ] && [ -e "$cur/$rel" ]; then
+        if ! cmp -s "$file" "$cur/$rel"; then
+          cp "$file" "$EDITS/$name/$rel"
+          diff -u --label "nix:$rel" --label "dev:$rel" "$cur/$rel" "$file" \
+            >"$EDITS/$name/$rel.patch" || true
+          printf 'saved edits  %s -> %s\n' "$rel" "$EDITS/$name/$rel"
+        fi
+        rm -f "$file"
+        ln -s "$cur/$rel" "$file"
+        printf 'linked new   %s\n' "$rel"
+      else
+        mv "$file" "$EDITS/$name/$rel"
+        printf 'moved new    %s -> %s (in no generation yet)\n' "$rel" "$EDITS/$name/$rel"
+      fi
+    done < <(new_files_of "$name")
+    rm -f "$s" "$(plain_file "$name")"
   done
   release
 }
@@ -241,6 +285,9 @@ cmd_status() {
       if cmp -s "$file" "$origin"; then mark="  unchanged"; else mark="* EDITED   "; fi
       printf '  %s %s\n' "$mark" "${file#"$HOME"/}"
     done <"$(state_file "$name")"
+    while IFS= read -r file; do
+      printf '  + NEW       %s\n' "${file#"$HOME"/}"
+    done < <(new_files_of "$name")
   done
 }
 
