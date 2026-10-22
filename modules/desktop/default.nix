@@ -747,7 +747,14 @@ in
         wlsunset
         xdg-desktop-portal-hyprland
 
-        vivaldi
+        (vivaldi.overrideAttrs (old: {
+          postInstall = (old.postInstall or "") + ''
+            ui=$out/opt/vivaldi/resources/vivaldi
+            cp ${./vivaldi-color-scheme.js} $ui/color-scheme.js
+            substituteInPlace $ui/window.html \
+              --replace-fail '</head>' '<script src="color-scheme.js"></script></head>'
+          '';
+        }))
         ungoogled-chromium
         firefox
 
