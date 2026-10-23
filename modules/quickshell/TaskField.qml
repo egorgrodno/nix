@@ -14,7 +14,7 @@ TextField {
     function tokenColor(token) {
         switch (token.kind) {
         case "priority":
-            return [Theme.foregroundMuted, Theme.foregroundMuted, Theme.blue, Theme.yellow, Theme.red][token.priority];
+            return Todoist.priorityColor(token.priority);
         case "date":
             return Theme.green;
         case "label":

@@ -6,30 +6,34 @@ import Quickshell.Io
 
 // Todoist through its API v1, with the token nx-setup keeps in the login
 // keyring; without one the bar shows no Todoist at all. The active tasks, the
-// projects, their sections and the labels come from the sync endpoint,
-// incrementally after the first time, at start, every five minutes, as a panel
-// opens and after every change, and persist in Quickshell's state directory,
-// so a restart shows them at once. Tasks assigned to someone else are left out
-// everywhere. A change applies here at once and is undone should Todoist
-// refuse it. A recurring task is moved by resending its whole due object with
-// the new date, as any other edit to it would replace the recurrence.
+// projects, their sections, the labels, the comments and the collaborators
+// come from the sync endpoint, incrementally after the first time, at start,
+// every five minutes, as a panel opens and after every change, and persist in
+// Quickshell's state directory, so a restart shows them at once. Tasks
+// assigned to someone else are left out everywhere. A change applies here at
+// once and is undone should Todoist refuse it. A recurring task is moved by
+// resending its whole due object with the new date, as any other edit to it
+// would replace the recurrence.
 Singleton {
     id: root
 
     readonly property string api: "https://api.todoist.com/api/v1"
     property string token: ""
     readonly property bool enabled: token !== ""
-    // By id, the active tasks, the projects, the sections and the labels.
+    // By id, the active tasks, the projects, the sections, the labels, the
+    // comments and the people the shared projects are shared with.
     property var items: ({})
     property var projects: ({})
     property var sections: ({})
     property var labels: ({})
+    property var notes: ({})
+    property var collaborators: ({})
     property string inbox: ""
     // The account's own id, "" until the first sync brings it.
     property string userId: ""
     // State saved with another list needs a full sync, as an incremental one
     // brings only changes.
-    readonly property var resources: ["items", "projects", "sections", "labels", "user"]
+    readonly property var resources: ["items", "projects", "sections", "labels", "notes", "collaborators", "user"]
     property string syncToken: "*"
     property bool syncing: false
     // Another sync was asked for while one ran.
@@ -42,6 +46,25 @@ Singleton {
     readonly property string today: Dates.of(clock.date)
     readonly property string now: Qt.locale("C").toString(clock.date, "HH:mm")
     readonly property var tasks: Object.values(items).filter(t => !deleting[t.id] && mine(t)).sort(compare)
+    // Parent id to its subtasks, in Todoist's order.
+    readonly property var subtasks: {
+        const children = {};
+        for (const task of tasks)
+            if (task.parent_id)
+                (children[task.parent_id] = children[task.parent_id] ?? []).push(task);
+        for (const id in children)
+            children[id].sort((a, b) => a.child_order - b.child_order);
+        return children;
+    }
+    // Task id to its comments, oldest first.
+    readonly property var comments: {
+        const byTask = {};
+        for (const note of Object.values(notes))
+            (byTask[note.item_id] = byTask[note.item_id] ?? []).push(note);
+        for (const id in byTask)
+            byTask[id].sort((a, b) => a.posted_at < b.posted_at ? -1 : 1);
+        return byTask;
+    }
     // ISO day to its tasks, in order.
     readonly property var byDay: {
         const days = {};
@@ -70,6 +93,18 @@ Singleton {
     // the first sync names it.
     function mine(task) {
         return !task.responsible_uid || userId === "" || task.responsible_uid === userId;
+    }
+
+    // The task with the id as the lists show it, or null for one they leave
+    // out.
+    function find(id) {
+        const task = items[id];
+        return task && !deleting[id] && mine(task) ? task : null;
+    }
+
+    // 4 being p1.
+    function priorityColor(priority) {
+        return [Theme.foregroundMuted, Theme.foregroundMuted, Theme.blue, Theme.yellow, Theme.red][priority] ?? Theme.foregroundMuted;
     }
 
     // The local day a task is due, or "" for none: a date, a floating time, or
@@ -203,6 +238,8 @@ Singleton {
         projects = merge(projects, data.projects, data.full_sync, p => p.is_archived);
         sections = merge(sections, data.sections, data.full_sync, s => s.is_archived);
         labels = merge(labels, data.labels, data.full_sync, () => false);
+        notes = merge(notes, data.notes, data.full_sync, () => false);
+        collaborators = merge(collaborators, data.collaborators, data.full_sync, () => false);
         // Sync leaves the flag out unless it holds.
         for (const project of data.projects ?? [])
             if (project.inbox_project)
@@ -218,7 +255,9 @@ Singleton {
             items: items,
             projects: projects,
             sections: sections,
-            labels: labels
+            labels: labels,
+            notes: notes,
+            collaborators: collaborators
         }));
     }
 
@@ -419,6 +458,20 @@ Singleton {
         };
     }
 
+    // Fields such as the content and the description, which the card edits.
+    function edit(task, fields) {
+        if (Object.keys(fields).every(key => task[key] === fields[key]))
+            return;
+        change(withTask(Object.assign({}, task, fields)), [
+            {
+                type: "item_update",
+                args: Object.assign({
+                    id: task.id
+                }, fields)
+            }
+        ]);
+    }
+
     function update(task, due) {
         if ((task.due?.date ?? null) === (due?.date ?? null))
             return;
@@ -470,6 +523,8 @@ Singleton {
             projects = saved.projects ?? {};
             sections = saved.sections ?? {};
             labels = saved.labels ?? {};
+            notes = saved.notes ?? {};
+            collaborators = saved.collaborators ?? {};
             inbox = saved.inbox ?? "";
             userId = saved.userId ?? "";
             syncToken = saved.resources === resources.join() ? saved.syncToken ?? "*" : "*";

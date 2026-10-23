@@ -37,6 +37,9 @@ PanelWindow {
 
     // The close has finished: the owner drops the panel.
     signal dismissed
+    // A press in the box, in scene coordinates, before the item under it takes
+    // it: content can react to a press outside itself.
+    signal pressed(point position)
 
     function close() {
         open = false;
@@ -171,6 +174,18 @@ PanelWindow {
                 y: panel.padding
                 width: parent.width - 2 * panel.padding
                 spacing: 20
+            }
+
+            // Over the content, declining each press so it goes on to the item
+            // under it: Qt hands a mouse press to items only until one takes
+            // it, handlers included.
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.AllButtons
+                onPressed: mouse => {
+                    panel.pressed(mapToItem(null, mouse.x, mouse.y));
+                    mouse.accepted = false;
+                }
             }
         }
     }

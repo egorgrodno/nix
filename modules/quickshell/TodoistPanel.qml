@@ -60,6 +60,7 @@ Panel {
     }
 
     boxWidth: 440
+    onViewChanged: list.close()
     Component.onCompleted: {
         Todoist.sync();
         field.forceActiveFocus();
@@ -104,10 +105,11 @@ Panel {
             width: parent.width
             maxHeight: 10 * 36
             sections: panel.sections
+            onClosed: field.forceActiveFocus()
         }
 
         Caption {
-            visible: list.shown.length === 0
+            visible: list.shown.length === 0 && list.trail.length === 0
             leftPadding: 8
             text: panel.views.find(v => v.id === panel.view).empty
         }

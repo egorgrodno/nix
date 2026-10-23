@@ -12,8 +12,8 @@ import Quickshell.Io
 // a click on a month opens its days, as Escape goes back to the last ones. The
 // month view takes the days' place, so the panel keeps its height. Below, the
 // selected day in full; with Todoist, its tasks, which a drag moves onto
-// another day, and Quick Add for it; then the time in each of Nix's world
-// clocks.
+// another day and a click opens in a card in their place until another day is
+// selected, and Quick Add for it; then the time in each of Nix's world clocks.
 Panel {
     id: panel
 
@@ -129,6 +129,7 @@ Panel {
     }
 
     boxWidth: 7 * cellWidth + 6 * 2 + 2 * padding
+    onSelectedChanged: list.close()
     Component.onCompleted: {
         months.go(thisMonth, false);
         if (Todoist.enabled)
@@ -541,6 +542,7 @@ Panel {
             maxHeight: 6 * 36
             showProject: false
             dragProxy: taskDrag
+            onClosed: calendar.forceActiveFocus()
             sections: panel.selected === panel.today ? [
                 {
                     tasks: Todoist.byDay[panel.today] ?? []
@@ -559,7 +561,7 @@ Panel {
 
             Caption {
                 height: 36
-                visible: list.shown.length === 0
+                visible: list.shown.length === 0 && list.trail.length === 0
                 leftPadding: 8
                 verticalAlignment: Text.AlignVCenter
                 text: "Nothing due"

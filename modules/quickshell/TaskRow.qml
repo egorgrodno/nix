@@ -1,10 +1,11 @@
 import QtQuick
 
-// A task: a ring in its priority's colour that completes it, its content, a
-// mark if it recurs, its project unless `showProject` is off, and its time, or
-// its day where `showDay`, in red once past. A click opens its quick menu below
-// it: Today, Tomorrow, Next week, No date, a month to pick a day from, and
-// Delete. With a `dragProxy`, a drag carries it onto a day of the calendar.
+// A task: a ring in its priority's colour that completes it, its content, marks
+// for a recurrence, a description, comments and subtasks, its project unless
+// `showProject` is off, and its time, or its day where `showDay`, in red once
+// past. A click asks for its card; a right click opens its quick menu below
+// it, the days of DateButtons and Delete. With a `dragProxy`, a drag carries
+// it onto a day of the calendar.
 Column {
     id: row
 
@@ -15,12 +16,13 @@ Column {
     // An item with `task`, `dragging` and `grab` properties and the day under
     // it as `target`, which the calendar's days take drops from.
     property Item dragProxy: null
-    property bool picking: false
     readonly property string day: Todoist.dayOf(task)
     readonly property string time: Todoist.timeOf(task)
-    readonly property color priorityColor: [Theme.foregroundMuted, Theme.foregroundMuted, Theme.blue, Theme.yellow, Theme.red][task.priority] ?? Theme.foregroundMuted
+    readonly property int commentCount: Todoist.comments[task.id]?.length ?? 0
+    readonly property int subtaskCount: Todoist.subtasks[task.id]?.length ?? 0
 
     signal toggled
+    signal opened
 
     function reschedule(day) {
         toggled();
@@ -28,7 +30,7 @@ Column {
     }
 
     onExpandedChanged: if (!expanded)
-        picking = false
+        menu.picking = false
 
     Item {
         id: line
@@ -84,37 +86,13 @@ Column {
                 if (target)
                     Qt.callLater(() => Todoist.reschedule(task, target.day));
             }
-            onClicked: row.toggled()
+            onClicked: event => event.button === Qt.RightButton ? row.toggled() : row.opened()
         }
 
-        Rectangle {
-            id: ring
-
+        TaskRing {
             x: 8
             anchors.verticalCenter: parent.verticalCenter
-            width: 18
-            height: 18
-            radius: 9
-            color: ringMouse.containsMouse ? Theme.alpha(row.priorityColor, 0.25) : "transparent"
-            border.width: 2
-            border.color: row.priorityColor
-
-            BarText {
-                anchors.centerIn: parent
-                visible: ringMouse.containsMouse
-                text: "\u{F012C}"
-                color: row.priorityColor
-                font.pixelSize: 13
-            }
-
-            MouseArea {
-                id: ringMouse
-
-                anchors.fill: parent
-                anchors.margins: -4
-                hoverEnabled: true
-                onClicked: Todoist.complete(row.task)
-            }
+            task: row.task
         }
 
         BarText {
@@ -133,6 +111,21 @@ Column {
             anchors.rightMargin: 8
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6
+
+            Caption {
+                visible: !!row.task.description
+                text: "\u{F09A8}"
+            }
+
+            Caption {
+                visible: row.commentCount > 0
+                text: `\u{F0182} ${row.commentCount}`
+            }
+
+            Caption {
+                visible: row.subtaskCount > 0
+                text: `\u{F0645} ${row.subtaskCount}`
+            }
 
             Caption {
                 visible: row.task.due?.is_recurring ?? false
@@ -155,76 +148,24 @@ Column {
         }
     }
 
-    Column {
+    DateButtons {
+        id: menu
+
         x: 36
         width: row.width - 36 - 8
         visible: row.expanded
         topPadding: 4
         bottomPadding: 10
-        spacing: 8
+        task: row.task
+        onPicked: day => row.reschedule(day)
 
-        Flow {
-            width: parent.width
-            spacing: 6
-
-            Repeater {
-                model: {
-                    const today = Todoist.today;
-                    // The next start of a week, a week away from one.
-                    const ahead = (Host.firstDayOfWeek - Dates.weekday(today) + 7) % 7 || 7;
-                    return [
-                        {
-                            label: "Today",
-                            day: today
-                        },
-                        {
-                            label: "Tomorrow",
-                            day: Dates.add(today, 1)
-                        },
-                        {
-                            label: "Next week",
-                            day: Dates.add(today, ahead)
-                        },
-                        {
-                            label: "No date",
-                            day: ""
-                        }
-                    ];
-                }
-
-                TextButton {
-                    required property var modelData
-
-                    text: modelData.label
-                    visible: modelData.day !== row.day
-                    onClicked: row.reschedule(modelData.day)
-                }
-            }
-
-            TextButton {
-                text: "Pick a day"
-                lit: row.picking
-                onClicked: row.picking = !row.picking
-            }
-
-            // The menu closes first, so Undo brings the task back closed.
-            TextButton {
-                text: "Delete"
-                hoverFill: Theme.alpha(Theme.red, 0.5)
-                onClicked: {
-                    row.toggled();
-                    Todoist.remove(row.task);
-                }
-            }
-        }
-
-        Loader {
-            active: row.picking
-            visible: active
-
-            sourceComponent: DayPicker {
-                selected: row.day
-                onPicked: day => row.reschedule(day)
+        // The menu closes first, so Undo brings the task back closed.
+        TextButton {
+            text: "Delete"
+            hoverFill: Theme.alpha(Theme.red, 0.5)
+            onClicked: {
+                row.toggled();
+                Todoist.remove(row.task);
             }
         }
     }
