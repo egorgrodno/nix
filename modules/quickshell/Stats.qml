@@ -56,18 +56,27 @@ Singleton {
     property bool offline: false
     // True from the first network sample on.
     property bool sampled: false
-    // Rates as `rate` formats them, and the last minute of them in bytes per
-    // second, oldest first.
+    // Rates as `rate` formats them, and the last five minutes of them in bytes
+    // per second, oldest first, of which the bar draws the last minute.
     property string up
     property string down
     property var upHistory: []
     property var downHistory: []
+    // The Wi-Fi signal from 0 to 100, sampled with the rates.
+    property var signalHistory: []
+    // The connection's details, which only the tooltip shows: {speed, maxRate}
+    // in Mbit/s, {ipv4, ipv6, dns} as lists, {gateway, band, channel, width,
+    // security, duplex} as nmcli and sysfs write them, the signal in {dbm},
+    // and {failed}, the frames sent since associating that no retry got
+    // through.
+    property var link: ({})
 
     // NetworkManager gives wired the lower route metric.
     readonly property NetworkDevice networkDevice: {
         const up = Networking.devices.values.filter(d => d.connected && (d.type === DeviceType.Wired || d.type === DeviceType.Wifi));
         return up.find(d => d.type === DeviceType.Wired) ?? up[0] ?? null;
     }
+    readonly property WifiNetwork wifiNetwork: networkDevice?.type === DeviceType.Wifi ? networkDevice.networks.values.find(n => n.connected) ?? null : null
 
     property var cpuTimes: []
     property var counters: null
@@ -247,6 +256,8 @@ Singleton {
             return;
         }
         offline = false;
+        if (wifiNetwork)
+            signalHistory = signalHistory.concat([Math.round(100 * wifiNetwork.signalStrength)]).slice(-150);
         rx.reload();
         tx.reload();
         const now = {
@@ -264,21 +275,47 @@ Singleton {
             const downRate = (now.rx - counters.rx) / seconds;
             up = rate(upRate);
             down = rate(downRate);
-            upHistory = upHistory.concat([upRate]).slice(-30);
-            downHistory = downHistory.concat([downRate]).slice(-30);
+            upHistory = upHistory.concat([upRate]).slice(-150);
+            downHistory = downHistory.concat([downRate]).slice(-150);
         }
         counters = now;
     }
 
+    // The link rate and addresses from nmcli, and on Wi-Fi the channel from
+    // nmcli and the signal and failed frames from the kernel.
+    function sampleLink() {
+        const d = networkDevice;
+        if (!d)
+            return;
+        linkProbe.running = true;
+        if (d.type === DeviceType.Wifi) {
+            channelProbe.running = true;
+            // Past the name: status, quality, level, noise, then the frames
+            // discarded by nwid, crypt, frag, retry and misc.
+            const f = Hardware.read("/proc/net/wireless").split("\n").find(l => l.trim().startsWith(`${d.name}:`))?.split(":")[1].trim().split(/\s+/) ?? [];
+            link = Object.assign({}, link, {
+                dbm: parseFloat(f[2]),
+                failed: Number(f[7])
+            });
+        } else
+            link = Object.assign({}, link, {
+                duplex: Hardware.read(`/sys/class/net/${d.name}/duplex`)
+            });
+    }
+
     // A new device starts a new baseline, once the counter paths follow it;
-    // its rate shows on the next tick.
+    // its rate shows on the next tick. Its details are read now, so the
+    // tooltip opens with them.
     onNetworkDeviceChanged: {
         counters = null;
         up = "";
         down = "";
         upHistory = [];
         downHistory = [];
+        signalHistory = [];
+        link = {};
         Qt.callLater(sampleNetwork);
+        Qt.callLater(sampleLink);
     }
 
     FileView {
@@ -401,6 +438,54 @@ Singleton {
                     time: new Date(time * 1000)
                 };
             }).sort((a, b) => a.number - b.number)
+        }
+    }
+
+    Process {
+        id: linkProbe
+
+        command: [Programs.nmcli, "--terse", "--fields", "CAPABILITIES.SPEED,IP4,IP6", "device", "show", root.networkDevice?.name ?? ""]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                // A list's fields are numbered, as `IP4.DNS[2]`.
+                const fields = {};
+                for (const line of text.split("\n")) {
+                    const i = line.indexOf(":");
+                    if (i < 0)
+                        continue;
+                    const key = line.slice(0, i).replace(/\[\d+\]$/, "");
+                    (fields[key] = fields[key] ?? []).push(line.slice(i + 1));
+                }
+                const list = key => (fields[key] ?? []).filter(v => v !== "");
+                root.link = Object.assign({}, root.link, {
+                    speed: parseInt(list("CAPABILITIES.SPEED")[0]),
+                    ipv4: list("IP4.ADDRESS"),
+                    ipv6: list("IP6.ADDRESS").filter(a => !a.toLowerCase().startsWith("fe80:")),
+                    // IPv4's: an IPv6 gateway is link-local, which ping
+                    // reaches only with the device named as its scope.
+                    gateway: list("IP4.GATEWAY")[0] ?? "",
+                    dns: list("IP4.DNS").concat(list("IP6.DNS"))
+                });
+            }
+        }
+    }
+
+    Process {
+        id: channelProbe
+
+        command: [Programs.nmcli, "--terse", "--fields", "IN-USE,BAND,CHAN,BANDWIDTH,RATE,SECURITY", "device", "wifi", "list", "ifname", root.networkDevice?.name ?? "", "--rescan", "no"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                const f = text.split("\n").find(l => l.startsWith("*:"))?.split(":");
+                if (f)
+                    root.link = Object.assign({}, root.link, {
+                        band: f[1],
+                        channel: f[2],
+                        width: f[3],
+                        maxRate: parseInt(f[4]),
+                        security: f[5]
+                    });
+            }
         }
     }
 }

@@ -101,6 +101,7 @@ let
         // Empty without the NVIDIA driver.
         readonly property string nvidiaSmi: "${lib.optionalString nvidia "${config.hardware.nvidia.package.bin}/bin/nvidia-smi"}"
         readonly property string pcmanfm: "${lib.getExe pkgs.pcmanfm}"
+        readonly property string ping: "${lib.getExe' pkgs.iputils "ping"}"
         readonly property string pwvucontrol: "${lib.getExe pkgs.pwvucontrol}"
         readonly property string rfkill: "${lib.getExe' pkgs.util-linux "rfkill"}"
         readonly property string rm: "${lib.getExe' pkgs.coreutils "rm"}"

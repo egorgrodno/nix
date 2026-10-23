@@ -1,8 +1,8 @@
 import QtQuick
 import QtQuick.Shapes
 
-// The last minute of a rate, scaled to its own peak, so a quiet direction
-// still shows its shape.
+// A history, oldest first, scaled to its own peak, so a quiet direction still
+// shows its shape.
 Shape {
     id: spark
 
@@ -10,7 +10,8 @@ Shape {
     // The smallest peak it scales to, so idle traffic draws flat.
     property real floor: 8192
     property color color: Theme.foregroundMuted
-    readonly property int samples: 30
+    // The values its width holds; a shorter history starts part way across.
+    property int samples: 30
 
     function area() {
         if (values.length < 2)

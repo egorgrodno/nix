@@ -12,7 +12,7 @@ Pill {
     readonly property WiredDevice wired: Networking.devices.values.find(d => d.type === DeviceType.Wired) ?? null
     // The device Stats reads, and the Wi-Fi network it is on.
     readonly property NetworkDevice device: Stats.networkDevice
-    readonly property WifiNetwork wifiNetwork: device?.type === DeviceType.Wifi ? device.networks.values.find(n => n.connected) ?? null : null
+    readonly property WifiNetwork wifiNetwork: Stats.wifiNetwork
     readonly property bool wifiOff: !device && wifi !== null && !Networking.wifiEnabled
     readonly property bool limited: Networking.connectivity === NetworkConnectivity.Limited || Networking.connectivity === NetworkConnectivity.Portal
     readonly property string glyph: {
@@ -56,7 +56,11 @@ Pill {
 
     visible: Stats.sampled
     lit: panel.active
-    tooltip: [detail === "" ? name : `${name}, ${detail}`].concat(Vpn.active.map(p => `VPN: ${p.name}`)).join("\n")
+    tooltipContent: Component {
+        NetworkTip {
+            module: network
+        }
+    }
     onClicked: button => {
         if (button === Qt.LeftButton) {
             if (panel.active)
@@ -158,13 +162,13 @@ Pill {
 
     Direction {
         icon: "\u{F0737}"
-        values: Stats.upHistory
+        values: Stats.upHistory.slice(-30)
         rate: Stats.up
     }
 
     Direction {
         icon: "\u{F072E}"
-        values: Stats.downHistory
+        values: Stats.downHistory.slice(-30)
         rate: Stats.down
     }
 
