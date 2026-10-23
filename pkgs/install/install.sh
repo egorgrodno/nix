@@ -13,6 +13,8 @@ mounted=()
 # Partition type GUIDs, as blkid reports them.
 espType=c12a7328-f81f-11d2-ba4b-00a0c93ec93b
 msReservedType=e3c9e316-0b5c-4db8-817d-f92df00215ae
+# systemd's record of a hibernation, which the next boot resumes from.
+hibernateLocation=/sys/firmware/efi/efivars/HibernateLocation-8cf2644b-4b0b-428f-9387-6d876050dc67
 
 die() {
   echo "install: $*" >&2
@@ -288,11 +290,21 @@ else
   plan="reformat $root (NIXROOT), keep $boot (NIXBOOT) as it is"
 fi
 
-gum style --border normal --padding "0 1" \
-  "$([[ $isNew == true ]] && echo "new host" || echo "reinstall") $host" \
-  "users: ${users[*]} (admin: $admin)" \
+summary=(
+  "$([[ $isNew == true ]] && echo "new host" || echo "reinstall") $host"
+  "users: ${users[*]} (admin: $admin)"
   "$plan"
+)
+[[ ! -e $hibernateLocation ]] || summary+=("discard this machine's hibernated session")
+gum style --border normal --padding "0 1" "${summary[@]}"
 [[ $(gum input --header "Type $host to install") == "$host" ]] || die "nothing was touched"
+
+# Left behind, it would send the first boot looking for an image that the
+# reformat destroys.
+if [[ -e $hibernateLocation ]]; then
+  chattr -i "$hibernateLocation"
+  rm "$hibernateLocation"
+fi
 
 if [[ $mode == "wipe a disk" ]]; then
   wipe

@@ -4,6 +4,8 @@
 
 mountPoint=/mnt
 mounted=()
+# systemd's record of a hibernation, which the next boot resumes from.
+hibernateLocation=/sys/firmware/efi/efivars/HibernateLocation-8cf2644b-4b0b-428f-9387-6d876050dc67
 
 die() {
   echo "repair-boot: $*" >&2
@@ -33,6 +35,17 @@ mountLabel() {
 
 [[ $EUID -eq 0 ]] || die "must run as root"
 [[ -d /sys/firmware/efi ]] || die "the ISO booted in legacy BIOS mode; boot it in UEFI mode"
+
+# Resuming over a NIXROOT changed since the hibernation corrupts it, and a
+# read-write mount changes it. Without the record no boot resumes, and swapon
+# overwrites the stale image.
+if [[ -e $hibernateLocation ]]; then
+  echo "repair-boot: this machine is hibernated, and repairing it discards the session, unsaved work included"
+  read -rp "Type discard to go on: " answer
+  [[ $answer == discard ]] || die "left the hibernated machine alone"
+  chattr -i "$hibernateLocation"
+  rm "$hibernateLocation"
+fi
 
 mountLabel NIXROOT "$mountPoint"
 mountLabel NIXBOOT "$mountPoint/boot" -o umask=077
