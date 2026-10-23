@@ -1,0 +1,27 @@
+Commands
+  nmtui              join Wi-Fi; Ethernet connects by itself
+  sudo repair-boot   reinstall the bootloader of the NixOS on NIXROOT/NIXBOOT
+  sudo nx-install    install or reinstall a host from the flake on GitHub
+  efibootmgr         list boot entries; -o 0001,0000 sets their order,
+                     -n 0001 the next boot only
+  nvim-layout        switch nvim between qwerty and hallmack
+  claude             Claude Code, logged in afresh on every boot
+  rescue-help        this text; /etc/nixos holds the flake the stick came from
+
+By hand
+  sudo mount /dev/disk/by-label/NIXROOT /mnt
+  sudo mount /dev/disk/by-label/NIXBOOT /mnt/boot
+  sudo nixos-enter --root /mnt
+  lsblk -f lists partitions and labels; smartctl -a /dev/nvme0n1 disk health.
+  Mount Windows partitions read-only: mount -o ro
+
+Firmware keys at power-on, boot menu / setup
+  ThinkPad     F12 / F1, Enter: both     MSI          F11 / Del
+  IdeaPad      F12 / F2, or Novo button  Gigabyte     F12 / Del
+  Dell         F12 / F2                  ASRock       F11 / F2 or Del
+  HP           F9 / F10, Esc: both       Acer         F12 / F2
+  ASUS board   F8 / Del                  Framework    F12 / F2
+  ASUS laptop  Esc / F2                  Intel NUC    F10 / F2
+  Surface      hold Volume Down / Up     Intel Mac    hold Option
+  Fast Boot can skip the keys: systemctl reboot --firmware-setup from Linux,
+  Shift+Restart from Windows. Boot the stick's UEFI entry, Secure Boot off.

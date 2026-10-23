@@ -17,6 +17,8 @@ nxb   # nixos-rebuild boot --flake /etc/nixos    (build and add boot entry, no a
 nxt   # nixos-rebuild test --flake /etc/nixos    (activate temporarily, no boot entry)
 nxu   # nix flake update --flake /etc/nixos      (update flake.lock), then craft-update
 nx-setup  # per-user setup after the first boot: logins, identity, plugins; safe to rerun
+nx-iso    # build the rescue stick's ISO and print its path; see rescue/README.md
+nx-flash  # write that ISO, or another, over a USB stick picked from a list, then verify it
 ```
 
 `nxe` opens `home.nix` in a kitty window, so it ships with `modules/desktop/` rather than `modules/nixtools/`.
@@ -35,7 +37,7 @@ A pre-commit hook in `.githooks/` rejects a commit whose staged files are not fo
 
 ### Entry point
 
-`flake.nix` builds one `nixosConfiguration` per directory in `hosts/`, named after it, which also sets `networking.hostName`. Each host's `host.nix` supplies its users and `system.stateVersion`. Every host passes the same `specialArgs` — `theme`, `fontPackages`, `users`, `forAllUsers`, `inputs` — to every module. Home-manager is integrated as a NixOS module, not standalone. `homeConfigurations` (`neovim-qwerty`, `neovim-hallmack`) are standalone profiles for non-NixOS machines.
+`flake.nix` builds one `nixosConfiguration` per directory in `hosts/`, named after it, which also sets `networking.hostName`. `nixosConfigurations.rescue` is the rescue stick, not a host: its `specialArgs` hold only `inputs`, and it has no home-manager. Each host's `host.nix` supplies its users and `system.stateVersion`. Every host passes the same `specialArgs` — `theme`, `fontPackages`, `users`, `forAllUsers`, `inputs` — to every module. Home-manager is integrated as a NixOS module, not standalone. `homeConfigurations` (`neovim-qwerty`, `neovim-hallmack`) are standalone profiles for non-NixOS machines.
 
 ### Layer structure
 
@@ -57,9 +59,10 @@ users/<name>.nix                           # identity + optional homeModules
 - `modules/` — Feature modules. Each owns both its NixOS and home-manager configuration, applying `hm.nix` to every user through `forAllUsers`.
 - `profiles/` — Home-manager profiles attached to a single user. See `profiles/README.md`.
 - `users/` — One file per user: `name`, `homedir`, `stateVersion`, optional `homeModules`. A host lists them by name in `host.nix`; the flake imports them into `specialArgs.users`.
-- `pkgs/` — Flake packages, one directory each: a `writeShellApplication` in `default.nix` and its script beside it, or a `buildGoModule` for a tool that parses more than shell holds well. `checks` builds them, so shellcheck and the Go tests run under `nix flake check`. `install` and `repair-boot` run as root from a NixOS ISO; `nx-setup` reaches every user through `modules/nixtools`, `craft-update` through `modules/craft`, and `carve` through `modules/git`. `carve` splits the working tree's changes into commits by hunk, in a scratch worktree with hooks, for the commit skill; `carve apply -h` documents the plan. `gum` wraps nixpkgs' gum in the colors of `lib/gum-theme.nix`, and an overlay in `flake.nix` makes it `pkgs.gum` for the hosts and every package here.
+- `pkgs/` — Flake packages, one directory each: a `writeShellApplication` in `default.nix` and its script beside it, or a `buildGoModule` for a tool that parses more than shell holds well. `checks` builds them, so shellcheck and the Go tests run under `nix flake check`. `install` and `repair-boot` run as root from a NixOS ISO. The rescue stick carries the copies it was built with, so a change to either needs a new stick. `nx-setup`, `nx-iso` and `nx-flash` reach every user through `modules/nixtools`, `craft-update` through `modules/craft`, and `carve` through `modules/git`. `carve` splits the working tree's changes into commits by hunk, in a scratch worktree with hooks, for the commit skill; `carve apply -h` documents the plan. `gum` wraps nixpkgs' gum in the colors of `lib/gum-theme.nix`, and an overlay in `flake.nix` makes it `pkgs.gum` for the hosts, the rescue stick and every package here.
 - `lib/` — Pure values and helper functions, not modules. A helper takes `lib` first and is used with `import ../../lib/<name>.nix lib`. Nothing here reads `config` or sets an option.
 - `home.nix` — Generates each `home-manager.users.*` entry: identity plus that user's `homeModules`.
+- `rescue/` — The rescue stick's NixOS module and login cheat sheet. See `rescue/README.md`.
 
 ### Multi-user architecture
 

@@ -238,6 +238,8 @@
         gum = pkgs.gum;
         # Installed for every user by modules/nixtools.
         nx-setup = pkgs.callPackage ./pkgs/nx-setup { };
+        nx-iso = pkgs.callPackage ./pkgs/nx-iso { };
+        nx-flash = pkgs.callPackage ./pkgs/nx-flash { };
         # Installed for every user by modules/craft.
         craft-update = pkgs.callPackage ./pkgs/craft-update { };
         # Installed for every user by modules/git.
@@ -256,9 +258,19 @@
         neovim-hallmack = mkNeovimHome { layout = "hallmack"; };
       };
 
-      # One configuration per directory in hosts/, named after it.
-      nixosConfigurations = lib.mapAttrs (name: _: mkHost name) (
-        lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./hosts)
-      );
+      # One configuration per directory in hosts/, named after it, and the rescue
+      # stick's, whose ISO nx-iso builds. The ISO is no package: `checks` builds
+      # every package.
+      nixosConfigurations =
+        lib.mapAttrs (name: _: mkHost name) (
+          lib.filterAttrs (_: type: type == "directory") (builtins.readDir ./hosts)
+        )
+        // {
+          rescue = lib.nixosSystem {
+            inherit system pkgs;
+            specialArgs = { inherit inputs; };
+            modules = nixosConfigurationModules ++ [ ./rescue/configuration.nix ];
+          };
+        };
     };
 }

@@ -4,3 +4,6 @@ result-*
 
 # Per-machine Claude Code overrides; the shared settings are .claude/settings.json
 .claude/settings.local.json
+
+# The rescue stick's SSH keys, which nx-iso creates and reads
+rescue/authorized_keys
