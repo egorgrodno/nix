@@ -489,23 +489,33 @@ Singleton {
     }
 
     // Through Quick Add, which reads dates, #projects, @labels and p1 to p4
-    // out of the text. A task it left without a date takes `day`, if any.
-    function add(text, day) {
+    // out of the text. A task it left without a date takes `day`, and one it
+    // left in the Inbox moves to `project`, if any.
+    function add(text, day, project) {
         request("/tasks/quick", {
             text: text
         }, task => {
+            const commands = [];
             if (day && task?.id && !task.due)
-                change(items, [
-                    {
-                        type: "item_update",
-                        args: {
-                            id: task.id,
-                            due: {
-                                date: day
-                            }
+                commands.push({
+                    type: "item_update",
+                    args: {
+                        id: task.id,
+                        due: {
+                            date: day
                         }
                     }
-                ]);
+                });
+            if (project && project !== inbox && task?.id && task.project_id === inbox)
+                commands.push({
+                    type: "item_move",
+                    args: {
+                        id: task.id,
+                        project_id: project
+                    }
+                });
+            if (commands.length > 0)
+                change(items, commands);
             else
                 sync();
         });

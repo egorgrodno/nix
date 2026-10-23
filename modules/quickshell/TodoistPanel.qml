@@ -1,8 +1,9 @@
 import QtQuick
 
-// Over the tasks module: Today, under what is overdue, Upcoming, by day, and
-// the Inbox, below a Quick Add field, whose task takes today as its date from
-// Today. Tab and Shift Tab change the view. It syncs as it opens.
+// Over the tasks module: Today, under what is overdue, Upcoming, by day, the
+// Inbox, and Projects, one project at a time by section, below a Quick Add
+// field, whose task takes today as its date from Today and the project from
+// Projects. Tab and Shift Tab change the view. It syncs as it opens.
 Panel {
     id: panel
 
@@ -22,8 +23,16 @@ Panel {
             id: "inbox",
             label: "Inbox",
             empty: "The Inbox is empty"
+        },
+        {
+            id: "projects",
+            label: "Projects",
+            empty: "Nothing in this project"
         }
     ]
+    readonly property var projects: Object.values(Todoist.projects).filter(p => p.id !== Todoist.inbox).sort((a, b) => a.child_order - b.child_order)
+    // The one Projects shows.
+    property string project: projects[0]?.id ?? ""
     readonly property var sections: {
         const today = Todoist.today;
         switch (view) {
@@ -39,6 +48,25 @@ Panel {
                     showDay: true
                 }
             ];
+        case "projects": {
+            // In Todoist's order, a subtask only in its parent's card,
+            // unless the lists leave the parent out.
+            const tasks = Todoist.tasks.filter(t => t.project_id === project);
+            const ids = new Set(tasks.map(t => t.id));
+            const top = tasks.filter(t => !ids.has(t.parent_id)).sort((a, b) => a.child_order - b.child_order);
+            const projectSections = Object.values(Todoist.sections).filter(s => s.project_id === project).sort((a, b) => a.section_order - b.section_order);
+            return [
+                {
+                    tasks: top.filter(t => !Todoist.sections[t.section_id]),
+                    showDay: true
+                },
+                ...projectSections.map(s => ({
+                            title: s.name,
+                            tasks: top.filter(t => t.section_id === s.id),
+                            showDay: true
+                        }))
+            ];
+        }
         }
         return [
             {
@@ -61,6 +89,7 @@ Panel {
 
     boxWidth: 440
     onViewChanged: list.close()
+    onProjectChanged: list.close()
     Component.onCompleted: {
         Todoist.sync();
         field.forceActiveFocus();
@@ -86,11 +115,30 @@ Panel {
             }
         }
 
+        Flow {
+            width: parent.width
+            visible: panel.view === "projects"
+            spacing: 6
+
+            Repeater {
+                model: panel.projects
+
+                TextButton {
+                    required property var modelData
+
+                    text: modelData.name
+                    lit: panel.project === modelData.id
+                    onClicked: panel.project = modelData.id
+                }
+            }
+        }
+
         TaskField {
             id: field
 
             width: parent.width
             day: panel.view === "today" ? Todoist.today : ""
+            project: panel.view === "projects" ? panel.project : ""
             Keys.onPressed: event => {
                 if (event.key === Qt.Key_Tab || event.key === Qt.Key_Backtab) {
                     panel.cycle(event.key === Qt.Key_Tab ? 1 : -1);
@@ -104,6 +152,7 @@ Panel {
 
             width: parent.width
             maxHeight: 10 * 36
+            showProject: panel.view !== "projects"
             sections: panel.sections
             onClosed: field.forceActiveFocus()
         }
