@@ -1,6 +1,8 @@
 { config }:
 
 ''
+  -- standalone.nix loads these from nixpkgs for the rescue stick, which has no
+  -- network to sync them over: keep the two lists in step.
   require'packer'.startup(function(use)
     use 'L3MON4D3/LuaSnip'
     use 'hrsh7th/cmp-buffer'
@@ -29,12 +31,7 @@
     }
     use { 'nvim-telescope/telescope-ui-select.nvim', requires = 'nvim-telescope/telescope.nvim' }
     use { 'aznhe21/actions-preview.nvim', requires = 'nvim-telescope/telescope.nvim' }
-    use {
-      'smoka7/hop.nvim',
-      config = function()
-        require'hop'.setup { keys = 'etovxqpdygfblzhckisuran' }
-      end
-    }
+    use 'smoka7/hop.nvim'
   end)
 
   --------------------------------------------------------------------------------
@@ -742,6 +739,7 @@
   --------------------------------------------------------------------------------
 
   local hop = require'hop'
+  hop.setup { keys = 'etovxqpdygfblzhckisuran' }
   local hop_after_cursor = require'hop.hint'.HintDirection.AFTER_CURSOR
   local hop_before_cursor = require'hop.hint'.HintDirection.BEFORE_CURSOR
 
