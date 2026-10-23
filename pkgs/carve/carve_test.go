@@ -539,6 +539,31 @@ func TestHookThatDoesNotSettleRefused(t *testing.T) {
 	contains(t, err, "commit 1: the hook rewrote its own fix")
 }
 
+func TestCommitAnEarlierHookFixMadeRefused(t *testing.T) {
+	f := newRepo(t, map[string]string{"a.txt": "a 1\nb 2\n"})
+	f.hook(align + "\ngit diff --quiet")
+	f.write("a.txt", "a  1\nb  2\ncc 3\n")
+	id := f.id("a.txt", "cc")
+	err := f.failCarve(plan(nil,
+		Commit{Message: "add cc", Take: []string{id + ":5"}},
+		Commit{Message: "realign", Take: []string{id + ":1-4"}},
+	), "apply")
+	contains(t, err, "commit 2 changes nothing: the hook's fix to a.txt in commit 1 already made it; take its hunks there")
+}
+
+func TestCommitItsHookFixUndoesRefused(t *testing.T) {
+	f := newRepo(t, map[string]string{"a.txt": "a\n"})
+	// Drops x while no line uses it, as deadnix drops an unused binding.
+	f.hook("grep -q '^use x$' a.txt || { grep -v '^x$' a.txt > a.tmp; mv a.tmp a.txt; }\ngit diff --quiet")
+	f.write("a.txt", "a\nx\nuse x\n")
+	id := f.id("a.txt", "use x")
+	err := f.failCarve(plan(nil,
+		Commit{Message: "add x", Take: []string{id + ":1"}},
+		Commit{Message: "use x", Take: []string{id + ":2"}},
+	), "apply")
+	contains(t, err, "commit 1 changes nothing: the hook's fix to a.txt undoes it; take its hunks in a later commit")
+}
+
 func TestRerunReusesPassedCommits(t *testing.T) {
 	f := newRepo(t, map[string]string{"base.txt": "base\n"})
 	log := filepath.Join(t.TempDir(), "hook.log")

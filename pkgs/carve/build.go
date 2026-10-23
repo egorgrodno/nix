@@ -242,6 +242,11 @@ func (r *repo) build(changes []*Change, commits []Commit, steps [][]*File, head,
 	}
 
 	parent := head
+	last, err := r.out(scratch, "rev-parse", "HEAD^{tree}")
+	if err != nil {
+		return "", err
+	}
+	fixedIn := map[string]int{}
 	for k, commit := range commits {
 		what := fmt.Sprintf("commit %d", k+1)
 		var touched []string
@@ -261,19 +266,28 @@ func (r *repo) build(changes []*Change, commits []Commit, steps [][]*File, head,
 		if err != nil {
 			return "", err
 		}
+		if tree == last {
+			var made []string
+			for _, p := range touched {
+				if j, ok := fixedIn[p]; ok {
+					made = append(made, fmt.Sprintf("%s in commit %d", p, j+1))
+				}
+			}
+			return "", fmt.Errorf("%s changes nothing: the hook's fix to %s already made it; take its hunks there", what, strings.Join(made, ", "))
+		}
 		message := strings.TrimSpace(commit.Message) + "\n"
 		sum := sha256.Sum256([]byte(strings.Join([]string{parent, tree, message, verify}, "\x00")))
 		key := hex.EncodeToString(sum[:])
 		sha := cache.get(r, key)
 		cached := sha != ""
+		got := tree
 		var fixed []string
 		if cached {
 			// The commit holds the hook's fix, if any, rather than tree.
 			if _, err := r.git(scratch, nil, "reset", "-q", "--hard", sha); err != nil {
 				return "", err
 			}
-			got, err := r.out(scratch, "rev-parse", sha+"^{tree}")
-			if err != nil {
+			if got, err = r.out(scratch, "rev-parse", sha+"^{tree}"); err != nil {
 				return "", err
 			}
 			// A fix an earlier plan kept may be to a final version in this one.
@@ -296,6 +310,10 @@ func (r *repo) build(changes []*Change, commits []Commit, steps [][]*File, head,
 				if fixed, err = fixes(what, k, tree, hooked); err != nil {
 					return "", err
 				}
+				if hooked == last {
+					return "", fmt.Errorf("%s changes nothing: the hook's fix to %s undoes it; take its hunks in a later commit", what, strings.Join(fixed, ", "))
+				}
+				got = hooked
 				if failed == nil {
 					if _, err := r.git(scratch, nil, "reset", "-q", "--soft", parent); err != nil {
 						return "", err
@@ -324,6 +342,9 @@ func (r *repo) build(changes []*Change, commits []Commit, steps [][]*File, head,
 				return "", err
 			}
 		}
+		for _, p := range fixed {
+			fixedIn[p] = k
+		}
 		var tags []string
 		if cached {
 			tags = append(tags, "cached")
@@ -336,7 +357,7 @@ func (r *repo) build(changes []*Change, commits []Commit, steps [][]*File, head,
 			tag = "  (" + strings.Join(tags, "; ") + ")"
 		}
 		fmt.Fprintf(stdout, "%d/%d  %s  %s%s\n", k+1, n, sha[:7], subject(message), tag)
-		parent = sha
+		parent, last = sha, got
 	}
 	return parent, nil
 }
