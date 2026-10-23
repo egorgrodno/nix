@@ -1,10 +1,11 @@
 import QtQuick
 import Quickshell
 
-// Under the module, or over it on a bar along the bottom edge, centred on it,
-// after half a second's hover. It slides out from the module's side as it fades
-// in, and back once the pointer leaves, clipped at the window's edge: a window
-// reaching over the module would take the hover off it.
+// Under the module, or over it on a bar along the bottom edge, centred on it
+// unless that would cross the outer gap, as a panel is, after half a second's
+// hover. It slides out from the module's side as it fades in, and back once the
+// pointer leaves, clipped at the window's edge: a window reaching over the
+// module would take the hover off it.
 PopupWindow {
     id: tip
 
@@ -13,6 +14,8 @@ PopupWindow {
     // Built in place of the text.
     property Component content: null
     property bool hovered
+    // The target's x in its window, read when the tooltip opens.
+    property real targetX
     // False from the start of the fade out.
     property bool shown: false
     readonly property bool upward: {
@@ -28,8 +31,9 @@ PopupWindow {
     }
 
     anchor.item: target
+    anchor.rect.x: Math.max(Theme.outerGap, Math.min(targetX + (target.width - implicitWidth) / 2, (target.QsWindow.window?.width ?? 0) - Theme.outerGap - implicitWidth)) - targetX
     anchor.rect.y: upward ? -4 : 0
-    anchor.rect.width: target.width
+    anchor.rect.width: implicitWidth
     anchor.rect.height: upward ? 1 : target.height + 4
     anchor.edges: upward ? Edges.Top : Edges.Bottom
     anchor.gravity: upward ? Edges.Top : Edges.Bottom
@@ -61,6 +65,7 @@ PopupWindow {
         onTriggered: {
             if (tip.text === "" && !tip.content)
                 return;
+            tip.targetX = tip.target.mapToItem(null, 0, 0).x;
             tip.visible = true;
             tip.shown = true;
             Tooltips.shown();
