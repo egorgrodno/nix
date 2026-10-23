@@ -10,8 +10,9 @@ Row {
     readonly property int perColumn: Math.ceil(Stats.physicalCores.length / columns)
     readonly property int threads: Stats.physicalCores[0]?.length ?? 1
     readonly property int meterWidth: 56
+    readonly property int threadGap: 32
 
-    spacing: 24
+    spacing: 48
 
     TextMetrics {
         id: indexSlot
@@ -58,15 +59,19 @@ Row {
                     height: 1
                 }
 
-                Caption {
-                    width: chart.threads * (chart.meterWidth + 8 + usageSlot.advanceWidth) + (chart.threads - 1) * 8
-                    text: chart.threads > 1 ? "threads" : "load"
-                }
+                Row {
+                    spacing: chart.threadGap
 
-                Caption {
-                    width: clockSlot.advanceWidth
-                    horizontalAlignment: Text.AlignRight
-                    text: "clock"
+                    Caption {
+                        width: chart.threads * (chart.meterWidth + 8 + usageSlot.advanceWidth) + (chart.threads - 1) * chart.threadGap
+                        text: chart.threads > 1 ? "threads" : "load"
+                    }
+
+                    Caption {
+                        width: clockSlot.advanceWidth
+                        horizontalAlignment: Text.AlignHCenter
+                        text: "clock"
+                    }
                 }
             }
 
@@ -91,39 +96,44 @@ Row {
                         font.pixelSize: 14
                     }
 
-                    Repeater {
-                        model: core.modelData
+                    Row {
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: chart.threadGap
 
-                        Row {
-                            required property int modelData
-                            readonly property int usage: Stats.cores[modelData] ?? 0
+                        Repeater {
+                            model: core.modelData
 
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 8
+                            Row {
+                                required property int modelData
+                                readonly property int usage: Stats.cores[modelData] ?? 0
 
-                            Meter {
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: chart.meterWidth
-                                value: parent.usage / 100
-                            }
+                                spacing: 8
 
-                            Figure {
-                                anchors.verticalCenter: parent.verticalCenter
-                                widest: "100%"
-                                horizontalAlignment: Text.AlignRight
-                                text: `${parent.usage}%`
-                                font.pixelSize: 14
+                                Meter {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: chart.meterWidth
+                                    value: parent.usage / 100
+                                }
+
+                                Figure {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    widest: "100%"
+                                    horizontalAlignment: Text.AlignRight
+                                    text: `${parent.usage}%`
+                                    font.pixelSize: 14
+                                }
                             }
                         }
-                    }
 
-                    Figure {
-                        anchors.verticalCenter: parent.verticalCenter
-                        widest: "0.0 GHz"
-                        horizontalAlignment: Text.AlignRight
-                        text: `${(Math.max(...core.modelData.map(t => Stats.clocks[t] ?? 0)) / 1000).toFixed(1)} GHz`
-                        color: Theme.foregroundMuted
-                        font.pixelSize: 14
+                        Figure {
+                            anchors.verticalCenter: parent.verticalCenter
+                            widest: "0.0 GHz"
+                            horizontalAlignment: Text.AlignRight
+                            text: `${(Math.max(...core.modelData.map(t => Stats.clocks[t] ?? 0)) / 1000).toFixed(1)} GHz`
+                            color: Theme.foregroundMuted
+                            font.pixelSize: 14
+                        }
                     }
                 }
             }
