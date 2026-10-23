@@ -9,10 +9,10 @@ import Quickshell.Io
 // projects, their sections and the labels come from the sync endpoint,
 // incrementally after the first time, at start, every five minutes, as a panel
 // opens and after every change, and persist in Quickshell's state directory,
-// so a restart shows them at once. A change applies here at once and is undone
-// should Todoist refuse it. A recurring task is moved by resending its whole
-// due object with the new date, as any other edit to it would replace the
-// recurrence.
+// so a restart shows them at once. Tasks assigned to someone else are left out
+// everywhere. A change applies here at once and is undone should Todoist
+// refuse it. A recurring task is moved by resending its whole due object with
+// the new date, as any other edit to it would replace the recurrence.
 Singleton {
     id: root
 
@@ -25,6 +25,11 @@ Singleton {
     property var sections: ({})
     property var labels: ({})
     property string inbox: ""
+    // The account's own id, "" until the first sync brings it.
+    property string userId: ""
+    // State saved with another list needs a full sync, as an incremental one
+    // brings only changes.
+    readonly property var resources: ["items", "projects", "sections", "labels", "user"]
     property string syncToken: "*"
     property bool syncing: false
     // Another sync was asked for while one ran.
@@ -36,7 +41,7 @@ Singleton {
     property var deleting: ({})
     readonly property string today: Dates.of(clock.date)
     readonly property string now: Qt.locale("C").toString(clock.date, "HH:mm")
-    readonly property var tasks: Object.values(items).filter(t => !deleting[t.id]).sort(compare)
+    readonly property var tasks: Object.values(items).filter(t => !deleting[t.id] && mine(t)).sort(compare)
     // ISO day to its tasks, in order.
     readonly property var byDay: {
         const days = {};
@@ -60,6 +65,12 @@ Singleton {
 
     // The tasks module on the focused screen opens its panel, or closes it.
     signal toggleRequested
+
+    // Unassigned, or assigned to this account, which counts all of them until
+    // the first sync names it.
+    function mine(task) {
+        return !task.responsible_uid || userId === "" || task.responsible_uid === userId;
+    }
 
     // The local day a task is due, or "" for none: a date, a floating time, or
     // a UTC time in a fixed time zone.
@@ -168,7 +179,7 @@ Singleton {
         };
         request("/sync", {
             sync_token: syncToken,
-            resource_types: ["items", "projects", "sections", "labels"]
+            resource_types: resources
         }, data => {
             apply(data);
             finish();
@@ -196,10 +207,14 @@ Singleton {
         for (const project of data.projects ?? [])
             if (project.inbox_project)
                 inbox = project.id;
+        if (data.user)
+            userId = data.user.id;
         syncToken = data.sync_token;
         storage.setText(JSON.stringify({
+            resources: resources.join(),
             syncToken: syncToken,
             inbox: inbox,
+            userId: userId,
             items: items,
             projects: projects,
             sections: sections,
@@ -456,9 +471,8 @@ Singleton {
             sections = saved.sections ?? {};
             labels = saved.labels ?? {};
             inbox = saved.inbox ?? "";
-            // An incremental sync brings only changes, so state saved without
-            // labels needs a full one to get them.
-            syncToken = saved.labels ? saved.syncToken ?? "*" : "*";
+            userId = saved.userId ?? "";
+            syncToken = saved.resources === resources.join() ? saved.syncToken ?? "*" : "*";
         } catch (e) {}
         readToken();
     }
