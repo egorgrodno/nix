@@ -25,6 +25,9 @@
       pkgs = import nixpkgs {
         inherit system;
         config.allowUnfree = true;
+        overlays = [
+          (final: prev: { gum = final.callPackage ./pkgs/gum { inherit (prev) gum; }; })
+        ];
       };
       # One palette per color scheme, under the same names. `background.raised`
       # lifts panels, popups and tooltips off `main`, which the windows share:
@@ -231,6 +234,8 @@
         # Run from a NixOS ISO: `nix run github:egorgrodno/nix#<name>`.
         install = pkgs.callPackage ./pkgs/install { };
         repair-boot = pkgs.callPackage ./pkgs/repair-boot { };
+        # The overlay's: installed for every user by modules/nixtools.
+        gum = pkgs.gum;
         # Installed for every user by modules/nixtools.
         nx-setup = pkgs.callPackage ./pkgs/nx-setup { };
         # Installed for every user by modules/craft.
