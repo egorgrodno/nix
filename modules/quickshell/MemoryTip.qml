@@ -70,13 +70,13 @@ Column {
                     width: parent.parent.width * Stats.memoryUsed / Math.max(1, Stats.memoryTotal)
                     height: parent.height
                     radius: 2
-                    color: Stats.memory >= 90 ? Theme.red : Stats.memory >= 70 ? Theme.yellow : Theme.foregroundMuted
+                    color: Stats.loadColor(Stats.memory / 100, Theme.blue)
                 }
 
                 Rectangle {
                     width: parent.parent.width * Stats.memoryCache / Math.max(1, Stats.memoryTotal)
                     height: parent.height
-                    color: Theme.foregroundFaint
+                    color: Theme.alpha(Theme.blue, 0.4)
                 }
             }
         }
@@ -89,12 +89,12 @@ Column {
                     {
                         label: "Used",
                         bytes: Stats.memoryUsed,
-                        color: Theme.foregroundMuted
+                        color: Theme.blue
                     },
                     {
                         label: "Cache",
                         bytes: Stats.memoryCache,
-                        color: Theme.foregroundFaint
+                        color: Theme.alpha(Theme.blue, 0.4)
                     },
                     {
                         label: "Free",

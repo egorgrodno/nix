@@ -26,7 +26,7 @@ Rectangle {
                     anchors.bottom: parent.bottom
                     width: parent.width
                     height: Math.max(1, Math.round(parent.height * parent.modelData / 100))
-                    color: parent.modelData >= 90 ? Theme.red : parent.modelData >= 70 ? Theme.yellow : Theme.foregroundMuted
+                    color: Stats.loadColor(parent.modelData / 100, Theme.blue)
                 }
             }
         }

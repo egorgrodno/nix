@@ -109,6 +109,15 @@ Singleton {
         return celsius >= crit ? Theme.red : celsius >= warn ? Theme.yellow : normal ?? Theme.foregroundMuted;
     }
 
+    // `normal` below a share of 0.7, then yellow, blending to red by 0.9.
+    function loadColor(share, normal) {
+        if (share < 0.7)
+            return normal;
+        const t = Math.min(1, (share - 0.7) / 0.2);
+        const [a, b] = [Theme.yellow, Theme.red];
+        return Qt.rgba(a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t, 1);
+    }
+
     function sampleCpu() {
         const times = Hardware.read("/proc/stat").split("\n").filter(l => l.startsWith("cpu")).map(l => {
             const t = l.trim().split(/\s+/).slice(1).map(Number);

@@ -9,7 +9,7 @@ Shape {
     property var values: []
     // The smallest peak it scales to, so idle traffic draws flat.
     property real floor: 8192
-    property color color: Theme.foregroundMuted
+    property color color: Theme.blue
     // The values its width holds; a shorter history starts part way across.
     property int samples: 30
 
@@ -27,9 +27,21 @@ Shape {
     preferredRendererType: Shape.CurveRenderer
 
     ShapePath {
-        fillColor: Theme.alpha(spark.color, 0.35)
         strokeColor: spark.color
         strokeWidth: 1
+        fillGradient: LinearGradient {
+            y2: spark.height
+
+            GradientStop {
+                position: 0
+                color: Theme.alpha(spark.color, 0.5)
+            }
+
+            GradientStop {
+                position: 1
+                color: Theme.alpha(spark.color, 0.05)
+            }
+        }
 
         PathPolyline {
             path: spark.area()

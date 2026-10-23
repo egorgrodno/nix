@@ -1,13 +1,12 @@
 import QtQuick
 
-// A level from 0 to 1. Grey unless graded, when it turns yellow from 70% and
-// red from 90%.
+// A level from 0 to 1.
 Rectangle {
     id: meter
 
     property real value
     property bool graded: true
-    property color fill: Theme.foregroundMuted
+    property color fill: Theme.blue
 
     width: 28
     height: 4
@@ -18,6 +17,6 @@ Rectangle {
         width: Math.max(parent.height, parent.width * Math.min(1, meter.value))
         height: parent.height
         radius: parent.radius
-        color: meter.graded && meter.value >= 0.9 ? Theme.red : meter.graded && meter.value >= 0.7 ? Theme.yellow : meter.fill
+        color: meter.graded ? Stats.loadColor(meter.value, meter.fill) : meter.fill
     }
 }

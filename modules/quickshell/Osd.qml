@@ -168,7 +168,7 @@ PanelWindow {
                 width: parent.width - glyph.width - percent.width - 2 * parent.spacing
                 graded: false
                 value: osd.percent / 100
-                fill: osd.dimmed ? Theme.foregroundFaint : Theme.foregroundMuted
+                fill: osd.dimmed ? Theme.foregroundFaint : Theme.blue
             }
 
             Figure {

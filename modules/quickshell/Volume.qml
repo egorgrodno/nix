@@ -78,7 +78,7 @@ Pill {
         anchors.verticalCenter: parent.verticalCenter
         graded: false
         value: volume.level / 100
-        fill: volume.muted ? Theme.foregroundFaint : Theme.foregroundMuted
+        fill: volume.muted ? Theme.foregroundFaint : Theme.blue
     }
 
     Figure {

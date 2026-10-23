@@ -14,11 +14,12 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 
 **Panels.** A panel builds on `Panel.qml`. Its focus grab, layer and fixed-size surface each work around Hyprland, and its comments say how.
 
-**Look.** Meters are grey, and colour marks state:
+**Look.** Meters, sparks and sliders fill in blue, and colour marks state:
 
 | Colour | State |
 |---|---|
 | Blue | Focus, or something on: a connected Bluetooth device, a VPN up |
+| Faint grey | A muted or dimmed meter |
 | Yellow, red | Warnings |
 | Red | A muted speaker or microphone |
 | Green | Charging |
