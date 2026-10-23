@@ -1,9 +1,9 @@
 import QtQuick
 
-// A month to pick a day from, under its name between chevrons that step it,
-// sliding as the calendar's does. It opens on the month of `selected`, else
-// today's.
-Column {
+// A month to pick a day from, under its name between chevrons that step it, as
+// either wheel does, sliding as the calendar's does. It opens on the month of
+// `selected`, else today's.
+Item {
     id: picker
 
     // An ISO date, or "" for none.
@@ -13,55 +13,79 @@ Column {
 
     signal picked(string day)
 
-    spacing: 4
+    implicitWidth: column.implicitWidth
+    implicitHeight: column.implicitHeight
     Component.onCompleted: months.go(Dates.month(selected || Todoist.today), false)
 
     Pager {
         id: months
     }
 
-    Item {
-        width: pages.width
-        height: 28
+    // Under the rest, which passes the wheel on. Either wheel, as a touchpad
+    // scrolls sideways.
+    MouseArea {
+        property int wheel: 0
 
-        Chevron {
-            by: -1
-            onStepped: by => months.go(months.page + by)
-        }
-
-        BarText {
-            anchors.centerIn: parent
-            text: `${Qt.locale().standaloneMonthName(months.page % 12)} ${Math.floor(months.page / 12)}`
-            font.pixelSize: 14
-        }
-
-        Chevron {
-            anchors.right: parent.right
-            by: 1
-            onStepped: by => months.go(months.page + by)
+        anchors.fill: parent
+        acceptedButtons: Qt.NoButton
+        onWheel: event => {
+            wheel += event.angleDelta.x || event.angleDelta.y;
+            const steps = Math.trunc(wheel / 120);
+            if (steps !== 0) {
+                wheel -= steps * 120;
+                months.go(months.page - steps);
+            }
         }
     }
 
-    Item {
-        id: pages
+    Column {
+        id: column
 
-        width: 7 * picker.cellWidth + 6 * 2
-        height: 7 * picker.cellHeight + 6 * 2
-        clip: true
+        spacing: 4
 
-        Repeater {
-            model: 2
+        Item {
+            width: pages.width
+            height: 28
 
-            CalendarMonth {
-                required property int index
+            Chevron {
+                by: -1
+                onStepped: by => months.go(months.page + by)
+            }
 
-                month: Math.floor(months.position) + index
-                today: Todoist.today
-                selected: picker.selected
-                cellWidth: picker.cellWidth
-                cellHeight: picker.cellHeight
-                x: (month - months.position) * pages.width
-                onPicked: day => picker.picked(day)
+            BarText {
+                anchors.centerIn: parent
+                text: `${Qt.locale().standaloneMonthName(months.page % 12)} ${Math.floor(months.page / 12)}`
+                font.pixelSize: 14
+            }
+
+            Chevron {
+                anchors.right: parent.right
+                by: 1
+                onStepped: by => months.go(months.page + by)
+            }
+        }
+
+        Item {
+            id: pages
+
+            width: 7 * picker.cellWidth + 6 * 2
+            height: 7 * picker.cellHeight + 6 * 2
+            clip: true
+
+            Repeater {
+                model: 2
+
+                CalendarMonth {
+                    required property int index
+
+                    month: Math.floor(months.position) + index
+                    today: Todoist.today
+                    selected: picker.selected
+                    cellWidth: picker.cellWidth
+                    cellHeight: picker.cellHeight
+                    x: (month - months.position) * pages.width
+                    onPicked: day => picker.picked(day)
+                }
             }
         }
     }
