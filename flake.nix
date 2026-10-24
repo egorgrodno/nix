@@ -26,7 +26,10 @@
         inherit system;
         config.allowUnfree = true;
         overlays = [
-          (final: prev: { gum = final.callPackage ./pkgs/gum { inherit (prev) gum; }; })
+          (final: prev: {
+            gum = final.callPackage ./pkgs/gum { inherit (prev) gum; };
+            xdg-utils = final.callPackage ./pkgs/xdg-utils { inherit (prev) xdg-utils; };
+          })
         ];
       };
       # One palette per color scheme, under the same names. `background.raised`
@@ -236,6 +239,8 @@
         repair-boot = pkgs.callPackage ./pkgs/repair-boot { };
         # The overlay's: installed for every user by modules/nixtools.
         gum = pkgs.gum;
+        # The overlay's: every package here and on the hosts gets it as xdg-utils.
+        xdg-utils = pkgs.xdg-utils;
         # Installed for every user by modules/nixtools.
         nx-setup = pkgs.callPackage ./pkgs/nx-setup { };
         nx-iso = pkgs.callPackage ./pkgs/nx-iso { };
