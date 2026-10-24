@@ -548,11 +548,17 @@ in
       enable = true;
       withUWSM = true;
       xwayland.enable = true;
-      # The seat announces a keyboard even with none attached: once that
-      # capability drops and returns, as across a VT switch or hibernation,
-      # QtWayland 6.11 sends no keys to the focused window, the lock included.
       package = pkgs.hyprland.overrideAttrs (old: {
-        patches = (old.patches or [ ]) ++ [ ./hyprland-always-keyboard.patch ];
+        patches = (old.patches or [ ]) ++ [
+          # The seat announces a keyboard even with none attached: once that
+          # capability drops and returns, as across a VT switch or hibernation,
+          # QtWayland 6.11 sends no keys to the focused window, the lock included.
+          ./hyprland-always-keyboard.patch
+          # Hyprland 0.56.2 rereads `cursor:invisible` only on a 500 ms tick,
+          # long enough for the pointer to show over the login curtain. This
+          # rereads it on every config change, `hl.config` and reloads alike.
+          ./hyprland-cursor-refresh.patch
+        ];
       });
     };
 

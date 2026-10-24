@@ -1,0 +1,11 @@
+--- a/src/config/supplementary/propRefresher/PropRefresher.cpp
++++ b/src/config/supplementary/propRefresher/PropRefresher.cpp
+@@ -151,6 +151,8 @@
+     if (m_propsTripped & REFRESH_GRADIENTS_GROUPBAR)
+         refreshGroupBarGradients();
+ 
++    g_pHyprRenderer->ensureCursorRenderingMode();
++
+     m_scheduled           = false;
+     m_scheduledRefreshSeq = 0;
+     m_propsTripped        = 0;
