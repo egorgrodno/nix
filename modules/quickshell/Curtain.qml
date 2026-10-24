@@ -135,8 +135,8 @@ Scope {
 
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: 400
-                        easing.type: Easing.OutCubic
+                        duration: 800
+                        easing.type: Easing.InOutQuad
                     }
                 }
             }
