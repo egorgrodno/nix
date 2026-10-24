@@ -9,7 +9,7 @@ Panel {
     id: panel
 
     // As tall as the strip between the bars allows, the list scrolling beyond.
-    readonly property real listMax: (screen?.height ?? 800) - 2 * (Theme.barHeight + 4) - 2 * 20 - dnd.height - footer.height - 2 * 20
+    readonly property real listMax: (screen?.height ?? 800) - 2 * (Theme.barHeight + Theme.outerGap) - 2 * 20 - dnd.height - footer.height - 2 * 20
     // Entries by desktop entry, else app name. A Map, as an object puts
     // integer keys first.
     readonly property var groups: {

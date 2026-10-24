@@ -256,8 +256,9 @@ let
   '';
 
   # The strip of each bar, top and bottom, which Quickshell is built to and
-  # reserves as its exclusive zone.
-  barHeight = 51;
+  # reserves as its exclusive zone: the outer gap at the screen's edge, then
+  # the segments. Windows and panels keep the outer gap past it.
+  barHeight = 49;
 
   # Between the windows and the screen's edges or the bars. The bars' segments
   # line up with it at the sides.
@@ -283,9 +284,9 @@ let
     {
       float = true;
       pin = true;
-      move = "(monitor_w-${
-        toString (lib.max (fromRight + width / 2) (width + outerGap))
-      }) (monitor_h-${toString (barHeight + height)})";
+      move = "(monitor_w-${toString (lib.max (fromRight + width / 2) (width + outerGap))}) (monitor_h-${
+        toString (barHeight + outerGap + height)
+      })";
       size = "${toString width} ${toString height}";
     };
 

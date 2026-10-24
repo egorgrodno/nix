@@ -38,7 +38,7 @@ PanelWindow {
     visible: false
     anchors.bottom: true
     // Reaching into the bar as far as the box slides, as a panel does.
-    margins.bottom: Theme.barHeight + 4 - Theme.slide
+    margins.bottom: Theme.barHeight + Theme.outerGap - Theme.slide
     exclusionMode: ExclusionMode.Ignore
     implicitWidth: 300
     implicitHeight: box.height + Theme.slide

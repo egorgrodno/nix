@@ -86,8 +86,8 @@ PanelWindow {
     }
     margins {
         left: Math.max(0, boxX - Theme.shadow)
-        top: Theme.barHeight + 4 - Theme.slide
-        bottom: Theme.barHeight + 4 - Theme.slide
+        top: Theme.barHeight + Theme.outerGap - Theme.slide
+        bottom: Theme.barHeight + Theme.outerGap - Theme.slide
     }
     exclusionMode: ExclusionMode.Ignore
     implicitWidth: Math.min(screen?.width ?? Infinity, boxX + boxWidth + Theme.shadow) - margins.left

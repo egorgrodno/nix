@@ -25,8 +25,8 @@ PanelWindow {
     }
     // Reaching over the bar as far as a card slides, as a panel does.
     margins {
-        top: Theme.barHeight + 4 - Theme.slide
-        bottom: Theme.barHeight + 4
+        top: Theme.barHeight + Theme.outerGap - Theme.slide
+        bottom: Theme.barHeight + Theme.outerGap
     }
     exclusionMode: ExclusionMode.Ignore
     // With room for the cards' shadows on the left.

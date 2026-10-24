@@ -207,7 +207,7 @@ Panel {
                 left: true
             }
             margins {
-                bottom: Theme.barHeight + 12
+                bottom: Theme.barHeight + 18
                 left: Theme.outerGap
             }
             exclusionMode: ExclusionMode.Ignore
@@ -240,7 +240,7 @@ Panel {
     // bars leaves, so Keep stays in reach at any scale. The 20 is the panel's
     // spacing above the footer.
     Flickable {
-        readonly property real limit: (panel.screen?.height ?? 800) - 2 * (Theme.barHeight + 4) - 2 * panel.padding - 20 - footer.height
+        readonly property real limit: (panel.screen?.height ?? 800) - 2 * (Theme.barHeight + Theme.outerGap) - 2 * panel.padding - 20 - footer.height
 
         width: panel.contentWidth
         height: Math.min(contentHeight, limit)

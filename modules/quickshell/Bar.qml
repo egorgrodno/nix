@@ -26,8 +26,7 @@ PanelWindow {
 
         anchors {
             fill: parent
-            topMargin: 6
-            bottomMargin: 6
+            topMargin: Theme.outerGap
             leftMargin: Theme.outerGap
             rightMargin: Theme.outerGap
         }
