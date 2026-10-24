@@ -3,7 +3,8 @@ import QtQuick
 // Over the tasks module: Today, under what is overdue, Upcoming, by day, the
 // Inbox, and Projects, one project at a time by section, below a Quick Add
 // field, whose task takes today as its date from Today and the project from
-// Projects. Tab and Shift Tab change the view. It syncs as it opens.
+// Projects. Tab and Shift Tab change the view. It syncs as it opens, on the
+// view, project and cards the last was left on.
 Panel {
     id: panel
 
@@ -90,9 +91,25 @@ Panel {
     boxWidth: 440
     onViewChanged: list.close()
     onProjectChanged: list.close()
+    // The view and project go first, as changing either closes the cards. Set
+    // once rather than bound, as a binding would rebuild the card on every
+    // sync. A project or task gone since is left out, Projects then giving way
+    // to Today.
     Component.onCompleted: {
+        const place = Todoist.place;
+        const kept = projects.some(p => p.id === place.project);
+        if (kept)
+            project = place.project;
+        view = place.view === "projects" && !kept ? "today" : place.view;
+        list.trail = place.trail.filter(id => Todoist.find(id));
         Todoist.sync();
-        field.forceActiveFocus();
+        if (list.trail.length === 0)
+            field.forceActiveFocus();
+    }
+    Component.onDestruction: Todoist.place = {
+        view: view,
+        project: project,
+        trail: list.trail
     }
 
     Column {

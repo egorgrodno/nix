@@ -39,6 +39,13 @@ Singleton {
     // Another sync was asked for while one ran.
     property bool again: false
     property string error: ""
+    // Where the panel was left, which the next opens on, until the bar
+    // restarts: { view, project, trail }.
+    property var place: ({
+            view: "today",
+            project: "",
+            trail: []
+        })
     // The last change while it can be undone: { text, revert, commit }.
     property var lastChange: null
     // By id, the tasks deleted here whose delete waits for the Undo offer.
