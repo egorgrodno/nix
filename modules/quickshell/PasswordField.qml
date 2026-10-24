@@ -2,8 +2,8 @@ import QtQuick
 
 // A password as dots, one per character, the latest at the right edge once
 // they fill the field. It holds no text: the owner's KeyBuffer does. Blue
-// while its window has the keyboard; the dots pulse while the password is
-// checked.
+// while its window has the keyboard and the password can be typed; while it
+// is checked, the dots pulse instead.
 Rectangle {
     id: field
 
@@ -16,7 +16,7 @@ Rectangle {
     radius: Theme.radius - 4
     color: Theme.tint(0.06)
     border.width: 1
-    border.color: Window.active ? Theme.blue : Theme.tint(0.12)
+    border.color: Window.active && !field.busy ? Theme.blue : Theme.tint(0.12)
     clip: true
 
     Behavior on border.color {

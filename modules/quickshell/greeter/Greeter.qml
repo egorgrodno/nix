@@ -130,6 +130,7 @@ Scope {
     KeyBuffer {
         id: buffer
 
+        readOnly: root.busy
         onSubmitted: root.submit()
     }
 

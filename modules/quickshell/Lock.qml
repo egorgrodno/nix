@@ -57,6 +57,7 @@ Scope {
     KeyBuffer {
         id: buffer
 
+        readOnly: root.checking
         onSubmitted: root.check()
     }
 
