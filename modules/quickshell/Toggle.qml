@@ -11,7 +11,7 @@ Rectangle {
     width: 44
     height: 24
     radius: 6
-    color: checked ? Theme.blue : hovered ? Theme.foregroundFaint : Theme.tint(0.12)
+    color: checked ? Theme.blue : Theme.tint(hovered ? 0.2 : 0.12)
 
     Behavior on color {
         ColorAnimation {
