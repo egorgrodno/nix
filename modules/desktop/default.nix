@@ -556,7 +556,7 @@ in
     xdg.mime.enable = true;
     # Secondary handlers only — these widen the "Open with" list. The default
     # for every type below stays whatever `defaultApplications` names, so
-    # images still open in viewnior rather than gimp.
+    # images still open in loupe rather than gimp.
     xdg.mime.addedAssociations = {
       "image/png" = "gimp.desktop";
       "image/gif" = "gimp.desktop";
@@ -608,8 +608,8 @@ in
       playerctl # backs the XF86Audio{Play,Pause,Prev,Next} binds
 
       # Classifying a program means knowing the class it actually reports, which
-      # is not derivable from its name: viewnior answers `Viewnior` under
-      # XWayland, okular `org.kde.okular`, and blueman leaks its Nix wrapper.
+      # is not derivable from its name: loupe answers `org.gnome.Loupe`, okular
+      # `org.kde.okular`, and blueman leaks its Nix wrapper.
       (writeShellScriptBin "hypr-window-class" ''
         hyprctl activewindow -j \
           | ${lib.getExe pkgs.jq} -r '"class: \(.class)\ninitialClass: \(.initialClass)\nxwayland: \(.xwayland)"' \
@@ -756,13 +756,10 @@ in
         stretchly
         telegram-desktop
         transmission_4-gtk
-        # nixpkgs pins GDK_BACKEND=x11, which forces XWayland; the later `--set`
-        # overrides that `--set-default`. The pin guards an upstream bug where
-        # panning a zoomed-in image does not work under Wayland.
-        (viewnior.overrideAttrs (old: {
-          postInstall = (old.postInstall or "") + ''
-            gappsWrapperArgs+=(--set GDK_BACKEND wayland,x11)
-          '';
+        # Set as Background reaches the gtk portal, which writes GNOME's
+        # background setting; the wallpaper here is awww's, set by Quickshell.
+        (loupe.overrideAttrs (old: {
+          patches = (old.patches or [ ]) ++ [ ./loupe-no-set-background.patch ];
         }))
         showtime
         snapshot
@@ -811,12 +808,12 @@ in
           "video/ogg" = "org.gnome.Showtime.desktop";
           "video/quicktime" = "org.gnome.Showtime.desktop";
           "video/x-msvideo" = "org.gnome.Showtime.desktop";
-          "image/png" = "viewnior.desktop";
-          "image/gif" = "viewnior.desktop";
-          "image/heic" = "viewnior.desktop";
-          "image/jpeg" = "viewnior.desktop";
-          "image/svg+xml" = "viewnior.desktop";
-          "image/webp" = "viewnior.desktop";
+          "image/png" = "org.gnome.Loupe.desktop";
+          "image/gif" = "org.gnome.Loupe.desktop";
+          "image/heic" = "org.gnome.Loupe.desktop";
+          "image/jpeg" = "org.gnome.Loupe.desktop";
+          "image/svg+xml" = "org.gnome.Loupe.desktop";
+          "image/webp" = "org.gnome.Loupe.desktop";
           "text/plain" = "nvim-gui.desktop";
           "text/markdown" = "nvim-gui.desktop";
           "application/x-shellscript" = "nvim-gui.desktop";
@@ -1174,13 +1171,9 @@ in
             ++ map viewer [
               "com.gabm.satty"
               "org.kde.okular"
+              "org.gnome.Loupe"
               "org.gnome.Showtime"
             ]
-
-            # viewnior opens at GTK's 480x300 default whatever the image, and
-            # its own `start-maximized` is eaten by the blanket
-            # suppress-maximize rule below, so the size is set here.
-            ++ [ (viewer "Viewnior" // { size = "960 600"; }) ]
 
             # Raised by another window and answered before work continues. These
             # three are standalone agents with no parent to inherit from; the

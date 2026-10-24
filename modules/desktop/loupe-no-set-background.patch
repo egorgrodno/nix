@@ -1,0 +1,51 @@
+--- a/data/resources/shortcuts-dialog.ui
++++ b/data/resources/shortcuts-dialog.ui
+@@ -30,12 +30,6 @@
+         </child>
+         <child>
+           <object class="AdwShortcutsItem">
+-            <property name="title" translatable="yes" context="shortcut window">Set as Background</property>
+-            <property name="accelerator">&lt;Ctrl&gt;F8</property>
+-          </object>
+-        </child>
+-        <child>
+-          <object class="AdwShortcutsItem">
+             <property name="title" translatable="yes" context="shortcut window">New Window</property>
+             <property name="action-name">app.new-window</property>
+           </object>
+--- a/src/widgets/image_page.ui
++++ b/src/widgets/image_page.ui
+@@ -23,10 +23,6 @@
+     </section>
+     <section>
+       <item>
+-        <attribute name="label" translatable="yes">_Set as Background…</attribute>
+-        <attribute name="action">win.set-background</attribute>
+-      </item>
+-      <item>
+         <attribute name="label" translatable="yes">_Delete</attribute>
+         <attribute name="action">win.trash</attribute>
+       </item>
+--- a/src/widgets/image_window/actions.rs
++++ b/src/widgets/image_window/actions.rs
+@@ -356,7 +356,6 @@
+                 &[ModifierType::CONTROL_MASK, gdk::ModifierType::SHIFT_MASK],
+             )],
+             Action::Print => &[(Key::p, &[ModifierType::CONTROL_MASK])],
+-            Action::SetBackground => &[(Key::F8, &[ModifierType::CONTROL_MASK])],
+             Action::ToggleFullscreen => &[(Key::F11, &[])],
+             Action::LeaveFullscreen => &[(Key::Escape, &[])],
+             Action::Trash => &[
+--- a/src/widgets/image_window.ui
++++ b/src/widgets/image_window.ui
+@@ -33,10 +33,6 @@
+     </section>
+     <section>
+       <item>
+-        <attribute name="label" translatable="yes">_Set as Background…</attribute>
+-        <attribute name="action">win.set-background</attribute>
+-      </item>
+-      <item>
+         <attribute name="label" translatable="yes">_Delete</attribute>
+         <attribute name="action">win.trash</attribute>
+       </item>
