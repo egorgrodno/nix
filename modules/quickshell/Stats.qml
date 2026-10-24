@@ -91,6 +91,14 @@ Singleton {
         return `${i > 0 && bytes < 100 ? bytes.toFixed(1) : Math.round(bytes)} ${units[i]}B`;
     }
 
+    // Decimal sizes, as drives are sold.
+    function decimal(bytes) {
+        for (const [unit, divisor] of [["TB", 1e12], ["GB", 1e9], ["MB", 1e6]])
+            if (bytes >= divisor)
+                return `${+(bytes / divisor).toFixed(bytes >= 10 * divisor ? 0 : 1)} ${unit}`;
+        return `${Math.round(bytes)} B`;
+    }
+
     // Decimal units, in bytes despite the b.
     function rate(bytes) {
         for (const [unit, divisor] of [["Gb/s", 1e9], ["Mb/s", 1e6], ["Kb/s", 1e3]])

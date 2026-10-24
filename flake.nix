@@ -249,6 +249,8 @@
         craft-update = pkgs.callPackage ./pkgs/craft-update { };
         # Installed for every user by modules/git.
         carve = pkgs.callPackage ./pkgs/carve { };
+        # Run by the bar's format panel, from modules/quickshell.
+        usb-format = pkgs.callPackage ./pkgs/usb-format { };
       };
       # The packages are listed so their build-time shellcheck and carve's tests
       # run here too.

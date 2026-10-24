@@ -3,6 +3,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Hyprland
+import Quickshell.Io
 
 ShellRoot {
     Variants {
@@ -95,6 +96,31 @@ ShellRoot {
         }
     }
 
+    // On the screen focused as it opens, over the bottom bar.
+    LazyLoader {
+        id: formatter
+
+        property ShellScreen screen
+
+        FormatPanel {
+            screen: formatter.screen
+            onDismissed: formatter.active = false
+        }
+    }
+
+    IpcHandler {
+        target: "format"
+
+        function toggle(): void {
+            if (formatter.active)
+                formatter.item.close();
+            else {
+                formatter.screen = Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? Quickshell.screens[0];
+                formatter.active = true;
+            }
+        }
+    }
+
     Connections {
         target: Quickshell
 
@@ -105,6 +131,8 @@ ShellRoot {
             }
             if (wallpapers.active && !Quickshell.screens.includes(wallpapers.screen))
                 wallpapers.item.close();
+            if (formatter.active && !Quickshell.screens.includes(formatter.screen))
+                formatter.item.close();
         }
     }
 

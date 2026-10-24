@@ -111,6 +111,7 @@ let
         readonly property string statsProbe: "${lib.getExe statsProbe}"
         readonly property string systemctl: "${lib.getExe' config.systemd.package "systemctl"}"
         readonly property string systemdInhibit: "${lib.getExe' config.systemd.package "systemd-inhibit"}"
+        readonly property string usbFormat: "${lib.getExe (pkgs.callPackage ../../pkgs/usb-format { })}"
         readonly property string uwsm: "${lib.getExe config.programs.uwsm.package}"
         readonly property string wlCopy: "${lib.getExe' pkgs.wl-clipboard "wl-copy"}"
         readonly property string xdgOpen: "${lib.getExe' pkgs.xdg-utils "xdg-open"}"
@@ -374,6 +375,14 @@ in
         icon = "preferences-desktop-wallpaper";
         categories = [ "Settings" ];
         settings.Keywords = "wallpaper;background;theme;light;dark;night light;";
+      };
+      xdg.desktopEntries.format-usb = {
+        name = "Format USB Drive";
+        genericName = "Erase a USB stick as FAT32, exFAT, NTFS or ext4";
+        exec = "${lib.getExe pkgs.quickshell} ipc call format toggle";
+        icon = "drive-removable-media-usb";
+        categories = [ "System" ];
+        settings.Keywords = "format;erase;wipe;usb;stick;flash;drive;fat32;exfat;ntfs;ext4;";
       };
 
       # Quickshell is the notification daemon: a notification sent while the

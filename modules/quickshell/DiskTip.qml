@@ -5,14 +5,6 @@ import QtQuick
 Column {
     id: tip
 
-    // Decimal, as drives are sold.
-    function decimal(bytes) {
-        for (const [unit, divisor] of [["TB", 1e12], ["GB", 1e9], ["MB", 1e6]])
-            if (bytes >= divisor)
-                return `${+(bytes / divisor).toFixed(bytes >= 10 * divisor ? 0 : 1)} ${unit}`;
-        return `${Math.round(bytes)} B`;
-    }
-
     // From the drive-health service's smartctl output, warnings in colour.
     function health(h) {
         if (!h)
@@ -41,7 +33,7 @@ Column {
                 color: h.worn >= 90 ? Theme.red : h.worn >= 70 ? Theme.yellow : Theme.foregroundMuted
             });
         if (!isNaN(h.written))
-            parts.push(`${decimal(h.written)} written`);
+            parts.push(`${Stats.decimal(h.written)} written`);
         for (const [count, what] of [[h.mediaErrors, "media errors"], [h.reallocated, "reallocated sectors"], [h.pending, "pending sectors"]])
             if (count > 0)
                 parts.push({
@@ -74,7 +66,7 @@ Column {
             // Alignment leaves a drive's edges unpartitioned, so the two are
             // compared as shown.
             readonly property string capacity: {
-                const [mounted, size] = [modelData.mounted, modelData.size].map(tip.decimal);
+                const [mounted, size] = [modelData.mounted, modelData.size].map(Stats.decimal);
                 return mounted === size ? size : `${mounted} of ${size}`;
             }
 
