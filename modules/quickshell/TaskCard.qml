@@ -5,7 +5,8 @@ import Quickshell
 // A task in full: Back, its project and section, and buttons that open it in
 // Todoist and delete it; its content and description, drawn from their
 // Markdown and edited raw after a click; chips for its day and for its
-// priority, each opening its choices under them, then its deadline and parent;
+// priority, each opening its choices under them, the day's led by a field
+// Todoist reads a date or a recurrence out of, then its deadline and parent;
 // then its subtasks and its comments, with their attachments. A subtask, or
 // the parent, asks for a card of its own. An edit saves on Enter, Ctrl Enter
 // in the description, a press anywhere in the panel outside it, or the card
@@ -69,7 +70,10 @@ Item {
         forceActiveFocus();
     }
 
+    // "" closes any. The keyboard comes back for Escape, as the field in the
+    // day's choices may hold it.
     function choose(chip) {
+        forceActiveFocus();
         choosing = choosing === chip ? "" : chip;
     }
 
@@ -133,12 +137,59 @@ Item {
     Component {
         id: dueChoices
 
-        DateButtons {
-            task: card.task
-            foldable: false
-            onPicked: day => {
-                Todoist.reschedule(card.task, day);
-                card.choosing = "";
+        Column {
+            spacing: 8
+
+            TextField {
+                id: dueField
+
+                readonly property string rule: card.task.due?.is_recurring ? card.task.due.string : ""
+
+                width: parent.width
+                height: 34
+                leftPadding: 8
+                rightPadding: 8
+                topPadding: 0
+                bottomPadding: 0
+                verticalAlignment: TextInput.AlignVCenter
+                placeholderText: "Type a date, as “fri 14:00” or “every 55 days”"
+                placeholderTextColor: Theme.foregroundMuted
+                color: Theme.foregroundStrong
+                selectionColor: Theme.blue
+                selectedTextColor: Theme.backgroundMain
+                font.family: Theme.fontUI
+                font.pixelSize: 14
+                Component.onCompleted: {
+                    text = rule;
+                    selectAll();
+                    forceActiveFocus();
+                }
+                // Sent again, an unchanged rule would move the task to its
+                // first day from today.
+                onAccepted: {
+                    const text = dueField.text.trim();
+                    if (text !== "" && text !== rule)
+                        Todoist.schedule(card.task, text);
+                    card.choose("");
+                }
+                Keys.onEscapePressed: card.choose("")
+
+                background: Rectangle {
+                    radius: Theme.radius - 4
+                    color: Theme.tint(0.06)
+                    border.width: 1
+                    border.color: dueField.activeFocus ? Theme.blue : Theme.tint(0.12)
+                }
+            }
+
+            DateButtons {
+                width: parent.width
+                task: card.task
+                foldable: false
+                onPicked: day => {
+                    Todoist.reschedule(card.task, day);
+                    card.choose("");
+                }
             }
         }
     }
@@ -162,7 +213,7 @@ Item {
                         Todoist.edit(card.task, {
                             priority: modelData
                         });
-                        card.choosing = "";
+                        card.choose("");
                     }
                 }
             }

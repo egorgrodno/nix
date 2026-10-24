@@ -408,6 +408,63 @@ Singleton {
             update(task, due);
     }
 
+    // To what Todoist reads out of the text, a recurrence as "every 55 days"
+    // included, counted from today as for a new task. Todoist counts from the
+    // due a task has, so the due is cleared first; text it then cannot read
+    // would leave none, so the old one goes back.
+    function schedule(task, text) {
+        const reading = uuid();
+        const settle = () => {
+            syncToken = "*";
+            sync();
+        };
+        request("/sync", {
+            commands: [
+                {
+                    type: "item_update",
+                    uuid: uuid(),
+                    args: {
+                        id: task.id,
+                        due: null
+                    }
+                },
+                {
+                    type: "item_update",
+                    uuid: reading,
+                    args: {
+                        id: task.id,
+                        due: {
+                            string: text
+                        }
+                    }
+                }
+            ]
+        }, data => {
+            if (data?.sync_status?.[reading] === "ok") {
+                sync();
+                return;
+            }
+            // Set after the request, as a successful one clears it.
+            const refused = () => error = `Todoist cannot read “${text}”`;
+            if (!task.due) {
+                refused();
+                return;
+            }
+            request("/sync", {
+                commands: [
+                    {
+                        type: "item_update",
+                        uuid: uuid(),
+                        args: {
+                            id: task.id,
+                            due: moved(task.due, task.due.date)
+                        }
+                    }
+                ]
+            }, refused, settle);
+        }, settle);
+    }
+
     // Many tasks to one day at once, as overdue ones to today, with Undo
     // putting each back on its own due.
     function rescheduleAll(tasks, day) {
