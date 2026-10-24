@@ -547,6 +547,12 @@ in
       enable = true;
       withUWSM = true;
       xwayland.enable = true;
+      # The seat announces a keyboard even with none attached: once that
+      # capability drops and returns, as across a VT switch or hibernation,
+      # QtWayland 6.11 sends no keys to the focused window, the lock included.
+      package = pkgs.hyprland.overrideAttrs (old: {
+        patches = (old.patches or [ ]) ++ [ ./hyprland-always-keyboard.patch ];
+      });
     };
 
     services.udisks2.enable = true;
@@ -717,7 +723,7 @@ in
         grim
         slurp
         wlsunset
-        xdg-desktop-portal-hyprland
+        config.programs.hyprland.portalPackage
 
         (vivaldi.overrideAttrs (old: {
           postInstall = (old.postInstall or "") + ''
@@ -740,7 +746,7 @@ in
         galculator
         gimp
         glances
-        grimblast
+        (grimblast.override { hyprland = config.programs.hyprland.package; })
         kdePackages.okular
         libheif
         libnotify
