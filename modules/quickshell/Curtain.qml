@@ -137,7 +137,7 @@ Scope {
 
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: 800
+                        duration: 600
                         easing.type: Easing.InOutQuad
                     }
                 }
