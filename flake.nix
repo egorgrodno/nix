@@ -35,9 +35,9 @@
       # One palette per color scheme, under the same names. `background.raised`
       # lifts panels, popups and tooltips off `main`, which the windows share:
       # a shadow barely shows on the dark one. `background.desktop` is
-      # Hyprland's background, which the curtain, lock screen and greeter must
-      # match. Foreground tones run from `strong`, the bar's text, to `faint`;
-      # `black` and `white` are the terminal's.
+      # Hyprland's background, which the lock screen and greeter must match.
+      # Foreground tones run from `strong`, the bar's text, to `faint`; `black`
+      # and `white` are the terminal's.
       theme = {
         fontMono = "Inconsolata LGC Nerd Font Mono";
         fontUI = "Overpass Nerd Font";

@@ -15,8 +15,9 @@ let
 
   hyprColor = import ../../lib/hypr-color.nix lib;
 
-  # Hyprland's colors under each color scheme. The background is the one
-  # Quickshell's login curtain maps in.
+  # Hyprland's colors under each color scheme. The background must stay
+  # `background.desktop`, which Quickshell's login curtain sets again as it
+  # lifts.
   hyprColors = mapAttrs (_: p: {
     general.col = {
       active_border = hyprColor p.blue "ff";
@@ -1287,7 +1288,7 @@ in
 
             -- The borders and background under the color scheme
             -- `color-scheme` saved, which sets them again on a change.
-            do
+            local function schemeColors()
               local state = os.getenv("XDG_STATE_HOME")
               if not state or state == "" then
                 state = os.getenv("HOME") .. "/.local/state"
@@ -1297,16 +1298,19 @@ in
               if file then
                 file:close()
               end
-              hl.config(scheme == "light" and ${lua hyprColors.light} or ${lua hyprColors.dark})
+              return scheme == "light" and ${lua hyprColors.light} or ${lua hyprColors.dark}
             end
+            hl.config(schemeColors())
 
-            -- The pointer stays hidden until Quickshell's login curtain fades,
-            -- which shows it again; the timer does should the bar never get
-            -- that far. A reload resets the option and drops the timer.
+            -- The session starts black, as the screen turns black after the
+            -- greeter, under a hidden pointer, until Quickshell's login curtain
+            -- fades, which restores both; the timer does should the bar never
+            -- get that far. A reload restores both and drops the timer.
             hl.on("hyprland.start", function()
-              hl.config({ cursor = { invisible = true } })
+              hl.config({ cursor = { invisible = true }, misc = { background_color = "rgba(000000ff)" } })
               hl.timer(function()
                 hl.config({ cursor = { invisible = false } })
+                hl.config(schemeColors())
               end, { timeout = 10000, type = "oneshot" })
             ${concatMapStrings (command: "  hl.exec_cmd(${lua command})\n") startup}end)
 

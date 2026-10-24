@@ -4,13 +4,14 @@ import Quickshell.Hyprland
 import Quickshell.Io
 import Quickshell.Wayland
 
-// At the session's first start, every screen under the theme's background,
-// opaque, the colour Hyprland draws without a wallpaper, until the saved layout
-// has applied and awww has drawn the wallpaper after it, or with no wallpaper
-// the layout alone; then it fades out, so the scale jump and the first draws
-// happen unseen. The pointer, which Hyprland hides from its start, stays hidden
-// until the fade out starts. A bar restarted in the same Hyprland instance
-// skips it, a crash under it included, and shows the pointer again. awww's
+// At the session's first start, every screen under opaque black, the colour
+// Hyprland starts on, until the saved layout has applied and awww has drawn the
+// wallpaper after it, or with no wallpaper the layout alone; then it fades out,
+// so the scale jump and the first draws happen unseen. Hyprland's pointer,
+// hidden from its start, and its black background stay until the fade out
+// starts, which gives back the pointer and the theme's background. A bar
+// restarted in the same Hyprland instance skips it, a crash under it included,
+// and gives both back too. awww's
 // daemon, which the session leaves to the bar, starts once it maps, or at once
 // without it: a wallpaper drawn first would vanish under it. After 3 s it lifts
 // regardless.
@@ -36,10 +37,11 @@ Scope {
         Quickshell.execDetached([Programs.systemctl, "--user", "start", "awww.service"]);
     }
 
-    // Through Hyprland's option, as the pointer never enters a surface that
+    // The pointer through Hyprland's option, as it never enters a surface that
     // maps under it until it moves.
-    function showPointer(visible) {
-        Quickshell.execDetached([Programs.hyprctl, "eval", `hl.config({ cursor = { invisible = ${!visible} } })`]);
+    function setHyprland(covered) {
+        const background = covered ? "000000" : Theme.backgroundDesktop.toString().slice(1);
+        Quickshell.execDetached([Programs.hyprctl, "eval", `hl.config({ cursor = { invisible = ${covered} }, misc = { background_color = "rgba(${background}ff)" } })`]);
     }
 
     // For the journal.
@@ -54,7 +56,7 @@ Scope {
         shown = false;
         hold.stop();
         timeout.stop();
-        showPointer(true);
+        setHyprland(false);
         console.info(`Curtain: lifted after ${Date.now() - start} ms, ${reason}`);
     }
 
@@ -78,13 +80,13 @@ Scope {
     Component.onCompleted: {
         const instance = Quickshell.env("HYPRLAND_INSTANCE_SIGNATURE") ?? "";
         if (marker.text().trim() === instance) {
-            showPointer(true);
+            setHyprland(false);
             startDaemon();
             return;
         }
         marker.setText(instance);
         start = Date.now();
-        showPointer(false);
+        setHyprland(true);
         // First, so the cover starts opaque rather than fading in.
         shown = true;
         covering = true;
@@ -128,7 +130,7 @@ Scope {
                 id: cover
 
                 anchors.fill: parent
-                color: Theme.backgroundDesktop
+                color: "black"
                 opacity: root.shown ? 1 : 0
                 onOpacityChanged: if (!root.shown && opacity === 0)
                     root.covering = false
