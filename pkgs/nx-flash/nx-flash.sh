@@ -1,7 +1,7 @@
 # Writes the rescue ISO, or another one, over a USB disk picked from a list,
-# then reads it back to compare. A disk with a mount outside /run/media, where
-# the desktop mounts sticks, is left off the list, so the running system's own
-# disks never show.
+# then reads it back to compare. A disk with a mount outside /media, where
+# the desktop's mountOnMedia puts sticks, is left off the list, so the running
+# system's own disks never show.
 #
 # Usage: nx-flash [iso], which defaults to the ISO nx-iso builds.
 
@@ -21,7 +21,7 @@ mapfile -t disks < <(
   lsblk -Jbpo NAME,TYPE,TRAN,SIZE,MOUNTPOINTS | jq -r --argjson min "$isoBytes" '
     .blockdevices[]
     | select(.type == "disk" and .tran == "usb" and .size >= $min)
-    | select(all(.. | objects | .mountpoints[]? | select(. != null); startswith("/run/media/")))
+    | select(all(.. | objects | .mountpoints[]? | select(. != null); startswith("/media/")))
     | .name
   '
 )
