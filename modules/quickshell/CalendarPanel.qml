@@ -129,6 +129,7 @@ Panel {
     }
 
     boxWidth: 7 * cellWidth + 6 * 2 + 2 * padding
+    keyboardHome: calendar
     onSelectedChanged: list.close()
     Component.onCompleted: {
         months.go(thisMonth, false);

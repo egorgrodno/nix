@@ -33,6 +33,9 @@ Item {
     property string choosing: ""
     // The id of the subtask whose quick menu is open.
     property string expanded: ""
+    // A field inside, left, gives the keyboard back here, where Escape goes
+    // back.
+    readonly property Item keyboardHome: card
 
     signal opened(string id)
     signal closed

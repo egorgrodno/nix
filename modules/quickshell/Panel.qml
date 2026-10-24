@@ -8,10 +8,11 @@ import Quickshell.Wayland
 // its screen under the top bar, or over the bottom one if `upward`. A layer
 // surface rather than a popup, since Hyprland drops a popup's grab whenever
 // another layer surface unmaps, as an expiring notification does. A click
-// outside closes it, through Hyprland's focus grab, as Escape does. It slides
-// out of the bar as it fades in, and back, and eases to a new height when its
-// content changes, casting a shadow over the windows. On `overlay`, above the
-// notification popups, which it holds while it is open.
+// outside closes it, through Hyprland's focus grab, as Escape does, and a
+// press in it outside a text field takes the keyboard from the field. It
+// slides out of the bar as it fades in, and back, and eases to a new height
+// when its content changes, casting a shadow over the windows. On `overlay`,
+// above the notification popups, which it holds while it is open.
 PanelWindow {
     id: panel
 
@@ -34,6 +35,9 @@ PanelWindow {
     property bool settled: false
     // Between the box's edge and the content.
     property int padding: 20
+    // Where the keyboard goes from a text field a press lands outside, unless
+    // an item around the field sets its own.
+    property Item keyboardHome: box
 
     // The close has finished: the owner drops the panel.
     signal dismissed
@@ -54,6 +58,20 @@ PanelWindow {
             return;
         grab.active = false;
         grab.active = true;
+    }
+
+    // To the `keyboardHome` of the nearest item around the field that sets
+    // one, else the panel's. After `pressed`, so content that leaves a field
+    // its own way, as by saving it, has done so. Text inputs alone have a
+    // cursor.
+    function blur(position) {
+        const field = box.Window.activeFocusItem;
+        if (field?.cursorPosition === undefined || field.contains(field.mapFromItem(null, position)))
+            return;
+        let item = field.parent;
+        while (item && !item.keyboardHome)
+            item = item.parent;
+        (item?.keyboardHome ?? keyboardHome).forceActiveFocus();
     }
 
     screen: bar?.screen ?? null
@@ -183,7 +201,9 @@ PanelWindow {
                 anchors.fill: parent
                 acceptedButtons: Qt.AllButtons
                 onPressed: mouse => {
-                    panel.pressed(mapToItem(null, mouse.x, mouse.y));
+                    const position = mapToItem(null, mouse.x, mouse.y);
+                    panel.pressed(position);
+                    panel.blur(position);
                     mouse.accepted = false;
                 }
             }

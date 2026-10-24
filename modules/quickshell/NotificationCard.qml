@@ -71,6 +71,19 @@ Item {
             card.forceActiveFocus();
     }
 
+    // In the panel, a press outside the reply ends it, as Escape does; a popup
+    // has no such signal.
+    Connections {
+        target: card.QsWindow.window
+        enabled: card.replying
+        ignoreUnknownSignals: true
+
+        function onPressed(position) {
+            if (!field.contains(field.mapFromItem(null, position)) && !sendMouse.contains(sendMouse.mapFromItem(null, position)))
+                Notifications.replying = null;
+        }
+    }
+
     HoverHandler {
         id: hover
 
