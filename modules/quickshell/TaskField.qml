@@ -4,7 +4,7 @@ import QtQuick.Controls.Basic
 // Todoist's Quick Add, which reads dates, #projects, /sections, @labels and p1
 // to p4 out of the text, each marked behind it in a colour as it is typed. A
 // task it leaves without a date takes `day`, and one it leaves in the Inbox
-// goes to `project`, if any.
+// goes to `project`, if any; with `parentId`, it goes under that task.
 TextField {
     id: field
 
@@ -12,6 +12,8 @@ TextField {
     property string day: ""
     // A project's id, or "" for none.
     property string project: ""
+    // A task's id, or "" for none.
+    property string parentId: ""
     readonly property var tokens: QuickAdd.tokens(text)
 
     function tokenColor(token) {
@@ -33,6 +35,8 @@ TextField {
     bottomPadding: 0
     verticalAlignment: TextInput.AlignVCenter
     placeholderText: {
+        if (parentId)
+            return "Add a subtask";
         if (project)
             return `Add a task to ${Todoist.projects[project]?.name ?? "the project"}`;
         if (!day)
@@ -50,7 +54,7 @@ TextField {
         const text = field.text.trim();
         if (text === "")
             return;
-        Todoist.add(text, day, project);
+        Todoist.add(text, day, project, parentId);
         field.text = "";
     }
 

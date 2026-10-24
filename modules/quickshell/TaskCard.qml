@@ -7,10 +7,10 @@ import Quickshell
 // Markdown and edited raw after a click; chips for its day and for its
 // priority, each opening its choices under them, the day's led by a field
 // Todoist reads a date or a recurrence out of, then its deadline and parent;
-// then its subtasks and its comments, with their attachments. A subtask, or
-// the parent, asks for a card of its own. An edit saves on Enter, Ctrl Enter
-// in the description, a press anywhere in the panel outside it, or the card
-// closing; Escape drops it, and otherwise goes back.
+// then its subtasks, above a field that adds one, and its comments, with their
+// attachments. A subtask, or the parent, asks for a card of its own. An edit
+// saves on Enter, Ctrl Enter in the description, a press anywhere in the panel
+// outside it, or the card closing; Escape drops it, and otherwise goes back.
 Item {
     id: card
 
@@ -462,9 +462,9 @@ Item {
         Column {
             x: 28
             width: parent.width - x
-            visible: card.subtasks.length > 0
 
             Caption {
+                visible: card.subtasks.length > 0
                 leftPadding: 8
                 bottomPadding: 6
                 text: "Subtasks"
@@ -483,6 +483,15 @@ Item {
                     expanded: card.expanded === modelData.id
                     onToggled: card.expanded = expanded ? "" : modelData.id
                     onOpened: card.opened(modelData.id)
+                }
+            }
+
+            TaskField {
+                width: parent.width
+                parentId: card.taskId
+                Keys.onEscapePressed: {
+                    text = "";
+                    card.forceActiveFocus();
                 }
             }
         }

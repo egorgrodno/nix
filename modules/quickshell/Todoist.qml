@@ -547,8 +547,9 @@ Singleton {
 
     // Through Quick Add, which reads dates, #projects, @labels and p1 to p4
     // out of the text. A task it left without a date takes `day`, and one it
-    // left in the Inbox moves to `project`, if any.
-    function add(text, day, project) {
+    // left in the Inbox moves to `project`, if any; with `parent`, it goes
+    // under that task wherever the text put it.
+    function add(text, day, project, parent) {
         request("/tasks/quick", {
             text: text
         }, task => {
@@ -563,7 +564,15 @@ Singleton {
                         }
                     }
                 });
-            if (project && project !== inbox && task?.id && task.project_id === inbox)
+            if (parent && task?.id)
+                commands.push({
+                    type: "item_move",
+                    args: {
+                        id: task.id,
+                        parent_id: parent
+                    }
+                });
+            else if (project && project !== inbox && task?.id && task.project_id === inbox)
                 commands.push({
                     type: "item_move",
                     args: {
