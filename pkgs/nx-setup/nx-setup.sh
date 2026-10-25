@@ -8,6 +8,7 @@ nixos=/etc/nixos
 githubRepo=git@github.com:egorgrodno/nix.git
 forgejoRepo=ssh://git@forgejo.home:30143/egor/nix.git
 config=${XDG_CONFIG_HOME:-$HOME/.config}
+state=${XDG_STATE_HOME:-$HOME/.local/state}
 me=$(id -un)
 
 # A step exits with this status to report that nothing was left to do.
@@ -170,6 +171,33 @@ neovimPlugins() {
   [[ -f $compiled ]] || die "PackerSync did not finish; run nvim +PackerSync"
 }
 
+# The bosun user service waits for the master's directory to exist, and the
+# master starts only in a directory Claude Code trusts.
+bosunMaster() {
+  local dir=$state/bosun/master file=$HOME/.claude.json lock=$HOME/.claude.json.lock tries=0
+  if [[ -d $dir ]] &&
+    jq -e --arg dir "$dir" '.projects[$dir].hasTrustDialogAccepted == true' "$file" >/dev/null 2>&1; then
+    skip "Claude Code trusts $dir"
+  fi
+  [[ -f $file ]] || die "no $file, which claude writes on its first run"
+  # Private like the rest of bosun's state, and like $file, which mv replaces.
+  umask 077
+  mkdir -p "$dir"
+  # Claude Code 2.1.310 saves $file holding proper-lockfile's lock directory,
+  # and reads the file afresh under it, so an edit under the same lock survives
+  # the sessions that are running.
+  until mkdir "$lock" 2>/dev/null; do
+    ((++tries < 50)) || die "$lock stayed held for 5 seconds"
+    sleep 0.1
+  done
+  (
+    trap 'rm -f "$file.nx-setup"; rmdir "$lock"' EXIT
+    jq --arg dir "$dir" '.projects[$dir].hasTrustDialogAccepted = true' "$file" >"$file.nx-setup"
+    mv "$file.nx-setup" "$file"
+  )
+  systemctl --user start bosun
+}
+
 ownsNixos() {
   local owner
   owner=$(stat -c %U "$nixos")
@@ -217,6 +245,7 @@ step "Forgejo login" forgejoLogin
 step "SSH key on Forgejo" forgejoKey
 step "Todoist token" todoistToken
 step "Neovim plugins" neovimPlugins
+step "bosun master trust" bosunMaster
 step "/etc/nixos remote" nixosRemote
 step "Push /etc/nixos" nixosPush
 

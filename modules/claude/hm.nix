@@ -21,8 +21,8 @@
     Unit = {
       Description = "bosun daemon, which runs a master Claude Code session over its workers";
       # The master's directory needs Claude Code's trust before the first start,
-      # so an account starts no daemon until it makes the directory and runs
-      # `claude` there once.
+      # so an account starts no daemon until nx-setup makes the directory and
+      # trusts it.
       ConditionPathExists = "%S/bosun/master";
       # Every background session, the user's own included, takes the
       # environment of the supervisor this starts, so it waits for uwsm to copy

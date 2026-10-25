@@ -38,6 +38,7 @@ nx-setup
 | Forgejo | `tea login add` for `http://forgejo.home` with a token or a password, then uploads the SSH key. |
 | Todoist | Optional. The API token in the login keyring, where the bar's Todoist module finds it. |
 | Neovim | Headless `PackerSync`. |
+| bosun | Makes `~/.local/state/bosun/master`, marks it trusted in `~/.claude.json`, and starts the `bosun` user service. It needs `~/.claude.json`, which `claude` writes on its first run. |
 | `/etc/nixos` | For its owner only: `origin` fetches from GitHub and pushes to GitHub and Forgejo, and unpushed commits are pushed after a confirmation. |
 
 ## Repair the boot menu
