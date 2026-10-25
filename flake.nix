@@ -9,6 +9,10 @@
 
     treefmt-nix.url = "github:numtide/treefmt-nix";
     treefmt-nix.inputs.nixpkgs.follows = "nixpkgs";
+
+    bosun.url = "github:egorgrodno/bosun";
+    bosun.inputs.nixpkgs.follows = "nixpkgs";
+    bosun.inputs.treefmt-nix.follows = "treefmt-nix";
   };
 
   outputs =
@@ -29,6 +33,7 @@
           (final: prev: {
             gum = final.callPackage ./pkgs/gum { inherit (prev) gum; };
             xdg-utils = final.callPackage ./pkgs/xdg-utils { inherit (prev) xdg-utils; };
+            bosun = inputs.bosun.packages.${system}.default;
           })
         ];
       };
