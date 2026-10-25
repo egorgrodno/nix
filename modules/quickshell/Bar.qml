@@ -4,7 +4,7 @@ import Quickshell.Hyprland
 
 // Segments of related modules inside the strip the bar reserves, their outer
 // edges in line with the windows' gaps: the window title, the workspaces,
-// network and the notification bell. The rest is on the bottom bar.
+// bosun, network and the notification bell. The rest is on the bottom bar.
 PanelWindow {
     id: bar
 
@@ -67,6 +67,12 @@ PanelWindow {
             anchors.right: parent.right
             height: parent.height
             spacing: 8
+
+            Segment {
+                visible: Bosun.connected
+
+                Agents {}
+            }
 
             Segment {
                 visible: Stats.sampled
