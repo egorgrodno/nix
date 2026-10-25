@@ -44,9 +44,11 @@ Singleton {
         send(["dismiss", id]);
     }
 
-    // `claude attach` leaves the session running when it exits, as on Ctrl+Z.
+    // `bosun attach` has the daemon resume a stopped session before `claude
+    // attach`, which would start Claude Code's supervisor in this kitty. `claude
+    // attach` leaves the session running when it exits, as on Ctrl+Z.
     function attach(session) {
-        Launcher.run([Programs.kitty, "-e", "claude", "attach", session.id]);
+        Launcher.run([Programs.kitty, "-e", Programs.bosun, "attach", session.id]);
     }
 
     function send(args) {
