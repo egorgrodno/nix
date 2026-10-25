@@ -350,7 +350,7 @@ let
   # shader every third frame. Writing master's mfact back to itself makes
   # Hyprland repaint every monitor in full. Remove that write once Hyprland
   # includes a287842067 (hyprwm/Hyprland#15924), which no release past 0.56.2
-  # has yet.
+  # has yet: http://forgejo.home/egor/nix/issues/67
   setScreenShader =
     path:
     ''hl.config({ decoration = { screen_shader = "${path}" }, master = { mfact = hl.get_config("master.mfact") } })'';
