@@ -2,21 +2,22 @@ import QtQuick
 import QtQuick.Controls.Basic
 import Quickshell
 
-// A task in full: Back, its project and section, and buttons that open it in
-// Todoist and delete it; its content and description, drawn from their
-// Markdown and edited raw after a click; chips for its day and for its
-// priority, each opening its choices under them, the day's led by a field
-// Todoist reads a date or a recurrence out of, then its deadline and parent;
-// then its subtasks, above a field that adds one, and its comments, with their
-// attachments. A subtask, or the parent, asks for a card of its own. An edit
-// saves on Enter, Ctrl Enter in the description, a press anywhere in the panel
-// outside it, or the card closing; Escape drops it, and otherwise goes back.
+// A task in full: Back, beside the task it returns to or else the task's
+// project and section, and buttons that open it in Todoist and delete it; its
+// content and description, drawn from their Markdown and edited raw after a
+// click; chips for its day and for its priority, each opening its choices under
+// them, the day's led by a field Todoist reads a date or a recurrence out of,
+// then its deadline and parent; then its subtasks, above a field that adds one,
+// and its comments, with their attachments. A subtask, or the parent, asks for
+// a card of its own. An edit saves on Enter, Ctrl Enter in the description, a
+// press anywhere in the panel outside it, or the card closing; Escape drops it,
+// and otherwise goes back.
 Item {
     id: card
 
     required property string taskId
-    // The card this one opened over, "" for none: the parent's link goes back
-    // to it rather than open it again.
+    // The card this one opened over, "" for none: Back names it, and the
+    // parent's link goes back to it rather than open it again.
     property string previous: ""
     readonly property var found: Todoist.find(taskId)
     // Held from the start, so a task that leaves stays drawn until the list
@@ -25,6 +26,7 @@ Item {
     readonly property string day: Todoist.dayOf(task)
     readonly property string time: Todoist.timeOf(task)
     readonly property var parentTask: task.parent_id ? Todoist.find(task.parent_id) : null
+    readonly property var previousTask: previous ? Todoist.find(previous) : null
     readonly property var subtasks: Todoist.subtasks[taskId] ?? []
     readonly property var comments: Todoist.comments[taskId] ?? []
     // "content" or "description" while it is edited.
@@ -243,7 +245,7 @@ Item {
                 width: todoistButton.x - x - 8
                 anchors.verticalCenter: parent.verticalCenter
                 elide: Text.ElideRight
-                text: [Todoist.projectName(card.task), Todoist.sections[card.task.section_id]?.name ?? ""].filter(s => s).join(" › ")
+                text: card.previousTask?.content ?? [Todoist.projectName(card.task), Todoist.sections[card.task.section_id]?.name ?? ""].filter(s => s).join(" › ")
             }
 
             TextButton {
