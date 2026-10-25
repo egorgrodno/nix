@@ -10,11 +10,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1792952378,
-        "narHash": "sha256-FkHpbaZ97o72JN1vkpVQv6951wtLXiZqviEAfK41PVg=",
+        "lastModified": 1792952827,
+        "narHash": "sha256-Fh/IqauOQ7T+bDO2whUk8EsjQqKBauguCqCu1O2tp3A=",
         "owner": "egorgrodno",
         "repo": "bosun",
-        "rev": "4649525809d896d536b35491483587e9e87457ce",
+        "rev": "7805985bc48d8f1882f124aae9b8d49dfaebfcdf",
         "type": "github"
       },
       "original": {
