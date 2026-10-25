@@ -57,6 +57,13 @@ Flickable {
         closed();
     }
 
+    // For other sections, which start at the top rather than where the last
+    // were scrolled to.
+    function reset() {
+        close();
+        contentY = 0;
+    }
+
     // The card goes first, so Undo brings the task back to the list.
     function remove(task) {
         back();

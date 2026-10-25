@@ -130,7 +130,7 @@ Panel {
 
     boxWidth: 7 * cellWidth + 6 * 2 + 2 * padding
     keyboardHome: calendar
-    onSelectedChanged: list.close()
+    onSelectedChanged: list.reset()
     Component.onCompleted: {
         months.go(thisMonth, false);
         if (Todoist.enabled)

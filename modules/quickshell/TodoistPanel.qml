@@ -89,8 +89,8 @@ Panel {
     }
 
     boxWidth: 440
-    onViewChanged: list.close()
-    onProjectChanged: list.close()
+    onViewChanged: list.reset()
+    onProjectChanged: list.reset()
     // The view and project go first, as changing either closes the cards. Set
     // once rather than bound, as a binding would rebuild the card on every
     // sync. A project or task gone since is left out, Projects then giving way
