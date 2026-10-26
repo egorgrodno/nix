@@ -463,7 +463,7 @@ Panel {
             anchors.right: parent.right
             anchors.rightMargin: 8
             anchors.verticalCenter: parent.verticalCenter
-            text: [panel.stateOf(row.session)].concat(row.session.model ? [row.session.model] : []).join(" · ")
+            text: [panel.stateOf(row.session)].concat([[row.session.model, row.session.effort].filter(part => part).join(" ")].filter(part => part)).join(" · ")
             color: row.session.paused === true ? Theme.yellow : Theme.foregroundMuted
             font.pixelSize: 14
         }
@@ -736,6 +736,7 @@ Panel {
 
                 property string repo: ""
                 property string model: ""
+                property string effort: ""
                 property bool waiting: false
                 readonly property bool valid: /^[a-z0-9][a-z0-9-]{0,39}$/.test(nameField.text) && repo !== "" && promptField.text.trim() !== ""
 
@@ -743,7 +744,7 @@ Panel {
                     if (!valid || waiting)
                         return;
                     waiting = true;
-                    Bosun.spawn(nameField.text, repo, promptField.text.trim(), model);
+                    Bosun.spawn(nameField.text, repo, promptField.text.trim(), model, effort);
                 }
 
                 width: parent.width
@@ -763,6 +764,7 @@ Panel {
                         promptField.text = "";
                         form.repo = "";
                         form.model = "";
+                        form.effort = "";
                         panel.spawning = false;
                     }
                 }
@@ -840,6 +842,29 @@ Panel {
                             hoverFill: lit ? Theme.blue : Theme.tint(0.12)
                             textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
                             onClicked: form.model = modelData
+                        }
+                    }
+                }
+
+                Caption {
+                    text: "At an effort"
+                }
+
+                Flow {
+                    width: parent.width
+                    spacing: 6
+
+                    Repeater {
+                        model: [""].concat(Bosun.efforts)
+
+                        TextButton {
+                            required property string modelData
+
+                            text: modelData === "" ? "Default" : modelData
+                            lit: modelData === form.effort
+                            hoverFill: lit ? Theme.blue : Theme.tint(0.12)
+                            textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
+                            onClicked: form.effort = modelData
                         }
                     }
                 }

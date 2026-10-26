@@ -48,6 +48,8 @@ Singleton {
     readonly property ShellScreen screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
     // Claude Code's aliases, which the panel offers.
     readonly property var models: ["fable", "opus", "sonnet", "haiku"]
+    // What a worker's effort may be, lowest first.
+    readonly property var efforts: ["low", "medium", "high", "xhigh", "max"]
 
     // The module on the focused screen opens or closes its panel.
     signal toggleRequested
@@ -206,10 +208,10 @@ Singleton {
         send(["tell", text]);
     }
 
-    // A worker under the master, on the daemon's worker model when `model` is
-    // empty.
-    function spawn(name, repo, prompt, model) {
-        send(["spawn"].concat(model ? ["-model", model] : [], ["--", name, repo, prompt]));
+    // A worker under the master, on the daemon's worker model and effort when
+    // `model` and `effort` are empty.
+    function spawn(name, repo, prompt, model, effort) {
+        send(["spawn"].concat(model ? ["-model", model] : [], effort ? ["-effort", effort] : [], ["--", name, repo, prompt]));
     }
 
     function kill(node) {
