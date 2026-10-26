@@ -14,6 +14,9 @@ Item {
     property string node
     // Its parent's node, whose prompts read as prompts rather than messages.
     property string parentNode
+    // Off for a session gone from the fleet: what it showed stays, and
+    // nothing new comes.
+    property bool live: true
     readonly property alias feed: feed
     readonly property var progress: feed.progress
     // Whether the session is in its turn as `bosun watch` has it, for when
@@ -73,21 +76,10 @@ Item {
         };
     }
 
+    // Once the view has laid out what changed.
     function restore(at) {
-        if (!at || at.follow) {
-            following = true;
-            Qt.callLater(list.positionViewAtEnd);
-            return;
-        }
-        const index = shown.values.findIndex(e => e.id === at.id);
-        if (index < 0) {
-            following = true;
-            Qt.callLater(list.positionViewAtEnd);
-            return;
-        }
-        following = false;
-        list.positionViewAtIndex(index, ListView.Beginning);
-        list.contentY += at.offset ?? 0;
+        restorer.at = at;
+        restorer.restart();
     }
 
     onNodeChanged: {
@@ -101,8 +93,37 @@ Item {
         property var kept: null
 
         node: conversation.node
+        live: conversation.live
         onPrepending: kept = conversation.position()
-        onPrepended: Qt.callLater(() => conversation.restore(kept))
+        onPrepended: conversation.restore(kept)
+    }
+
+    // Timers rather than Qt.callLater, which can outlive a pane destroyed in
+    // between.
+    Timer {
+        id: restorer
+
+        property var at: null
+
+        interval: 0
+        onTriggered: {
+            const index = at && !at.follow ? shown.values.findIndex(e => e.id === at.id) : -1;
+            if (index < 0) {
+                conversation.following = true;
+                list.positionViewAtEnd();
+                return;
+            }
+            conversation.following = false;
+            list.positionViewAtIndex(index, ListView.Beginning);
+            list.contentY += at.offset ?? 0;
+        }
+    }
+
+    Timer {
+        id: toEnd
+
+        interval: 0
+        onTriggered: list.positionViewAtEnd()
     }
 
     // Ticks the times, each second in a turn, as a running call counts them.
@@ -164,7 +185,7 @@ Item {
         }
 
         onContentHeightChanged: if (conversation.following)
-            Qt.callLater(positionViewAtEnd)
+            toEnd.restart()
         onMovementEnded: conversation.following = atYEnd
         onAtYBeginningChanged: if (atYBeginning && !conversation.following)
             feed.loadOlder()

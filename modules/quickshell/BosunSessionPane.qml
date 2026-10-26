@@ -13,10 +13,11 @@ BosunPane {
     // While a first click has armed Kill.
     property bool killArmed: false
     readonly property string node: session?.node ?? ""
-    readonly property bool attachable: (session?.id ?? "") !== "" && session?.status !== "exited"
+    readonly property bool gone: session !== null && !Bosun.sessions.some(s => s.node === node)
+    readonly property bool attachable: !gone && (session?.id ?? "") !== "" && session?.status !== "exited"
     readonly property bool killable: attachable && !["master", "desk"].includes(node) && session?.killed !== true
     // The daemon's `model` switches only these.
-    readonly property bool switchable: ["master", "desk"].includes(node) && Bosun.connected
+    readonly property bool switchable: !gone && ["master", "desk"].includes(node) && Bosun.connected
     readonly property bool sayable: attachable && session?.killed !== true && Bosun.connected
     readonly property string stateKey: session ? BosunLook.stateOf(session) : "stopped"
     readonly property alias conversation: conversationView
@@ -68,9 +69,9 @@ BosunPane {
     ]
     facts: [
         BosunFact {
-            glyph: BosunLook.states[pane.stateKey].glyph
-            glyphColor: BosunLook.stateColor(pane.stateKey)
-            text: pane.session ? BosunLook.stateWords(pane.session) : ""
+            glyph: BosunLook.states[pane.gone ? "stopped" : pane.stateKey].glyph
+            glyphColor: pane.gone ? Theme.foregroundMuted : BosunLook.stateColor(pane.stateKey)
+            text: pane.gone ? "Gone from the fleet" : pane.session ? BosunLook.stateWords(pane.session) : ""
         },
         BosunFact {
             glyph: BosunLook.folder
@@ -99,6 +100,7 @@ BosunPane {
             anchors.fill: parent
             node: pane.visible ? pane.node : ""
             parentNode: pane.session?.parent ?? ""
+            live: !pane.gone
             busy: ["busy", "waiting"].includes(pane.session?.status)
             onDecisionOpened: id => pane.decisionOpened(id)
         }

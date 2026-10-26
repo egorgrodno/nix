@@ -23,15 +23,18 @@ Item {
     // How many entries each request asks for, meta entries uncounted.
     property int page: 100
 
+    // Off stops following and keeps the entries held.
+    property bool live: true
+
     // Each id's place in `entries`.
     property var places: ({})
-    // Around putting older entries at the start, for a view to keep its place.
-    signal prepending
-    signal prepended
-
     // Set by a reset: the entries line after it is the latest page, with
     // `more`.
     property bool opening: false
+
+    // Around putting older entries at the start, for a view to keep its place.
+    signal prepending
+    signal prepended
 
     function clear() {
         entries = [];
@@ -96,13 +99,21 @@ Item {
         follow.running = false;
         older.running = false;
         retry.stop();
-        if (node === "")
+        if (node === "" || !live)
             return;
         follow.command = [Programs.bosun, "follow", "-limit", String(page), node];
         follow.running = true;
     }
 
     onNodeChanged: restart()
+    onLiveChanged: {
+        if (live)
+            restart();
+        else {
+            follow.running = false;
+            retry.stop();
+        }
+    }
     Component.onCompleted: restart()
 
     Process {
@@ -113,7 +124,7 @@ Item {
         }
         onExited: {
             feed.progress = null;
-            if (feed.node !== "")
+            if (feed.node !== "" && feed.live)
                 retry.start();
         }
     }
