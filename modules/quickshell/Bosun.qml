@@ -9,7 +9,8 @@ import Quickshell.Io
 // The bosun daemon as `bosun watch` streams it: the Claude Code sessions it
 // runs and the decisions waiting on an answer. The stream ends whenever the
 // daemon stops, and starts again a few seconds later. Answers and commands go
-// through the `bosun` command, one at a time.
+// through the `bosun` command, one at a time. A decision that comes to wait on
+// the user raises a notification.
 Singleton {
     id: root
 
@@ -30,8 +31,41 @@ Singleton {
 
     // The module on the focused screen opens or closes its panel.
     signal toggleRequested
+    // The module on the focused screen opens its panel.
+    signal openRequested
     // A command sent through `send` has exited, with status 0 if `ok`.
     signal finished(var args, bool ok)
+
+    // What a permission asks to run or touch, as `bosun status` names it.
+    function detailOf(decision) {
+        const input = decision.input ?? {};
+        for (const key of ["command", "file_path", "notebook_path", "url", "pattern"])
+            if (typeof input[key] === "string")
+                return input[key];
+        return JSON.stringify(input);
+    }
+
+    // As the newest of one notification, which a later one replaces through
+    // its tag. A click opens the panel.
+    function notify(decision) {
+        const d = decision;
+        const summary = d.kind === "permission" ? `${d.node} asks to use ${d.tool}` : d.kind === "question" ? `${d.node} asks` : `${d.node} says`;
+        const text = d.kind === "permission" ? detailOf(d) : d.kind === "question" ? d.question : d.note;
+        const why = d.kind !== "notice" && d.note ? `\n\nMaster: ${d.note}` : "";
+        // The bar reads a body as markup.
+        const body = (text + why).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        notifier.post([summary, body]);
+    }
+
+    // Once nothing waits on the user.
+    function withdraw() {
+        for (const entry of Notifications.entries)
+            if (entry.tag === "bosun")
+                entry.notification?.expire();
+    }
+
+    onMineChanged: if (mine.length === 0)
+        withdraw()
 
     function approve(id) {
         send(["approve", id]);
@@ -80,6 +114,14 @@ Singleton {
         cli.next();
     }
 
+    // An escalated decision comes again, now held by the user.
+    function add(decision) {
+        const was = decisions.find(d => d.id === decision.id);
+        decisions = [...decisions.filter(d => d.id !== decision.id), decision].sort((a, b) => Number(a.id) - Number(b.id));
+        if (decision.holder === "user" && was?.holder !== "user")
+            notify(decision);
+    }
+
     function receive(line) {
         let message;
         try {
@@ -99,9 +141,8 @@ Singleton {
         case "sessions":
             sessions = event.sessions ?? [];
             break;
-        // An escalated decision comes again, now held by the user.
         case "decision":
-            decisions = [...decisions.filter(d => d.id !== event.decision.id), event.decision].sort((a, b) => Number(a.id) - Number(b.id));
+            add(event.decision);
             break;
         case "settled":
             decisions = decisions.filter(d => d.id !== event.id);
@@ -154,6 +195,36 @@ Singleton {
             root.finished(args, exitCode === 0);
             Qt.callLater(next);
         }
+    }
+
+    // One at a time: a post ends the notify-send before, whose notification
+    // the next one replaces.
+    Process {
+        id: notifier
+
+        property var pending: null
+
+        function post(args) {
+            pending = args;
+            if (running)
+                running = false;
+            else
+                next();
+        }
+
+        function next() {
+            if (running || pending === null)
+                return;
+            command = [Programs.notifySend, "--app-name=bosun", "--hint=string:x-dunst-stack-tag:bosun", "--action=default=Open", "--"].concat(pending);
+            pending = null;
+            running = true;
+        }
+
+        stdout: StdioCollector {
+            onStreamFinished: if (text.trim() === "default")
+                root.openRequested()
+        }
+        onExited: Qt.callLater(next)
     }
 
     IpcHandler {

@@ -43,15 +43,6 @@ Panel {
         return rows;
     }
 
-    // What a permission asks to run or touch, as `bosun status` names it.
-    function detailOf(decision) {
-        const input = decision.input ?? {};
-        for (const key of ["command", "file_path", "notebook_path", "url", "pattern"])
-            if (typeof input[key] === "string")
-                return input[key];
-        return JSON.stringify(input);
-    }
-
     function stateOf(session) {
         if (session.killed)
             return "killed";
@@ -219,7 +210,7 @@ Panel {
                 elide: Text.ElideRight
                 font.family: card.decision.kind === "permission" ? Theme.fontMono : Theme.fontUI
                 font.pixelSize: 14
-                text: card.decision.kind === "permission" ? panel.detailOf(card.decision) : card.decision.kind === "question" ? card.decision.question : card.decision.note
+                text: card.decision.kind === "permission" ? Bosun.detailOf(card.decision) : card.decision.kind === "question" ? card.decision.question : card.decision.note
             }
 
             // Why the master escalated it.
