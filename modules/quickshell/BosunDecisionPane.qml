@@ -1,0 +1,323 @@
+pragma ComponentBehavior: Bound
+
+import QtQuick
+
+// A decision whole: what reserves it and what auto mode refused, the call or
+// the question, why the master passed it on, and its answers. A permission
+// takes Deny, with a note of what to do instead, and Approve, a question a
+// reply, a notice Dismiss. Once settled it stays, faded and unanswerable,
+// until the selection moves.
+BosunPane {
+    id: pane
+
+    // The decision, live or held.
+    property var decision: null
+    // While it still waits on the user.
+    property bool live: false
+    // "a" or "d" while a first press has armed Approve or Deny.
+    property string armed: ""
+    readonly property string decisionId: decision?.id ?? ""
+    readonly property string kind: decision?.kind ?? ""
+    readonly property var session: Bosun.sessions.find(s => s.node === decision?.node) ?? null
+    // What was typed for each decision, by id, so a note survives moving
+    // away and back.
+    property var drafts: ({})
+    readonly property string settledText: {
+        if (live || !decision)
+            return "";
+        const entry = Bosun.settledEntry(decisionId);
+        const outcome = entry ? BosunLook.outcomeOf(entry) : "";
+        const verb = {
+            allowed: "approved",
+            denied: "denied",
+            answered: "answered",
+            dismissed: "dismissed"
+        }[outcome];
+        let text = "It no longer waits on you.";
+        if (outcome === "withdrawn")
+            text = entry.cause ? `Withdrawn when ${entry.cause}.` : "Withdrawn.";
+        else if (entry?.by === "user")
+            text = `You ${verb} it.`;
+        else if (entry?.by === "desk")
+            text = `The desk ${verb} it on your word: “${entry.words ?? ""}”.`;
+        else if (entry?.by === "master")
+            text = `The master ${verb} it.`;
+        else if (entry?.by === "session")
+            text = `It was ${verb} in ${decision.node}'s own prompt.`;
+        else if (entry)
+            text = `bosun ${verb} it.`;
+        return `${text} It stays here until you move to something else.`;
+    }
+
+    // Back to the sidebar, from a field.
+    signal leave
+
+    function approve() {
+        if (live && kind === "permission")
+            Bosun.approve(decisionId);
+    }
+
+    function deny() {
+        if (live && kind === "permission")
+            Bosun.deny(decisionId, noteField.text.trim());
+    }
+
+    function focusNote() {
+        if (live && kind === "permission")
+            noteField.focusIn();
+    }
+
+    function focusReply() {
+        if (live && kind === "question")
+            replyField.focusIn();
+    }
+
+    // Where Tab and Enter take the keyboard: the field this decision takes.
+    function focusIn() {
+        if (kind === "question")
+            focusReply();
+        else
+            focusNote();
+        return live && kind !== "notice";
+    }
+
+    onDecisionIdChanged: {
+        noteField.text = drafts[decisionId]?.note ?? "";
+        replyField.text = drafts[decisionId]?.reply ?? "";
+        scrollToTop();
+    }
+
+    title: {
+        const d = decision;
+        if (!d)
+            return "";
+        if (d.kind === "question")
+            return `${d.node} asks`;
+        if (d.kind === "notice")
+            return `${d.node} says`;
+        switch (d.tool) {
+        case "Bash":
+            return `${d.node} wants to run a command`;
+        case "Edit":
+        case "MultiEdit":
+            return `${d.node} wants to edit a file`;
+        case "Write":
+            return `${d.node} wants to write a file`;
+        case "NotebookEdit":
+            return `${d.node} wants to edit a notebook`;
+        }
+        return `${d.node} wants to use ${d.tool}`;
+    }
+    aside: decision ? `#${decision.id}` : ""
+    facts: [
+        BosunFact {
+            glyph: BosunLook.folder
+            text: BosunLook.tilde(pane.session?.repo || pane.session?.dir)
+        },
+        BosunFact {
+            glyph: BosunLook.branch
+            text: pane.session?.base ? `worktree-${pane.session.node}` : ""
+        },
+        BosunFact {
+            glyph: BosunLook.chip
+            text: [pane.session?.model, pane.session?.effort].filter(part => part).join(" ")
+        }
+    ]
+
+    Banner {
+        visible: pane.settledText !== ""
+        glyph: BosunLook.notice
+        tint: Theme.foregroundMuted
+        text: pane.settledText
+    }
+
+    Banner {
+        visible: (pane.decision?.reserved ?? "") !== ""
+        glyph: BosunLook.reserved
+        tint: Theme.yellow
+        text: `Reserved: ${pane.decision?.reserved ?? ""}.${pane.decision?.userOnly ? " Only your own answer here settles it." : ""}`
+    }
+
+    Banner {
+        visible: (pane.decision?.refused ?? "") !== ""
+        glyph: BosunLook.alert
+        tint: Theme.yellow
+        text: `Auto mode refused its last call: ${pane.decision?.refused ?? ""}`
+    }
+
+    Column {
+        width: parent.width
+        spacing: 12
+        opacity: pane.live ? 1 : 0.6
+
+        BarText {
+            width: parent.width
+            visible: pane.kind === "question" || pane.kind === "notice"
+            wrapMode: Text.Wrap
+            font.pixelSize: 16
+            text: (pane.kind === "question" ? pane.decision?.question : pane.decision?.note) ?? ""
+        }
+
+        Repeater {
+            model: pane.kind === "permission" ? Bosun.callOf(pane.decision) : []
+
+            delegate: BosunCallBlock {}
+        }
+
+        // Why the master passed it on. A notice's note is its text.
+        Column {
+            width: parent.width
+            visible: pane.kind !== "notice" && (pane.decision?.note ?? "") !== ""
+            topPadding: 4
+            spacing: 4
+
+            BosunFact {
+                glyph: BosunLook.master
+                text: "Why the master passed it to you"
+            }
+
+            BarText {
+                width: parent.width
+                wrapMode: Text.Wrap
+                font.pixelSize: 14
+                text: pane.decision?.note ?? ""
+            }
+        }
+    }
+
+    foot: [
+        Row {
+            width: parent.width
+            visible: pane.live && pane.kind === "permission"
+            spacing: 8
+
+            BosunComposer {
+                id: noteField
+
+                width: parent.width - denyButton.width - approveButton.width - 2 * parent.spacing
+                height: 34
+                sendGlyph: false
+                placeholder: "Deny with what to do instead (optional)"
+                onTextChanged: pane.drafts[pane.decisionId] = Object.assign({}, pane.drafts[pane.decisionId], {
+                    note: text
+                })
+                onSent: pane.deny()
+                onLeave: pane.leave()
+            }
+
+            TextButton {
+                id: denyButton
+
+                anchors.verticalCenter: parent.verticalCenter
+                height: 34
+                text: pane.armed === "d" ? `${BosunLook.close}  Deny?` : `${BosunLook.close}  Deny`
+                hoverFill: Theme.alpha(Theme.red, 0.5)
+                lit: pane.armed === "d"
+                onClicked: pane.deny()
+            }
+
+            TextButton {
+                id: approveButton
+
+                anchors.verticalCenter: parent.verticalCenter
+                height: 34
+                text: pane.armed === "a" ? `${BosunLook.check}  Approve?` : `${BosunLook.check}  Approve`
+                hoverFill: Theme.alpha(Theme.blue, 0.5)
+                lit: pane.armed === "a"
+                onClicked: pane.approve()
+            }
+        },
+        BosunComposer {
+            id: replyField
+
+            width: parent.width
+            visible: pane.live && pane.kind === "question"
+            placeholder: `Answer ${pane.decision?.node ?? ""}`
+            onTextChanged: pane.drafts[pane.decisionId] = Object.assign({}, pane.drafts[pane.decisionId], {
+                reply: text
+            })
+            onSent: text => Bosun.reply(pane.decisionId, text)
+            onLeave: pane.leave()
+        },
+        TextButton {
+            anchors.right: parent.right
+            visible: pane.live && pane.kind === "notice"
+            text: "Dismiss"
+            onClicked: Bosun.dismiss(pane.decisionId)
+        },
+        BosunHints {
+            model: {
+                const move = {
+                    keys: ["j", "k"],
+                    text: "next decision"
+                };
+                if (!pane.live)
+                    return [move];
+                if (pane.kind === "permission")
+                    return [
+                        {
+                            keys: ["a", "a"],
+                            text: "approve"
+                        },
+                        {
+                            keys: ["d", "d"],
+                            text: "deny"
+                        },
+                        {
+                            keys: ["D"],
+                            text: "deny with a note"
+                        },
+                        {
+                            keys: ["Tab"],
+                            text: "write a note"
+                        },
+                        move];
+                if (pane.kind === "question")
+                    return [
+                        {
+                            keys: ["r"],
+                            text: "answer"
+                        },
+                        move];
+                return [move];
+            }
+        }
+    ]
+
+    // A line on a tint of its colour, under a glyph.
+    component Banner: Rectangle {
+        id: banner
+
+        property string glyph
+        property color tint
+        property string text
+
+        width: parent?.width ?? 0
+        height: bannerText.implicitHeight + 20
+        radius: Theme.radius - 4
+        color: Theme.alpha(tint, 0.12)
+
+        BarText {
+            id: bannerGlyph
+
+            x: 12
+            y: 10
+            text: banner.glyph
+            color: banner.tint
+            font.pixelSize: 14
+        }
+
+        BarText {
+            id: bannerText
+
+            anchors.left: bannerGlyph.right
+            anchors.leftMargin: 10
+            y: 10
+            width: parent.width - x - 12
+            wrapMode: Text.Wrap
+            text: banner.text
+            color: banner.tint
+            font.pixelSize: 14
+        }
+    }
+}

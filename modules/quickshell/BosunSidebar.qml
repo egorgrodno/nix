@@ -1,0 +1,496 @@
+pragma ComponentBehavior: Bound
+
+import QtQuick
+import QtQuick.Controls.Basic
+import Quickshell
+
+// Waiting on you, Desk, Fleet and the latest three Log entries, as one list
+// that j and k move through. Each row is a key: "decision:<id>", "desk",
+// "session:<node>" or "log:<seq>". A row reads its session or decision from
+// Bosun by that key, so a row kept across an update shows the update.
+Item {
+    id: sidebar
+
+    // The selected row's key.
+    property string selected
+    // The selected decision once it no longer waits on the user, which its
+    // row keeps showing until the selection moves.
+    property var held: null
+    // Lights the selected row's edge while the keyboard is here.
+    readonly property bool focused: activeFocus
+    readonly property var waiting: {
+        const mine = Bosun.mine;
+        if (!held || mine.some(d => d.id === held.id))
+            return mine;
+        return [...mine, held].sort((a, b) => Number(a.id) - Number(b.id));
+    }
+    // The master and its workers, depth first, each session under its parent,
+    // as `bosun status` prints it.
+    readonly property var tree: {
+        const children = new Map();
+        for (const s of Bosun.sessions.filter(s => s.node !== "desk")) {
+            const parent = s.parent ?? "";
+            children.set(parent, [...(children.get(parent) ?? []), s]);
+        }
+        const rows = [];
+        const walk = parent => {
+            for (const s of children.get(parent) ?? []) {
+                rows.push(s);
+                walk(s.node);
+            }
+        };
+        walk("");
+        return rows;
+    }
+    readonly property var rows: {
+        if (!Bosun.connected)
+            return [
+                {
+                    key: "head:none",
+                    type: "none"
+                }
+            ];
+        const head = name => ({
+                    key: `head:${name}`,
+                    type: "head",
+                    name: name
+                });
+        const rows = [head("Waiting on you")];
+        for (const d of waiting)
+            rows.push({
+                key: `decision:${d.id}`,
+                type: "decision",
+                id: d.id
+            });
+        rows.push(head("Desk"), {
+            key: "desk",
+            type: "desk"
+        }, head("Fleet"));
+        for (const s of tree)
+            rows.push({
+                key: `session:${s.node}`,
+                type: "session",
+                node: s.node
+            });
+        const latest = Bosun.log.slice(-3).reverse();
+        if (latest.length > 0)
+            rows.push(head("Log"));
+        for (const e of latest)
+            rows.push({
+                key: `log:${e.seq}`,
+                type: "log",
+                entry: e
+            });
+        return rows;
+    }
+    // What j and k step through, in order.
+    readonly property var keys: rows.filter(r => !["head", "none"].includes(r.type)).map(r => r.key)
+
+    signal chosen(string key)
+
+    function reveal(key) {
+        const index = rows.findIndex(r => r.key === key);
+        if (index >= 0)
+            list.positionViewAtIndex(index, ListView.Contain);
+    }
+
+    onSelectedChanged: Qt.callLater(() => reveal(selected))
+
+    ListView {
+        id: list
+
+        anchors.fill: parent
+        anchors.topMargin: 8
+        anchors.bottomMargin: 8
+        clip: true
+        boundsBehavior: Flickable.StopAtBounds
+        model: ScriptModel {
+            values: sidebar.rows
+            objectProp: "key"
+        }
+
+        ScrollBar.vertical: ScrollBar {
+            policy: list.contentHeight > list.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
+
+            contentItem: Rectangle {
+                implicitWidth: 4
+                radius: 2
+                color: Theme.tint(0.25)
+            }
+        }
+
+        delegate: Loader {
+            id: slot
+
+            required property var modelData
+
+            width: ListView.view.width
+            sourceComponent: {
+                switch (modelData.type) {
+                case "head":
+                    return header;
+                case "decision":
+                    return decisionRow;
+                case "desk":
+                    return deskRow;
+                case "session":
+                    return sessionRow;
+                case "log":
+                    return logRow;
+                }
+                return none;
+            }
+
+            Component {
+                id: header
+
+                Header {
+                    name: slot.modelData.name
+                }
+            }
+
+            Component {
+                id: decisionRow
+
+                DecisionRow {
+                    rowKey: slot.modelData.key
+                    decisionId: slot.modelData.id
+                }
+            }
+
+            Component {
+                id: deskRow
+
+                DeskRow {
+                    rowKey: slot.modelData.key
+                }
+            }
+
+            Component {
+                id: sessionRow
+
+                SessionRow {
+                    rowKey: slot.modelData.key
+                    node: slot.modelData.node
+                }
+            }
+
+            Component {
+                id: logRow
+
+                LogRow {
+                    rowKey: slot.modelData.key
+                    entry: slot.modelData.entry
+                }
+            }
+
+            Component {
+                id: none
+
+                Caption {
+                    leftPadding: 20
+                    topPadding: 12
+                    text: "The bosun daemon is not running"
+                }
+            }
+        }
+    }
+
+    // A section's name, and for Waiting on you how many wait, yellow while any
+    // does.
+    component Header: Item {
+        id: head
+
+        required property string name
+        readonly property bool waiting: name === "Waiting on you"
+        readonly property int count: Bosun.mine.length
+
+        height: head.name === "Waiting on you" ? 32 : 44
+
+        Caption {
+            id: headText
+
+            x: 20
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 6
+            text: head.name
+            color: head.waiting && head.count > 0 ? Theme.yellow : Theme.foregroundMuted
+        }
+
+        Caption {
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            anchors.baseline: headText.baseline
+            visible: head.waiting
+            text: `${head.count}`
+            color: headText.color
+        }
+    }
+
+    // What every row shares: the selected one's fill and edge, a hover, and
+    // a click that selects it.
+    component RowBase: Item {
+        id: base
+
+        required property string rowKey
+        readonly property bool current: sidebar.selected === rowKey
+        readonly property bool hovered: hover.hovered
+
+        height: 36
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.leftMargin: 8
+            anchors.rightMargin: 8
+            radius: Theme.radius - 4
+            color: base.current ? Theme.tint(0.07) : hover.hovered ? Theme.tint(0.04) : "transparent"
+
+            Rectangle {
+                width: 2
+                height: parent.height
+                visible: base.current
+                color: sidebar.focused ? Theme.blue : Theme.foregroundFaint
+            }
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 150
+                    easing.type: Easing.OutQuad
+                }
+            }
+        }
+
+        HoverHandler {
+            id: hover
+        }
+
+        TapHandler {
+            onTapped: sidebar.chosen(base.rowKey)
+        }
+    }
+
+    // Its kind's glyph, the session, the tool or "asks", whether it is
+    // reserved or settled, and under them the command, the path or the
+    // question.
+    component DecisionRow: RowBase {
+        id: row
+
+        required property string decisionId
+        readonly property var live: Bosun.mine.find(d => d.id === decisionId) ?? null
+        readonly property var decision: live ?? (sidebar.held?.id === decisionId ? sidebar.held : null)
+
+        height: 54
+        opacity: live ? 1 : 0.6
+
+        BarText {
+            id: kindGlyph
+
+            x: 20
+            y: 9
+            text: row.decision ? BosunLook.decisionGlyph(row.decision) : ""
+            color: Theme.foregroundMuted
+            font.pixelSize: 14
+        }
+
+        BarText {
+            id: nodeText
+
+            anchors.left: kindGlyph.right
+            anchors.leftMargin: 8
+            anchors.baseline: kindGlyph.baseline
+            text: row.decision?.node ?? ""
+            font.pixelSize: 14
+        }
+
+        BarText {
+            anchors.left: nodeText.right
+            anchors.leftMargin: 8
+            anchors.right: badge.visible ? badge.left : parent.right
+            anchors.rightMargin: badge.visible ? 8 : 20
+            anchors.baseline: kindGlyph.baseline
+            elide: Text.ElideRight
+            text: {
+                const d = row.decision;
+                if (!d)
+                    return "";
+                return d.kind === "permission" ? d.tool : d.kind === "question" ? "asks" : "says";
+            }
+            color: Theme.foregroundMuted
+            font.pixelSize: 13
+        }
+
+        Rectangle {
+            id: badge
+
+            readonly property bool reserved: (row.decision?.reserved ?? "") !== ""
+
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            anchors.verticalCenter: kindGlyph.verticalCenter
+            visible: reserved || !row.live
+            width: badgeText.implicitWidth + 12
+            height: 20
+            radius: 4
+            color: row.live ? Theme.alpha(Theme.yellow, 0.15) : Theme.tint(0.06)
+
+            BarText {
+                id: badgeText
+
+                anchors.centerIn: parent
+                text: row.live ? `${BosunLook.reserved} reserved` : "settled"
+                color: row.live ? Theme.yellow : Theme.foregroundMuted
+                font.pixelSize: 12
+            }
+        }
+
+        BarText {
+            x: nodeText.x
+            y: 30
+            width: parent.width - x - 20
+            elide: Text.ElideRight
+            text: row.decision ? Bosun.summaryOf(row.decision).split("\n")[0] : ""
+            color: Theme.foregroundMuted
+            font.family: row.decision?.kind === "permission" ? Theme.fontMono : Theme.fontUI
+            font.pixelSize: 13
+        }
+    }
+
+    // The front desk, a dot while it holds a reply the user has not seen,
+    // and its model. Without a desk, the master, whom a tell then reaches.
+    component DeskRow: RowBase {
+        id: row
+
+        readonly property var session: Bosun.desk ?? Bosun.master
+
+        BarText {
+            id: deskGlyph
+
+            x: 20
+            anchors.verticalCenter: parent.verticalCenter
+            text: Bosun.desk ? BosunLook.desk : BosunLook.master
+            color: Theme.foregroundMuted
+            font.pixelSize: 14
+        }
+
+        BarText {
+            id: deskName
+
+            anchors.left: deskGlyph.right
+            anchors.leftMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            text: Bosun.desk ? "Front desk" : "Master"
+            font.pixelSize: 14
+        }
+
+        Rectangle {
+            anchors.left: deskName.right
+            anchors.leftMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            visible: Bosun.desk?.unseen === true
+            width: 6
+            height: 6
+            radius: 3
+            color: Theme.blue
+        }
+
+        Caption {
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            anchors.verticalCenter: parent.verticalCenter
+            text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
+        }
+    }
+
+    // A session, indented under its parent: its state's glyph, whose tooltip
+    // gives the words, its name, and its model and effort.
+    component SessionRow: RowBase {
+        id: row
+
+        required property string node
+        readonly property var session: Bosun.sessions.find(s => s.node === node) ?? null
+        readonly property string stateKey: session ? BosunLook.stateOf(session) : "stopped"
+        readonly property bool resting: ["stopped", "killed"].includes(stateKey)
+
+        height: 32
+
+        BarText {
+            id: stateGlyph
+
+            x: 20 + 16 * (row.session?.depth ?? 0)
+            anchors.verticalCenter: parent.verticalCenter
+            text: BosunLook.states[row.stateKey].glyph
+            color: BosunLook.stateColor(row.stateKey)
+            font.pixelSize: 14
+
+            HoverHandler {
+                id: glyphHover
+            }
+
+            Tooltip {
+                target: stateGlyph
+                text: row.session ? BosunLook.stateWords(row.session) : ""
+                hovered: glyphHover.hovered
+            }
+        }
+
+        BarText {
+            anchors.left: stateGlyph.right
+            anchors.leftMargin: 8
+            anchors.right: modelText.left
+            anchors.rightMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            elide: Text.ElideRight
+            text: row.node
+            color: row.resting ? Theme.foregroundMuted : Theme.foregroundStrong
+            font.pixelSize: 14
+        }
+
+        Caption {
+            id: modelText
+
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            anchors.verticalCenter: parent.verticalCenter
+            text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
+        }
+    }
+
+    // A Log entry on one line, and when it came.
+    component LogRow: RowBase {
+        id: row
+
+        required property var entry
+
+        height: 28
+
+        BarText {
+            id: logGlyph
+
+            x: 20
+            anchors.verticalCenter: parent.verticalCenter
+            text: BosunLook.logGlyph(row.entry)
+            color: BosunLook.logColor(row.entry)
+            font.pixelSize: 14
+        }
+
+        BarText {
+            anchors.left: logGlyph.right
+            anchors.leftMargin: 8
+            anchors.right: timeText.left
+            anchors.rightMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            elide: Text.ElideRight
+            text: BosunLook.logLine(row.entry)
+            font.pixelSize: 13
+        }
+
+        Caption {
+            id: timeText
+
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            anchors.verticalCenter: parent.verticalCenter
+            text: BosunLook.timeOf(row.entry)
+        }
+    }
+}

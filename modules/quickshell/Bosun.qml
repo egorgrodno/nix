@@ -7,7 +7,7 @@ import Quickshell.Hyprland
 import Quickshell.Io
 
 // The bosun daemon as `bosun watch` streams it: the Claude Code sessions it
-// runs, the decisions waiting on an answer and the messages between sessions.
+// runs, the decisions waiting on an answer and the fleet's log.
 // The stream ends whenever the daemon stops, and starts again a few seconds
 // later. Answers and commands go through the `bosun` command, one at a time,
 // with a pause or unpause beside them. A decision that comes to wait on the
@@ -37,12 +37,12 @@ Singleton {
         const order = ["turn", "blocked", "paused", "idle", "stopped"];
         return sessions.filter(s => s.node !== "master" && s.node !== "desk").map(activityOf).filter(a => a !== "").sort((a, b) => order.indexOf(a) - order.indexOf(b));
     }
-    // What sessions told each other, oldest first, the latest ten as the daemon
-    // keeps them: `from` told `node` the `text`.
-    property var messages: []
     // The decisions the desk answered on the user's word, oldest first: the
     // `decision`, the `behavior` or `text` it gave and the user's `words`.
     property var answered: []
+    // The fleet's log, oldest first, the latest 200 as the daemon keeps them:
+    // each entry with its `seq`, `at`, `kind`, `by` and what its kind carries.
+    property var log: []
     // Why the last command failed, until the next one.
     property string error: ""
     readonly property ShellScreen screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
@@ -86,7 +86,7 @@ Singleton {
         return JSON.stringify(input);
     }
 
-    // The whole of a permission's call, as blocks for the panel's CallBlock:
+    // The whole of a permission's call, as blocks for BosunCallBlock:
     // the parts the tool acts on, what takes a command out of the sandbox or
     // onto the network, then every other field of its input, so the user
     // approves nothing unseen.
@@ -187,12 +187,30 @@ Singleton {
     onMineChanged: if (notifier.decision !== "" && !mine.some(d => d.id === notifier.decision))
         withdraw()
 
+    // What a decision asks, on one line: what a permission acts on, a
+    // question, or a notice's text.
+    function summaryOf(decision) {
+        const d = decision;
+        if (d.kind === "permission")
+            return detailOf(d);
+        return (d.kind === "question" ? d.question : d.note) ?? "";
+    }
+
+    // The log's `settled` entry for the decision, once it has come.
+    function settledEntry(id) {
+        for (let i = log.length - 1; i >= 0; i--)
+            if (log[i].kind === "settled" && log[i].decision?.id === id)
+                return log[i];
+        return null;
+    }
+
     function approve(id) {
         send(["approve", id]);
     }
 
-    function deny(id) {
-        send(["deny", id]);
+    // `bosun deny` passes a note on as what to do instead.
+    function deny(id, note) {
+        send(["deny", id].concat(note ? [note] : []));
     }
 
     function reply(id, answer) {
@@ -263,8 +281,8 @@ Singleton {
         if (message.type === "snapshot") {
             sessions = message.sessions ?? [];
             decisions = message.decisions ?? [];
-            messages = message.messages ?? [];
             answered = message.answered ?? [];
+            log = message.log ?? [];
             paused = message.paused === true;
             connected = true;
             return;
@@ -280,12 +298,13 @@ Singleton {
         case "settled":
             decisions = decisions.filter(d => d.id !== event.id);
             break;
-        case "message":
-            messages = [...messages, event].slice(-10);
-            break;
         case "answered":
             if (event.answered)
                 answered = [...answered, event.answered].slice(-10);
+            break;
+        case "log":
+            if (event.entry)
+                log = [...log, event.entry].slice(-200);
             break;
         case "paused":
         case "unpaused":
@@ -307,8 +326,8 @@ Singleton {
             root.paused = false;
             root.sessions = [];
             root.decisions = [];
-            root.messages = [];
             root.answered = [];
+            root.log = [];
             retry.start();
         }
     }
