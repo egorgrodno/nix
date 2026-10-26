@@ -25,6 +25,8 @@ Singleton {
     // Each as `bosun status --json` gives it.
     property var sessions: []
     readonly property var master: sessions.find(s => s.node === "master") ?? null
+    // The session the user talks to, which `tell` reaches.
+    readonly property var desk: sessions.find(s => s.node === "desk") ?? null
     property var decisions: []
     readonly property var mine: decisions.filter(d => d.holder === "user")
     readonly property var masters: decisions.filter(d => d.holder === "master")
@@ -33,7 +35,7 @@ Singleton {
     // gone from Claude Code's listing left out.
     readonly property var activities: {
         const order = ["turn", "blocked", "paused", "idle", "stopped"];
-        return sessions.filter(s => s.node !== "master").map(activityOf).filter(a => a !== "").sort((a, b) => order.indexOf(a) - order.indexOf(b));
+        return sessions.filter(s => s.node !== "master" && s.node !== "desk").map(activityOf).filter(a => a !== "").sort((a, b) => order.indexOf(a) - order.indexOf(b));
     }
     // What sessions told each other, oldest first, the latest ten as the daemon
     // keeps them: `from` told `node` the `text`.
@@ -196,6 +198,7 @@ Singleton {
         send(["dismiss", id]);
     }
 
+    // The daemon routes it to the desk, or to the master when there is none.
     function tell(text) {
         send(["tell", text]);
     }

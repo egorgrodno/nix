@@ -8,8 +8,8 @@ import Quickshell.Io
 // Under the bosun module: while the fleet is paused, a banner with Resume, then
 // the decisions waiting on the user, each with its answer, then those waiting
 // on the master, which the user may answer too, then the master's model and a
-// field to tell it, then the tree of sessions. A click on a session opens it in
-// a terminal, Kill on a worker stops it, and Pause all stops every session,
+// field to tell the desk, then the tree of sessions, the desk first. A click on
+// a session opens it in a terminal, Kill on a worker stops it, and Pause all stops every session,
 // each at a second click. New worker opens a form under the tree that starts
 // one under the master. Last, the messages between sessions.
 Panel {
@@ -28,14 +28,15 @@ Panel {
 
     boxWidth: 720
 
-    // Depth first, each session under its parent, as `bosun status` prints it.
+    // The desk first, then depth first, each session under its parent, as
+    // `bosun status` prints it.
     readonly property var tree: {
         const children = new Map();
-        for (const s of Bosun.sessions) {
+        for (const s of Bosun.sessions.filter(s => s.node !== "desk")) {
             const parent = s.parent ?? "";
             children.set(parent, [...(children.get(parent) ?? []), s]);
         }
-        const rows = [];
+        const rows = Bosun.desk ? [Bosun.desk] : [];
         const walk = parent => {
             for (const s of children.get(parent) ?? []) {
                 rows.push(s);
@@ -338,7 +339,7 @@ Panel {
         required property var modelData
         readonly property var session: modelData
         readonly property bool attachable: (session.id ?? "") !== "" && session.status !== "exited"
-        readonly property bool killable: attachable && session.node !== "master" && session.killed !== true
+        readonly property bool killable: attachable && !["master", "desk"].includes(session.node) && session.killed !== true
         readonly property bool armed: panel.killing === session.node
         readonly property bool working: session.status === "busy" || session.status === "waiting"
         readonly property bool resting: ["stopped", "exited"].includes(session.status) || session.killed === true
@@ -609,7 +610,7 @@ Panel {
                 }
 
                 SendField {
-                    placeholder: "Tell the master"
+                    placeholder: Bosun.desk ? "Tell the desk" : "Tell the master"
                     onSent: text => Bosun.tell(text)
                 }
             }
