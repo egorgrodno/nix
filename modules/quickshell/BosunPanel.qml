@@ -5,7 +5,8 @@ import Quickshell
 
 // Under the bosun module: the decisions waiting on the user, each with its
 // answer, then those waiting on the master, which the user may answer too,
-// then the tree of sessions. A click on a session opens it in a terminal.
+// then a field to tell the master, then the tree of sessions. A click on a
+// session opens it in a terminal.
 Panel {
     id: panel
 
@@ -46,6 +47,77 @@ Panel {
         return session.state ? `${session.status} · ${session.state}` : session.status;
     }
 
+    // A line of text and a glyph that sends it, as Return does, then clears.
+    component SendField: Rectangle {
+        id: field
+
+        property string placeholder
+
+        signal sent(string text)
+
+        function send() {
+            const text = input.text.trim();
+            if (text === "")
+                return;
+            sent(text);
+            input.text = "";
+        }
+
+        width: parent?.width ?? 0
+        height: 32
+        radius: Theme.radius - 4
+        color: Theme.tint(0.06)
+        border.color: input.activeFocus ? Theme.blue : "transparent"
+        border.width: 1
+
+        TextInput {
+            id: input
+
+            anchors.left: parent.left
+            anchors.leftMargin: 10
+            anchors.right: sendButton.left
+            anchors.rightMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            clip: true
+            color: Theme.foregroundStrong
+            selectionColor: Theme.blue
+            selectByMouse: true
+            font.family: Theme.fontUI
+            font.pixelSize: 14
+            font.hintingPreference: Font.PreferFullHinting
+            renderType: Text.CurveRendering
+            Keys.onReturnPressed: field.send()
+            Keys.onEnterPressed: field.send()
+
+            BarText {
+                anchors.verticalCenter: parent.verticalCenter
+                visible: input.text === ""
+                text: field.placeholder
+                color: Theme.foregroundMuted
+                font.pixelSize: 14
+            }
+        }
+
+        BarText {
+            id: sendButton
+
+            anchors.right: parent.right
+            anchors.rightMargin: 10
+            anchors.verticalCenter: parent.verticalCenter
+            text: "\u{F048A}"
+            color: input.text !== "" && sendMouse.containsMouse ? Theme.foregroundStrong : Theme.foregroundMuted
+
+            MouseArea {
+                id: sendMouse
+
+                anchors.fill: parent
+                anchors.margins: -6
+                hoverEnabled: true
+                onClicked: field.send()
+            }
+        }
+    }
+
     // A decision and its answers: Deny and Approve for a permission, a reply
     // field for a question, Dismiss for a notice.
     component DecisionCard: Rectangle {
@@ -53,14 +125,6 @@ Panel {
 
         required property var modelData
         readonly property var decision: modelData
-
-        function send() {
-            const text = answer.text.trim();
-            if (text === "")
-                return;
-            Bosun.reply(decision.id, text);
-            answer.text = "";
-        }
 
         width: parent?.width ?? 0
         height: body.implicitHeight + 24
@@ -133,61 +197,10 @@ Panel {
                 }
             }
 
-            Rectangle {
-                width: parent.width
-                height: 32
+            SendField {
                 visible: card.decision.kind === "question"
-                radius: Theme.radius - 4
-                color: Theme.tint(0.06)
-                border.color: answer.activeFocus ? Theme.blue : "transparent"
-                border.width: 1
-
-                TextInput {
-                    id: answer
-
-                    anchors.left: parent.left
-                    anchors.leftMargin: 10
-                    anchors.right: sendButton.left
-                    anchors.rightMargin: 8
-                    anchors.verticalCenter: parent.verticalCenter
-                    clip: true
-                    color: Theme.foregroundStrong
-                    selectionColor: Theme.blue
-                    selectByMouse: true
-                    font.family: Theme.fontUI
-                    font.pixelSize: 14
-                    font.hintingPreference: Font.PreferFullHinting
-                    renderType: Text.CurveRendering
-                    Keys.onReturnPressed: card.send()
-                    Keys.onEnterPressed: card.send()
-
-                    BarText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: answer.text === ""
-                        text: "Answer"
-                        color: Theme.foregroundMuted
-                        font.pixelSize: 14
-                    }
-                }
-
-                BarText {
-                    id: sendButton
-
-                    anchors.right: parent.right
-                    anchors.rightMargin: 10
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: "\u{F048A}"
-                    color: answer.text !== "" && sendMouse.containsMouse ? Theme.foregroundStrong : Theme.foregroundMuted
-
-                    MouseArea {
-                        id: sendMouse
-
-                        anchors.fill: parent
-                        anchors.margins: -6
-                        hoverEnabled: true
-                        onClicked: card.send()
-                    }
-                }
+                placeholder: "Answer"
+                onSent: text => Bosun.reply(card.decision.id, text)
             }
         }
     }
@@ -288,6 +301,21 @@ Panel {
             }
 
             delegate: DecisionCard {}
+        }
+    }
+
+    Column {
+        width: panel.contentWidth
+        visible: Bosun.connected
+        spacing: 8
+
+        Caption {
+            text: "Master"
+        }
+
+        SendField {
+            placeholder: "Tell the master"
+            onSent: text => Bosun.tell(text)
         }
     }
 

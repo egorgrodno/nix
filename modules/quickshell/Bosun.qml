@@ -8,8 +8,8 @@ import Quickshell.Io
 
 // The bosun daemon as `bosun watch` streams it: the Claude Code sessions it
 // runs and the decisions waiting on an answer. The stream ends whenever the
-// daemon stops, and starts again a few seconds later. Answers go through the
-// `bosun` command, one at a time.
+// daemon stops, and starts again a few seconds later. Answers and commands go
+// through the `bosun` command, one at a time.
 Singleton {
     id: root
 
@@ -21,7 +21,7 @@ Singleton {
     readonly property var mine: decisions.filter(d => d.holder === "user")
     readonly property var masters: decisions.filter(d => d.holder === "master")
     readonly property bool working: sessions.some(s => s.status === "busy" || s.status === "waiting")
-    // Why the last answer failed, until the next one.
+    // Why the last command failed, until the next one.
     property string error: ""
     readonly property ShellScreen screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
 
@@ -42,6 +42,10 @@ Singleton {
 
     function dismiss(id) {
         send(["dismiss", id]);
+    }
+
+    function tell(text) {
+        send(["tell", text]);
     }
 
     // `bosun attach` has the daemon resume a stopped session before `claude
