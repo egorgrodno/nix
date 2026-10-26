@@ -32,6 +32,14 @@ Singleton {
     readonly property string filter: "\u{F0236}"
     readonly property string chevronDown: "\u{F0140}"
     readonly property string cancel: "\u{F073A}"
+    readonly property string chevronRight: "\u{F0142}"
+    readonly property string message: "\u{F12F5}"
+    readonly property string running: "\u{F0772}"
+    readonly property string interrupt: "\u{F04DB}"
+    readonly property string thinking: "\u{F07F7}"
+    readonly property string compacted: "\u{F084D}"
+    readonly property string command: "\u{F0FDF}"
+    readonly property string queued: "\u{F011D}"
 
     readonly property var states: ({
             working: {
@@ -171,7 +179,7 @@ Singleton {
 
     // The kinds of log entry the panel shows; any other is one bosun cannot
     // show yet.
-    readonly property var logKinds: ["decision", "escalated", "settled", "tell", "message", "spawned", "resumed", "merged", "killed", "paused", "unpaused", "model", "turn_end", "exit"]
+    readonly property var logKinds: ["decision", "escalated", "settled", "tell", "message", "spawned", "resumed", "merged", "killed", "paused", "unpaused", "model", "turn_end", "exit", "say", "interrupt"]
 
     function knows(entry) {
         return logKinds.includes(entry.kind) && (!["decision", "escalated", "settled"].includes(entry.kind) || entry.decision);
@@ -248,6 +256,10 @@ Singleton {
             return `${who} switched ${entry.node} to ${[entry.model, entry.effort].filter(part => part).join(" ")}`;
         case "turn_end":
             return `${entry.node} ended its turn`;
+        case "say":
+            return `${who} said to ${entry.node}`;
+        case "interrupt":
+            return `${who} interrupted ${entry.node}`;
         }
         return `${entry.node} stopped`;
     }
@@ -445,8 +457,11 @@ Singleton {
             return "\u{F05E1}";
         case "tell":
             return entry.by === "desk" ? desk : entry.by === "master" ? master : "\u{F12F5}";
+        case "say":
         case "message":
             return "\u{F12F5}";
+        case "interrupt":
+            return interrupt;
         case "spawned":
             return "\u{F0419}";
         case "resumed":
@@ -487,5 +502,84 @@ Singleton {
             return Theme.yellow;
         }
         return Theme.foregroundMuted;
+    }
+
+    // The kinds of conversation entry the panel shows. Any other is one bosun
+    // cannot show yet, but for `meta`, the bookkeeping it hides.
+    readonly property var entryKinds: ["prompt", "queued", "text", "thinking", "tool", "compact", "command"]
+
+    // Who a prompt came from: the user, bosun, Claude Code, the session's
+    // parent, or another session's message.
+    function promptTitle(entry, parent) {
+        const mid = entry.midTurn ? ", mid-turn" : "";
+        switch (entry.from) {
+        case "user":
+            return `You${mid}`;
+        case "bosun":
+            return `From bosun${mid}`;
+        case "claude":
+            return `From Claude Code${mid}`;
+        }
+        return entry.from === parent ? `Prompt from ${entry.from}${mid}` : `Message from ${entry.from}${mid}`;
+    }
+
+    function promptGlyph(entry, parent) {
+        switch (entry.from) {
+        case "user":
+            return account;
+        case "bosun":
+        case "claude":
+            return robot;
+        }
+        return entry.from === parent ? account : message;
+    }
+
+    // What a tool call acts on, on one line.
+    function toolArg(entry) {
+        const input = entry.input ?? {};
+        for (const key of ["command", "file_path", "notebook_path", "pattern", "url", "query", "description", "prompt", "skill"])
+            if (typeof input[key] === "string")
+                return input[key].split("\n")[0];
+        return Object.keys(input).length > 0 ? JSON.stringify(input) : "";
+    }
+
+    // The lines a diff's hunks remove and add.
+    function diffCounts(hunks) {
+        let removed = 0;
+        let added = 0;
+        for (const hunk of hunks ?? [])
+            for (const line of hunk.lines ?? []) {
+                if (line.startsWith("-"))
+                    removed++;
+                else if (line.startsWith("+"))
+                    added++;
+            }
+        return {
+            removed: removed,
+            added: added
+        };
+    }
+
+    // "12s", "4 min" or "2 h 5 min".
+    function span(ms) {
+        const s = Math.max(0, Math.floor(ms / 1000));
+        if (s < 60)
+            return `${s}s`;
+        const m = Math.floor(s / 60);
+        if (m < 60)
+            return `${m} min`;
+        return m % 60 > 0 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${Math.floor(m / 60)} h`;
+    }
+
+    // "just now", "4 min ago", "2 h ago", else the date.
+    function ago(at, now) {
+        if (!at)
+            return "";
+        const ms = now - new Date(at).getTime();
+        if (ms < 60000)
+            return "just now";
+        if (ms < 86400000)
+            return `${span(ms).replace(/ \d+ min$/, "")} ago`;
+        return Qt.formatDate(new Date(at), "MMM d");
     }
 }

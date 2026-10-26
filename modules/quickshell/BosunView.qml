@@ -570,6 +570,7 @@ Item {
                     killArmed: view.killing !== "" && view.killing === (view.session?.node ?? "")
                     onKillClicked: view.kill(view.session.node)
                     onLeave: view.keyboardHome.forceActiveFocus()
+                    onDecisionOpened: id => view.select(`decision:${id}`)
                 }
 
                 BosunLogPane {

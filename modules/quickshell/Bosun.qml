@@ -250,6 +250,17 @@ Singleton {
         send(["kill", node]);
     }
 
+    // As the user: a stopped session resumes with it, a running one reads it
+    // between tool calls, and a text starting with / runs as a command.
+    function say(node, text) {
+        send(["say", node, text]);
+    }
+
+    // Ends the session's turn, which reaches its parent as a turn end.
+    function interrupt(node) {
+        send(["interrupt", node]);
+    }
+
     // The daemon resumes the master or the desk on another model, effort or
     // both, keeping its conversation; an empty one stays as it is. A desk in
     // its turn can take 30 s to answer, which `switching` covers.

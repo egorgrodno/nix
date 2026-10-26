@@ -13,6 +13,8 @@ Item {
     property alias facts: factRow.data
     property alias actions: actionRow.data
     property alias foot: footColumn.data
+    // Takes the body's place, for an item that scrolls itself.
+    property alias fill: fillItem.data
     readonly property real bodyWidth: bodyColumn.width
     // What BosunKept keeps the body's scroll under, or "" to keep none.
     property string scrollKey: ""
@@ -88,6 +90,7 @@ Item {
         anchors.bottom: footColumn.top
         anchors.bottomMargin: footColumn.height > 0 ? 16 : 0
         width: parent.width - 2 * x
+        visible: fillItem.children.length === 0
         contentHeight: bodyColumn.implicitHeight
         clip: true
         interactive: contentHeight > height
@@ -111,6 +114,17 @@ Item {
             width: scroller.width - (scroller.interactive ? 14 : 0)
             spacing: 16
         }
+    }
+
+    Item {
+        id: fillItem
+
+        x: 28
+        anchors.top: factRow.bottom
+        anchors.topMargin: 20
+        anchors.bottom: footColumn.top
+        anchors.bottomMargin: footColumn.height > 0 ? 16 : 0
+        width: parent.width - 2 * x
     }
 
     Column {

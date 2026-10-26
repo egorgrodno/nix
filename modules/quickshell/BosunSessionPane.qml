@@ -2,10 +2,10 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 
-// A session: its state, where it works and on what model, Open, which
-// attaches to it in kitty, and Kill for a worker, at a second click. The
-// master's has its model and effort switch, and while there is no desk a field
-// to tell it, since a tell then reaches the master.
+// A session: its state, repository, branch and parent, its conversation, and
+// a composer that sends as the user. The master's and the desk's model and
+// effort switch beside Interrupt, Kill for a worker at a second click, and
+// Open in kitty, which attaches to it.
 BosunPane {
     id: pane
 
@@ -13,27 +13,45 @@ BosunPane {
     // While a first click has armed Kill.
     property bool killArmed: false
     readonly property string node: session?.node ?? ""
-    readonly property bool isMaster: node === "master"
     readonly property bool attachable: (session?.id ?? "") !== "" && session?.status !== "exited"
     readonly property bool killable: attachable && !["master", "desk"].includes(node) && session?.killed !== true
+    // The daemon's `model` switches only these.
+    readonly property bool switchable: ["master", "desk"].includes(node) && Bosun.connected
+    readonly property bool sayable: attachable && session?.killed !== true && Bosun.connected
     readonly property string stateKey: session ? BosunLook.stateOf(session) : "stopped"
+    readonly property alias conversation: conversationView
 
     signal killClicked
     signal leave
+    signal decisionOpened(string id)
 
     function focusIn() {
-        if (!tellField.visible)
+        if (!composer.visible)
             return false;
-        tellField.focusIn();
+        composer.focusIn();
         return true;
     }
 
     title: node
     actions: [
+        BosunSegments {
+            visible: pane.switchable
+            enabled: Bosun.switching !== pane.node
+            values: Bosun.models
+            current: pane.session?.model ?? ""
+            onPicked: value => Bosun.model(pane.node, value, "")
+        },
+        BosunSegments {
+            visible: pane.switchable
+            enabled: Bosun.switching !== pane.node
+            values: Bosun.efforts
+            current: pane.session?.effort ?? ""
+            onPicked: value => Bosun.model(pane.node, "", value)
+        },
         TextButton {
-            visible: pane.attachable
-            text: `${BosunLook.open}  Open`
-            onClicked: Bosun.attach(pane.session)
+            visible: conversationView.inTurn && pane.sayable
+            text: `${BosunLook.interrupt}  Interrupt`
+            onClicked: Bosun.interrupt(pane.node)
         },
         TextButton {
             visible: pane.killable
@@ -41,6 +59,11 @@ BosunPane {
             hoverFill: Theme.alpha(Theme.red, 0.5)
             lit: pane.killArmed
             onClicked: pane.killClicked()
+        },
+        TextButton {
+            visible: pane.attachable
+            text: `${BosunLook.open}  Open in kitty`
+            onClicked: Bosun.attach(pane.session)
         }
     ]
     facts: [
@@ -57,7 +80,9 @@ BosunPane {
             glyph: BosunLook.branch
             text: pane.session?.base ? `worktree-${pane.node}` : ""
         },
+        // A worker's model, which only its parent switches.
         BosunFact {
+            visible: !pane.switchable && text !== ""
             glyph: BosunLook.chip
             text: [pane.session?.model, pane.session?.effort].filter(part => part).join(" ") || (pane.session ? "default model" : "")
         },
@@ -67,28 +92,48 @@ BosunPane {
         }
     ]
 
-    BosunModelSwitch {
-        visible: pane.isMaster && Bosun.connected
-        node: pane.node
-        session: pane.session
-    }
+    fill: [
+        BosunConversation {
+            id: conversationView
+
+            anchors.fill: parent
+            node: pane.visible ? pane.node : ""
+            parentNode: pane.session?.parent ?? ""
+            busy: ["busy", "waiting"].includes(pane.session?.status)
+            onDecisionOpened: id => pane.decisionOpened(id)
+        }
+    ]
 
     foot: [
         BosunComposer {
-            id: tellField
+            id: composer
 
             width: parent.width
-            visible: pane.isMaster && !Bosun.desk && Bosun.connected
-            placeholder: "Tell the master"
-            draftKey: "tell:master"
-            onSent: text => Bosun.tell(text)
+            visible: pane.sayable
+            placeholder: {
+                if (conversationView.inTurn)
+                    return `Message ${pane.node} as you. It reads it between tool calls, mid-turn too.`;
+                if (pane.session?.status === "stopped")
+                    return `Message ${pane.node} as you. It resumes with it.`;
+                return `Message ${pane.node} as you`;
+            }
+            draftKey: `say:${pane.node}`
+            onSent: text => Bosun.say(pane.node, text)
             onLeave: pane.leave()
         },
         BosunHints {
-            model: (tellField.visible ? [
+            model: (composer.visible ? [
                     {
-                        keys: ["Tab"],
-                        text: "tell the master"
+                        keys: ["Enter"],
+                        text: "send"
+                    },
+                    {
+                        keys: ["Esc"],
+                        text: "back to the list"
+                    },
+                    {
+                        keys: ["/"],
+                        text: "commands such as /compact"
                     }
                 ] : []).concat([
                 {
