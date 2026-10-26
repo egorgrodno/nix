@@ -23,6 +23,12 @@ Singleton {
     readonly property var mine: decisions.filter(d => d.holder === "user")
     readonly property var masters: decisions.filter(d => d.holder === "master")
     readonly property bool working: sessions.some(s => s.status === "busy" || s.status === "waiting")
+    // What each worker does, as `activityOf` names it, in turn first: those
+    // gone from Claude Code's listing left out.
+    readonly property var activities: {
+        const order = ["turn", "blocked", "idle", "stopped"];
+        return sessions.filter(s => s.node !== "master").map(activityOf).filter(a => a !== "").sort((a, b) => order.indexOf(a) - order.indexOf(b));
+    }
     // What sessions told each other, oldest first, the latest ten as the daemon
     // keeps them: `from` told `node` the `text`.
     property var messages: []
@@ -38,6 +44,22 @@ Singleton {
     signal openRequested
     // A command sent through `send` has exited, with status 0 if `ok`.
     signal finished(var args, bool ok)
+
+    // "turn", "blocked" in its own prompt, as a session waiting on a decision
+    // is too, "idle", "stopped", or "" once gone.
+    function activityOf(session) {
+        if (session.status === "exited")
+            return "";
+        if (session.killed || session.status === "stopped")
+            return "stopped";
+        switch (session.status) {
+        case "waiting":
+            return "blocked";
+        case "idle":
+            return "idle";
+        }
+        return "turn";
+    }
 
     // What a permission asks to run or touch, as `bosun status` names it.
     function detailOf(decision) {

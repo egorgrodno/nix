@@ -1,13 +1,29 @@
 import QtQuick
 import Quickshell
 
-// The bosun fleet: a robot, blue while a session is in its turn, and how many
-// decisions wait on the user, yellow while any does. Click opens the bosun
-// panel.
+// The bosun fleet: a robot, blue while a session is in its turn, a dot for
+// each worker, and how many decisions wait on the user, yellow while any does.
+// A dot is blue in a turn, yellow blocked in its own prompt, grey idle, and a
+// ring once stopped. Click opens the bosun panel.
 Pill {
     id: agents
 
     readonly property int count: Bosun.mine.length
+    readonly property string fleet: {
+        const names = {
+            turn: "in a turn",
+            blocked: "blocked",
+            idle: "idle",
+            stopped: "stopped"
+        };
+        const counts = [];
+        for (const activity of Object.keys(names)) {
+            const n = Bosun.activities.filter(a => a === activity).length;
+            if (n > 0)
+                counts.push(`${n} ${names[activity]}`);
+        }
+        return counts.length > 0 ? `Workers: ${counts.join(", ")}` : "";
+    }
     // Half the room a single digit leaves in its slot, moved before the glyph,
     // as on the bell.
     readonly property int slack: Math.round((figure.width - figure.implicitWidth) / 2)
@@ -22,7 +38,10 @@ Pill {
     leftPadding: 12 + slack
     rightPadding: 12 - slack
     lit: panel.active
-    tooltip: count === 0 ? "Nothing waits on you" : count === 1 ? "1 decision waits on you" : `${count} decisions wait on you`
+    tooltip: {
+        const waiting = count === 0 ? "Nothing waits on you" : count === 1 ? "1 decision waits on you" : `${count} decisions wait on you`;
+        return fleet ? `${fleet} · ${waiting}` : waiting;
+    }
     onClicked: button => {
         if (button === Qt.LeftButton)
             toggle();
@@ -48,6 +67,37 @@ Pill {
         anchors.verticalCenter: parent.verticalCenter
         text: "\u{F06A9}"
         color: Bosun.working ? Theme.blue : Theme.foregroundStrong
+    }
+
+    Row {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: Bosun.activities.length > 0
+        spacing: 3
+
+        Repeater {
+            model: Bosun.activities
+
+            Rectangle {
+                required property string modelData
+
+                width: 7
+                height: 7
+                radius: 3.5
+                color: {
+                    switch (modelData) {
+                    case "turn":
+                        return Theme.blue;
+                    case "blocked":
+                        return Theme.yellow;
+                    case "idle":
+                        return Theme.foregroundMuted;
+                    }
+                    return "transparent";
+                }
+                border.width: modelData === "stopped" ? 1.5 : 0
+                border.color: Theme.foregroundMuted
+            }
+        }
     }
 
     Figure {
