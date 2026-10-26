@@ -254,11 +254,13 @@
         craft-update = pkgs.callPackage ./pkgs/craft-update { };
         # Installed for every user by modules/git.
         carve = pkgs.callPackage ./pkgs/carve { };
+        # Installed for every user by modules/craft, with the apps' caches.
+        mcp-lazy = pkgs.callPackage ./pkgs/mcp-lazy { };
         # Run by the bar's format panel, from modules/quickshell.
         usb-format = pkgs.callPackage ./pkgs/usb-format { };
       };
-      # The packages are listed so their build-time shellcheck and carve's tests
-      # run here too.
+      # The packages are listed so their build-time shellcheck and Go tests run
+      # here too.
       checks.${system} = {
         formatting = treefmtEval.config.build.check self;
       }

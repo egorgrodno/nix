@@ -1,17 +1,57 @@
 { pkgs, lib, ... }:
 
 let
-  apps = lib.mapAttrsToList (name: src: pkgs.callPackage ./package.nix ({ inherit name; } // src)) (
+  apps = lib.mapAttrs (name: src: pkgs.callPackage ./package.nix ({ inherit name; } // src)) (
     lib.importJSON ./sources.json
   );
   opens = app: types: lib.genAttrs types (_: "ai.storyteller.${app}.desktop");
+
+  # Each app's MCP server arguments, as the craft plugin's .mcp.json gives
+  # them. A server started with others has no cache, so mcp-lazy starts it at
+  # once.
+  roots = [
+    "--automation-read-root"
+    "\${CLAUDE_PROJECT_DIR}"
+    "--automation-write-root"
+    "\${CLAUDE_PROJECT_DIR}"
+  ];
+  mcpArgs = {
+    cadcraft = [ ];
+    deckcraft = roots;
+    designcraft = roots;
+    effectcraft = roots;
+    figcraft = roots;
+    filmcraft = [ ];
+    gridcraft = [ ];
+    lightcraft = [ "--compact" ];
+    pdfcraft = [ "--compact" ] ++ roots;
+    photocraft = roots;
+    soundcraft = roots;
+    vectorcraft = roots;
+    wordcraft = roots;
+  };
+  mcp-lazy = pkgs.callPackage ../../pkgs/mcp-lazy { };
+  record = name: args: ''
+    ${lib.getExe mcp-lazy} -record ${lib.getExe' apps.${name} "${name}-cli"} mcp \
+      ${lib.escapeShellArgs args} > $out/${name}-cli.json
+  '';
+  mcpCache = pkgs.runCommand "craft-mcp-cache" { } ''
+    mkdir $out
+    export HOME=$TMPDIR
+    ${lib.concatStrings (lib.mapAttrsToList record mcpArgs)}
+  '';
 in
 {
-  home.packages = apps ++ [ (pkgs.callPackage ../../pkgs/craft-update { }) ];
+  home.packages = lib.attrValues apps ++ [
+    (pkgs.callPackage ../../pkgs/craft-update { })
+    (pkgs.runCommand "mcp-lazy" { nativeBuildInputs = [ pkgs.makeBinaryWrapper ]; } ''
+      makeWrapper ${lib.getExe mcp-lazy} $out/bin/mcp-lazy --add-flags "-cache ${mcpCache}"
+    '')
+  ];
 
   # The tarballs are only build inputs, which garbage collection takes; kept,
   # rebuilding the pinned versions needs no GitHub.
-  home.extraDependencies = map (app: app.src) apps;
+  home.extraDependencies = lib.mapAttrsToList (_: app: app.src) apps;
 
   # A viewer in modules/desktop keeps PDF, SVG, images and video; each app
   # still lists itself under "Open with" for them.
