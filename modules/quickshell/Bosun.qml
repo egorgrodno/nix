@@ -104,9 +104,10 @@ Singleton {
 
     // `bosun attach` has the daemon resume a stopped session before `claude
     // attach`, which would start Claude Code's supervisor in this kitty. `claude
-    // attach` leaves the session running when it exits, as on Ctrl+Z.
+    // attach` leaves the session running when it exits, as on Ctrl+Z. A failed
+    // attach exits non-zero, and the window then waits so its error is read.
     function attach(session) {
-        Launcher.run([Programs.kitty, "-e", Programs.bosun, "attach", session.id]);
+        Launcher.run([Programs.kitty, "-e", Programs.sh, "-c", "\"$0\" attach \"$1\" || { printf '\\nPress Enter to close this window. '; read -r _; }", Programs.bosun, session.id]);
     }
 
     function send(args) {
