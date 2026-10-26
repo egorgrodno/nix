@@ -7,10 +7,10 @@ import Quickshell.Io
 
 // Under the bosun module: the decisions waiting on the user, each with its
 // answer, then those waiting on the master, which the user may answer too,
-// then a field to tell the master, then the tree of sessions. A click on a
-// session opens it in a terminal, and Kill on a worker stops it, at a second
-// click. New worker opens a form under the tree that starts one under the
-// master.
+// then the master's model and a field to tell it, then the tree of sessions.
+// A click on a session opens it in a terminal, and Kill on a worker stops it,
+// at a second click. New worker opens a form under the tree that starts one
+// under the master.
 Panel {
     id: panel
 
@@ -385,8 +385,38 @@ Panel {
         visible: Bosun.connected
         spacing: 8
 
-        Caption {
-            text: "Master"
+        Item {
+            width: parent.width
+            height: modelRow.height
+
+            Caption {
+                readonly property string model: Bosun.master?.model ?? ""
+
+                anchors.verticalCenter: parent.verticalCenter
+                text: Bosun.models.includes(model) ? "Master" : `Master · ${model || "default model"}`
+            }
+
+            Row {
+                id: modelRow
+
+                anchors.right: parent.right
+                spacing: 6
+
+                Repeater {
+                    model: Bosun.models
+
+                    TextButton {
+                        required property string modelData
+
+                        text: modelData
+                        lit: modelData === Bosun.master?.model
+                        hoverFill: lit ? Theme.blue : Theme.tint(0.12)
+                        textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
+                        onClicked: if (!lit)
+                            Bosun.model(modelData)
+                    }
+                }
+            }
         }
 
         SendField {

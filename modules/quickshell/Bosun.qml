@@ -17,6 +17,7 @@ Singleton {
     property bool connected: false
     // Each as `bosun status --json` gives it.
     property var sessions: []
+    readonly property var master: sessions.find(s => s.node === "master") ?? null
     property var decisions: []
     readonly property var mine: decisions.filter(d => d.holder === "user")
     readonly property var masters: decisions.filter(d => d.holder === "master")
@@ -60,6 +61,11 @@ Singleton {
 
     function kill(node) {
         send(["kill", node]);
+    }
+
+    // The daemon resumes the master on it, keeping its conversation.
+    function model(name) {
+        send(["model", name]);
     }
 
     // `bosun attach` has the daemon resume a stopped session before `claude
