@@ -11,7 +11,8 @@ import Quickshell.Io
 // The stream ends whenever the daemon stops, and starts again a few seconds
 // later. Answers and commands go through the `bosun` command, one at a time,
 // with a pause or unpause beside them. A decision that comes to wait on the
-// user raises a notification.
+// user raises a notification, as a reply of the desk's does while no panel
+// shows.
 Singleton {
     id: root
 
@@ -48,6 +49,11 @@ Singleton {
     // The node whose model switch has not finished.
     property string switching: ""
     readonly property ShellScreen screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
+    // How many bosun panels show, one per screen at most.
+    property int panelsOpen: 0
+    // The desk's latest reply, its `activity` text and when, which a
+    // notification told of or the snapshot already held.
+    property string deskReply: ""
     // Claude Code's aliases, which the panel offers.
     readonly property var models: ["fable", "opus", "sonnet", "haiku"]
     // What a worker's effort may be, lowest first.
@@ -190,6 +196,20 @@ Singleton {
         notifier.post(d.id, answers.concat(["--", summary, body]));
     }
 
+    // The desk ended a turn on text, its activity says: a reply, which raises
+    // a notification unless a panel shows or `post` is false.
+    function noteDesk(post) {
+        const activity = desk?.activity;
+        if (!activity?.text || activity.tool)
+            return;
+        const reply = `${activity.at} ${activity.text}`;
+        if (reply === deskReply)
+            return;
+        deskReply = reply;
+        if (post && panelsOpen === 0)
+            deskNotifier.post(activity.text);
+    }
+
     // Once its decision no longer waits on the user.
     function withdraw() {
         notifier.decision = "";
@@ -313,17 +333,21 @@ Singleton {
             log = message.log ?? [];
             paused = message.paused === true;
             connected = true;
+            noteDesk(false);
             return;
         }
         const event = message.event;
         switch (event?.kind) {
         case "sessions":
             sessions = event.sessions ?? [];
+            noteDesk(true);
             break;
         case "activity":
             sessions = sessions.map(s => s.node === event.node ? Object.assign({}, s, {
                 activity: event.activity
             }) : s);
+            if (event.node === "desk")
+                noteDesk(true);
             break;
         case "decision":
             add(event.decision);
@@ -459,6 +483,41 @@ Singleton {
                     root.approve(notifier.decision);
                 else if (notifier.decision !== "" && action === "deny")
                     root.deny(notifier.decision);
+            }
+        }
+        onExited: Qt.callLater(next)
+    }
+
+    // Under a tag of its own, so a reply and a decision replace neither.
+    Process {
+        id: deskNotifier
+
+        property string pending: ""
+
+        function post(text) {
+            pending = text;
+            if (running)
+                running = false;
+            else
+                next();
+        }
+
+        function next() {
+            if (running || pending === "")
+                return;
+            // The bar reads a body as markup.
+            const body = pending.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            command = [Programs.notifySend, "--app-name=bosun", "--hint=string:x-dunst-stack-tag:bosun-desk", "--action=default=Open", "--", "Front desk", body];
+            pending = "";
+            running = true;
+        }
+
+        stdout: StdioCollector {
+            onStreamFinished: {
+                if (text.trim() === "default") {
+                    BosunKept.select("desk");
+                    root.openRequested();
+                }
             }
         }
         onExited: Qt.callLater(next)

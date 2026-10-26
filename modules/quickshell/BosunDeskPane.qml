@@ -1,70 +1,92 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import Quickshell
 
-// The front desk: its model and effort switch, a field to tell it, which
-// `bosun tell` reaches, Open, which attaches to it in kitty, and the decisions
-// it answered on the user's word, newest first, each with the words it quoted
-// as the yes.
+// The front desk: its conversation, as BosunDesk shapes it, and a composer
+// that reaches it through `bosun tell`. The desk's model and effort switch
+// beside Interrupt and Open in kitty, which attaches to it.
 BosunPane {
     id: pane
 
     readonly property var session: Bosun.desk
-    readonly property string stateKey: session ? BosunLook.stateOf(session) : "stopped"
+    readonly property bool attachable: (session?.id ?? "") !== "" && session?.status !== "exited"
 
     signal leave
+    signal opened(string key, var item)
 
     function focusIn() {
-        tellField.focusIn();
+        if (!composer.visible)
+            return false;
+        composer.focusIn();
         return true;
     }
 
     title: "Front desk"
     actions: [
+        BosunSegments {
+            visible: Bosun.connected && pane.session !== null
+            enabled: Bosun.switching !== "desk"
+            values: Bosun.models
+            current: pane.session?.model ?? ""
+            onPicked: value => Bosun.model("desk", value, "")
+        },
+        BosunSegments {
+            visible: Bosun.connected && pane.session !== null
+            enabled: Bosun.switching !== "desk"
+            values: Bosun.efforts
+            current: pane.session?.effort ?? ""
+            onPicked: value => Bosun.model("desk", "", value)
+        },
         TextButton {
-            visible: (pane.session?.id ?? "") !== "" && pane.session?.status !== "exited"
-            text: `${BosunLook.open}  Open`
+            visible: conversationView.inTurn && pane.attachable && Bosun.connected
+            text: `${BosunLook.interrupt}  Interrupt`
+            onClicked: Bosun.interrupt("desk")
+        },
+        TextButton {
+            visible: pane.attachable
+            text: `${BosunLook.open}  Open in kitty`
             onClicked: Bosun.attach(pane.session)
         }
     ]
     facts: [
         BosunFact {
-            glyph: BosunLook.states[pane.stateKey].glyph
-            glyphColor: BosunLook.stateColor(pane.stateKey)
-            text: pane.session ? BosunLook.stateWords(pane.session) : ""
+            glyph: BosunLook.chip
+            text: Bosun.switching === "desk" ? "Switching…" : [pane.session?.model, pane.session?.effort].filter(part => part).join(" ") || (pane.session ? "default model" : "")
         },
         BosunFact {
-            glyph: BosunLook.chip
-            text: [pane.session?.model, pane.session?.effort].filter(part => part).join(" ") || (pane.session ? "default model" : "")
+            glyph: BosunLook.eye
+            text: "Reads the whole fleet"
+        },
+        BosunFact {
+            glyph: BosunLook.master
+            text: "Changes go to the master as instructions"
         }
     ]
 
-    BosunModelSwitch {
-        visible: Bosun.connected && pane.session !== null
-        node: "desk"
-        session: pane.session
-    }
+    fill: [
+        BosunConversation {
+            id: conversationView
 
-    Caption {
-        visible: Bosun.answered.length > 0
-        text: "Answered on your word"
-    }
-
-    Repeater {
-        model: ScriptModel {
-            values: [...Bosun.answered].reverse()
+            anchors.fill: parent
+            node: pane.visible ? "desk" : ""
+            scrollKey: conversationView.node !== "" ? "session:desk" : ""
+            shape: entries => BosunDesk.shape(entries)
+            busy: ["busy", "waiting"].includes(pane.session?.status)
+            onDecisionOpened: id => pane.opened(`decision:${id}`, null)
+            onOpened: (key, item) => pane.opened(key, item)
         }
+    ]
 
-        delegate: AnsweredRow {}
-    }
-
+    // A tell, unlike a say, queues in the daemon and outlasts a pause, and
+    // the desk's `answer` counts it as the user's one message after it
+    // proposed an answer from when it was sent.
     foot: [
         BosunComposer {
-            id: tellField
+            id: composer
 
             width: parent.width
-            placeholder: "Tell the desk"
+            visible: Bosun.connected
+            placeholder: "Ask about the run, or tell the fleet what to do"
             draftKey: "tell"
             onSent: text => Bosun.tell(text)
             onLeave: pane.leave()
@@ -78,75 +100,12 @@ BosunPane {
                 {
                     keys: ["Esc"],
                     text: "back to the list"
+                },
+                {
+                    keys: [],
+                    text: "A reply that comes while the panel is closed raises a notification"
                 }
             ]
         }
     ]
-
-    // What the decision was, what the desk gave and the user's words.
-    component AnsweredRow: Rectangle {
-        id: answer
-
-        required property var modelData
-        readonly property var decision: modelData.decision
-        readonly property string given: {
-            if (decision.kind === "permission")
-                return modelData.behavior === "allow" ? "Approved" : `Denied${modelData.text ? `: ${modelData.text}` : ""}`;
-            return `Answered: ${modelData.text ?? ""}`;
-        }
-
-        width: parent?.width ?? 0
-        height: answerBody.implicitHeight + 24
-        radius: Theme.radius - 4
-        color: Theme.tint(0.04)
-
-        Column {
-            id: answerBody
-
-            x: 12
-            y: 12
-            width: parent.width - 24
-            spacing: 4
-
-            Row {
-                width: parent.width
-                spacing: 8
-
-                BarText {
-                    text: BosunLook.decisionGlyph(answer.decision)
-                    color: Theme.foregroundMuted
-                    font.pixelSize: 14
-                }
-
-                BarText {
-                    text: answer.decision.node
-                    font.pixelSize: 14
-                }
-
-                BarText {
-                    width: parent.width - x
-                    elide: Text.ElideRight
-                    text: Bosun.summaryOf(answer.decision).split("\n")[0]
-                    color: Theme.foregroundMuted
-                    font.family: answer.decision.kind === "permission" ? Theme.fontMono : Theme.fontUI
-                    font.pixelSize: 13
-                }
-            }
-
-            BarText {
-                width: parent.width
-                wrapMode: Text.Wrap
-                font.pixelSize: 14
-                text: answer.given
-            }
-
-            BarText {
-                width: parent.width
-                wrapMode: Text.Wrap
-                color: Theme.foregroundMuted
-                font.pixelSize: 14
-                text: `You said: “${answer.modelData.words}”`
-            }
-        }
-    }
 }

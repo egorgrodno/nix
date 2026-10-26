@@ -434,17 +434,23 @@ Item {
     }
 
     // The front desk, a dot while it holds a reply the user has not seen,
-    // and its model. Without a desk, the master, whom a tell then reaches.
+    // its model, and under them what it does or last said. Without a desk,
+    // the master, whom a tell then reaches.
     component DeskRow: RowBase {
         id: row
 
         readonly property var session: Bosun.desk ?? Bosun.master
+        readonly property var activity: Bosun.desk?.activity ?? null
+        readonly property string activityLine: activity ? BosunLook.activityText(activity) : ""
+        readonly property color activityColor: Bosun.desk && BosunLook.stateOf(Bosun.desk) === "working" ? Theme.blue : Theme.foregroundMuted
+
+        height: activityLine ? 52 : 36
 
         BarText {
             id: deskGlyph
 
             x: 20
-            anchors.verticalCenter: parent.verticalCenter
+            y: row.activityLine ? 8 : (row.height - height) / 2
             text: Bosun.desk ? BosunLook.desk : BosunLook.master
             color: Theme.foregroundMuted
             font.pixelSize: 14
@@ -455,7 +461,7 @@ Item {
 
             anchors.left: deskGlyph.right
             anchors.leftMargin: 8
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: deskGlyph.verticalCenter
             text: Bosun.desk ? "Front desk" : "Master"
             font.pixelSize: 14
         }
@@ -463,7 +469,7 @@ Item {
         Rectangle {
             anchors.left: deskName.right
             anchors.leftMargin: 8
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: deskGlyph.verticalCenter
             visible: Bosun.desk?.unseen === true
             width: 6
             height: 6
@@ -474,8 +480,33 @@ Item {
         Caption {
             anchors.right: parent.right
             anchors.rightMargin: 20
-            anchors.verticalCenter: parent.verticalCenter
+            anchors.verticalCenter: deskGlyph.verticalCenter
             text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
+        }
+
+        Row {
+            visible: row.activityLine !== ""
+            x: deskName.x
+            y: 30
+            width: parent.width - x - 20
+            spacing: 6
+
+            BarText {
+                id: deskActivityGlyph
+
+                text: row.activity ? BosunLook.activityGlyph(row.activity) : ""
+                color: row.activityColor
+                font.pixelSize: 12
+            }
+
+            BarText {
+                width: parent.width - deskActivityGlyph.width - parent.spacing
+                elide: Text.ElideRight
+                text: row.activityLine
+                color: row.activityColor
+                font.family: row.activity?.tool ? Theme.fontMono : Theme.fontUI
+                font.pixelSize: 12
+            }
         }
     }
 

@@ -64,8 +64,15 @@ Item {
     // stops it following.
     property bool restoring: false
 
+    // Turns the feed's entries into those shown, as BosunDesk.shape does for
+    // the desk; null shows them as they come.
+    property var shape: null
+
     // A decision's row is selected, as the sidebar does.
     signal decisionOpened(string id)
+    // A row the conversation names is selected, as `BosunLook.logLink` gives
+    // it.
+    signal opened(string key, var item)
 
     function isOpen(id, byDefault) {
         return flipped[id] === true ? !byDefault : byDefault;
@@ -180,7 +187,7 @@ Item {
             id: shown
 
             objectProp: "id"
-            values: feed.entries.filter(e => e.kind !== "meta" && !(e.kind === "queued" && e.taken))
+            values: (conversation.shape ? conversation.shape(feed.entries) : feed.entries).filter(e => e.kind !== "meta" && !(e.kind === "queued" && e.taken))
         }
 
         delegate: BosunEntry {

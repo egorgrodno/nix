@@ -40,6 +40,7 @@ Singleton {
     readonly property string compacted: "\u{F084D}"
     readonly property string command: "\u{F0FDF}"
     readonly property string queued: "\u{F011D}"
+    readonly property string eye: "\u{F06D0}"
 
     readonly property var states: ({
             working: {

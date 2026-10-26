@@ -5,8 +5,8 @@ import QtQuick
 // One entry of a session's conversation, as BosunFeed holds it: a prompt or
 // a message on a card, the assistant's text, and a line for a tool call,
 // thinking, a compaction or a command that opens at a click. An edit opens on
-// its diff. Any kind the panel does not know shows as one bosun cannot show
-// yet.
+// its diff. BosunDeskEntry shows the kinds BosunDesk adds. Any kind the panel
+// does not know shows as one bosun cannot show yet.
 Item {
     id: entry
 
@@ -14,7 +14,7 @@ Item {
     // The BosunConversation it sits in, which keeps what is open.
     required property var conversation
     readonly property var item: modelData
-    readonly property string kind: BosunLook.entryKinds.includes(item.kind) ? item.kind : "raw"
+    readonly property string kind: BosunLook.entryKinds.includes(item.kind) ? item.kind : (item.kind ?? "").startsWith("desk-") ? "desk" : "raw"
     readonly property bool open: conversation.isOpen(item.id, kind === "tool" && (item.result?.diff ?? []).length > 0)
 
     function toggle() {
@@ -41,6 +41,8 @@ Item {
             case "compact":
             case "command":
                 return foldEntry;
+            case "desk":
+                return deskEntry;
             }
             return rawEntry;
         }
@@ -206,6 +208,17 @@ Item {
                         })
                 }
             }
+        }
+    }
+
+    Component {
+        id: deskEntry
+
+        BosunDeskEntry {
+            item: entry.item
+            conversation: entry.conversation
+            open: entry.open
+            onToggled: entry.toggle()
         }
     }
 

@@ -301,11 +301,15 @@ Item {
         killing = "";
     }
     Component.onCompleted: {
+        Bosun.panelsOpen++;
         if (selected === "")
             select(defaultKey());
         keyboardHome.forceActiveFocus();
     }
-    Component.onDestruction: BosunKept.save()
+    Component.onDestruction: {
+        Bosun.panelsOpen--;
+        BosunKept.save();
+    }
 
     // The selection stays where it is as rows come and go: only the user's
     // own answer from the panel moves it on.
@@ -557,8 +561,8 @@ Item {
 
                     anchors.fill: parent
                     visible: view.paneKind === "desk"
-                    scrollKey: visible ? "desk" : ""
                     onLeave: view.keyboardHome.forceActiveFocus()
+                    onOpened: (key, item) => view.select(key, item)
                 }
 
                 BosunSessionPane {
