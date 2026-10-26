@@ -25,16 +25,34 @@ Item {
     readonly property bool inTurn: (progress?.tempo ?? "") !== "" ? progress.tempo !== "idle" : busy
     // The prompt the session shows: "approve Bash: …" or "answer: q (A · B)".
     readonly property string needs: progress?.needs ?? ""
+    // The daemon's reading of `needs`, else the panel's own.
+    readonly property var need: {
+        if (needs === "")
+            return null;
+        if (progress.need)
+            return progress.need;
+        const permission = needs.match(/^approve ([^:]+): ([^]*)$/);
+        if (permission)
+            return {
+                kind: "permission",
+                tool: permission[1],
+                detail: permission[2]
+            };
+        const question = needs.match(/^answer: ([^]*?)(?: \((.*)\))?$/);
+        if (question)
+            return {
+                kind: "question",
+                question: question[1],
+                options: question[2]?.split(" · ")
+            };
+        return {
+            kind: "other",
+            text: needs
+        };
+    }
     // The decision that holds the session's permission, which approve and
     // deny answer.
-    readonly property var needsDecision: needs.startsWith("approve ") ? Bosun.decisions.find(d => d.node === node && (d.kind === "permission" || d.prompt === true)) ?? null : null
-    readonly property var question: {
-        const match = needs.match(/^answer: (.*) \((.*)\)$/);
-        return match ? {
-            text: match[1],
-            options: match[2].split(" · ")
-        } : null;
-    }
+    readonly property var needsDecision: need?.kind === "permission" ? Bosun.decisions.find(d => d.node === node && Bosun.kindOf(d) === "permission") ?? null : null
     property real now: Date.now()
     // Each id whose open state differs from its kind's default.
     property var flipped: ({})
@@ -227,24 +245,35 @@ Item {
             BosunFact {
                 glyph: BosunLook.states.blocked.glyph
                 glyphColor: Theme.yellow
-                text: conversation.question ? `${conversation.node} asks` : conversation.needs.startsWith("approve ") ? `${conversation.node} waits on its own permission prompt` : `${conversation.node} waits on its own prompt`
+                text: {
+                    switch (conversation.need?.kind) {
+                    case "question":
+                        return `${conversation.node} asks`;
+                    case "permission":
+                        return `${conversation.node} asks to use ${conversation.need.tool} in its own prompt`;
+                    }
+                    return `${conversation.node} waits on its own prompt`;
+                }
             }
 
             BarText {
                 width: parent.width
                 wrapMode: Text.Wrap
-                text: conversation.question?.text ?? conversation.needs.replace(/^approve /, "")
-                font.family: conversation.question ? Theme.fontUI : Theme.fontMono
-                font.pixelSize: conversation.question ? 14 : 13
+                text: {
+                    const need = conversation.need;
+                    return need?.kind === "question" ? need.question : need?.kind === "permission" ? need.detail : need?.text ?? "";
+                }
+                font.family: conversation.need?.kind === "permission" ? Theme.fontMono : Theme.fontUI
+                font.pixelSize: conversation.need?.kind === "permission" ? 13 : 14
             }
 
             Flow {
                 width: parent.width
-                visible: conversation.question !== null
+                visible: (conversation.need?.options ?? []).length > 0
                 spacing: 6
 
                 Repeater {
-                    model: conversation.question?.options ?? []
+                    model: conversation.need?.options ?? []
 
                     TextButton {
                         required property string modelData
