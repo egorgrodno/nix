@@ -40,6 +40,9 @@ Singleton {
     // What sessions told each other, oldest first, the latest ten as the daemon
     // keeps them: `from` told `node` the `text`.
     property var messages: []
+    // The decisions the desk answered on the user's word, oldest first: the
+    // `decision`, the `behavior` or `text` it gave and the user's `words`.
+    property var answered: []
     // Why the last command failed, until the next one.
     property string error: ""
     readonly property ShellScreen screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
@@ -259,6 +262,7 @@ Singleton {
             sessions = message.sessions ?? [];
             decisions = message.decisions ?? [];
             messages = message.messages ?? [];
+            answered = message.answered ?? [];
             paused = message.paused === true;
             connected = true;
             return;
@@ -276,6 +280,10 @@ Singleton {
             break;
         case "message":
             messages = [...messages, event].slice(-10);
+            break;
+        case "answered":
+            if (event.answered)
+                answered = [...answered, event.answered].slice(-10);
             break;
         case "paused":
         case "unpaused":
@@ -298,6 +306,7 @@ Singleton {
             root.sessions = [];
             root.decisions = [];
             root.messages = [];
+            root.answered = [];
             retry.start();
         }
     }

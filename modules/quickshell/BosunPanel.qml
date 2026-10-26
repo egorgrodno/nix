@@ -7,7 +7,8 @@ import Quickshell.Io
 
 // Under the bosun module: while the fleet is paused, a banner with Resume, then
 // a count of the decisions the master holds, then the decisions waiting on the
-// user, each with its answer, then the master's model and a
+// user, each with its answer, then those the desk answered on the user's
+// word, then the master's model and a
 // field to tell the desk, then the tree of sessions, the desk first. A click on
 // a session opens it in a terminal, Kill on a worker stops it, and Pause all stops every session,
 // each at a second click. New worker opens a form under the tree that starts
@@ -341,6 +342,58 @@ Panel {
         }
     }
 
+    // A decision the desk answered on the user's word: what it was, what the
+    // desk gave and the words it quoted as the user's yes.
+    component AnsweredRow: Rectangle {
+        id: answer
+
+        required property var modelData
+        readonly property var decision: modelData.decision
+        readonly property string given: {
+            const d = decision;
+            if (d.kind === "permission")
+                return modelData.behavior === "allow" ? "Approved" : `Denied${modelData.text ? `: ${modelData.text}` : ""}`;
+            return `Answered: ${modelData.text ?? ""}`;
+        }
+
+        width: parent?.width ?? 0
+        height: answerBody.implicitHeight + 24
+        radius: Theme.radius - 4
+        color: Theme.tint(0.04)
+
+        Column {
+            id: answerBody
+
+            x: 12
+            y: 12
+            width: parent.width - 24
+            spacing: 4
+
+            BarText {
+                width: parent.width
+                elide: Text.ElideRight
+                color: Theme.foregroundMuted
+                font.pixelSize: 14
+                text: `${answer.decision.node} · ${answer.decision.kind === "permission" ? `${answer.decision.tool}: ${Bosun.detailOf(answer.decision)}` : answer.decision.question ?? answer.decision.note ?? ""}`
+            }
+
+            BarText {
+                width: parent.width
+                wrapMode: Text.Wrap
+                font.pixelSize: 14
+                text: answer.given
+            }
+
+            BarText {
+                width: parent.width
+                wrapMode: Text.Wrap
+                color: Theme.foregroundMuted
+                font.pixelSize: 14
+                text: `You said: “${answer.modelData.words}”`
+            }
+        }
+    }
+
     // A session, indented under its parent: blue in its turn, faint once
     // stopped. A click attaches to it.
     component SessionRow: Item {
@@ -565,6 +618,25 @@ Panel {
                     }
 
                     delegate: DecisionCard {}
+                }
+            }
+
+            Column {
+                width: parent.width
+                visible: Bosun.answered.length > 0
+                spacing: 8
+
+                Caption {
+                    text: "Answered by the desk"
+                }
+
+                Repeater {
+                    // Newest first, by reference like the messages.
+                    model: ScriptModel {
+                        values: [...Bosun.answered].reverse()
+                    }
+
+                    delegate: AnsweredRow {}
                 }
             }
 
