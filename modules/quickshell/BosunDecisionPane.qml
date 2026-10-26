@@ -17,7 +17,7 @@ BosunPane {
     // "a" or "d" while a first press has armed Approve or Deny.
     property string armed: ""
     readonly property string decisionId: decision?.id ?? ""
-    readonly property string kind: decision?.kind ?? ""
+    readonly property string kind: decision ? Bosun.kindOf(decision) : ""
     readonly property var session: Bosun.sessions.find(s => s.node === decision?.node) ?? null
     // Who settled it, how and when: "Allowed by the master at 17:44."
     readonly property string settledText: {
@@ -86,9 +86,9 @@ BosunPane {
         const d = decision;
         if (!d)
             return "";
-        if (d.kind === "question")
+        if (kind === "question")
             return `${d.node} asks`;
-        if (d.kind === "notice")
+        if (kind === "notice")
             return `${d.node} says`;
         switch (d.tool) {
         case "Bash":
@@ -147,7 +147,7 @@ BosunPane {
 
         BarText {
             width: parent.width
-            visible: pane.kind === "question" || pane.kind === "notice"
+            visible: pane.kind === "question" || pane.decision?.kind === "notice"
             wrapMode: Text.Wrap
             font.pixelSize: 16
             text: (pane.kind === "question" ? pane.decision?.question : pane.decision?.note) ?? ""
@@ -162,7 +162,7 @@ BosunPane {
         // Why the master passed it on. A notice's note is its text.
         Column {
             width: parent.width
-            visible: pane.kind !== "notice" && (pane.decision?.note ?? "") !== ""
+            visible: pane.decision?.kind !== "notice" && (pane.decision?.note ?? "") !== ""
             topPadding: 4
             spacing: 4
 

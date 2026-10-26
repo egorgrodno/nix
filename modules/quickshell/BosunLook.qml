@@ -111,9 +111,10 @@ Singleton {
     }
 
     function decisionGlyph(decision) {
-        if (decision.kind === "question")
+        const kind = Bosun.kindOf(decision);
+        if (kind === "question")
             return "\u{F0625}";
-        if (decision.kind === "notice")
+        if (kind === "notice")
             return notice;
         switch (decision.tool) {
         case "Bash":
@@ -181,7 +182,7 @@ Singleton {
     function outcomeOf(entry) {
         if (entry.withdrawn)
             return "withdrawn";
-        if (entry.decision?.kind === "notice")
+        if (entry.decision?.kind === "notice" && !entry.behavior)
             return "dismissed";
         if (entry.behavior === "allow")
             return "allowed";

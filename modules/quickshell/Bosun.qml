@@ -84,6 +84,12 @@ Singleton {
         return "turn";
     }
 
+    // A decision's kind, a notice of the session's own permission prompt, which
+    // approve and deny answer, as a permission.
+    function kindOf(decision) {
+        return decision.kind === "notice" && decision.prompt === true ? "permission" : decision.kind;
+    }
+
     // What a permission asks to run or touch, as `bosun status` names it.
     function detailOf(decision) {
         const input = decision.input ?? {};
@@ -170,14 +176,15 @@ Singleton {
     // the lines a card shows before its expander.
     function notify(decision) {
         const d = decision;
-        const summary = d.kind === "permission" ? `${d.node} asks to use ${d.tool}` : d.kind === "question" ? `${d.node} asks` : `${d.node} says`;
-        const text = d.kind === "permission" ? callOf(d).filter(b => b.kind !== "note").map(b => b.label ? `${b.label}: ${b.text}` : b.text) : [d.kind === "question" ? d.question : d.note];
+        const kind = kindOf(d);
+        const summary = kind === "permission" ? `${d.node} asks to use ${d.tool}` : d.kind === "question" ? `${d.node} asks` : `${d.node} says`;
+        const text = kind === "permission" ? callOf(d).filter(b => b.kind !== "note").map(b => b.label ? `${b.label}: ${b.text}` : b.text) : [d.kind === "question" ? d.question : d.note];
         const lines = text.concat(d.kind !== "notice" && d.note ? [`Master: ${d.note}`] : []).join("\n").split("\n");
         const whole = lines.length <= 3 && lines.every(line => {
             bodyLine.text = line;
             return bodyLine.advanceWidth <= 280;
         });
-        const answers = d.kind === "permission" && whole ? ["--action=deny=Deny", "--action=approve=Approve"] : [];
+        const answers = kind === "permission" && whole ? ["--action=deny=Deny", "--action=approve=Approve"] : [];
         // The bar reads a body as markup.
         const body = lines.slice(0, 20).join("\n").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         notifier.post(d.id, answers.concat(["--", summary, body]));
@@ -198,7 +205,7 @@ Singleton {
     // question, or a notice's text.
     function summaryOf(decision) {
         const d = decision;
-        if (d.kind === "permission")
+        if (kindOf(d) === "permission")
             return detailOf(d);
         return (d.kind === "question" ? d.question : d.note) ?? "";
     }

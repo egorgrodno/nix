@@ -382,7 +382,8 @@ Item {
                 const d = row.decision;
                 if (!d)
                     return "";
-                return d.kind === "permission" ? d.tool : d.kind === "question" ? "asks" : "says";
+                const kind = Bosun.kindOf(d);
+                return kind === "permission" ? d.tool : kind === "question" ? "asks" : "says";
             }
             color: Theme.foregroundMuted
             font.pixelSize: 13
@@ -427,7 +428,7 @@ Item {
             elide: Text.ElideRight
             text: row.decision ? Bosun.summaryOf(row.decision).split("\n")[0] : ""
             color: Theme.foregroundMuted
-            font.family: row.decision?.kind === "permission" ? Theme.fontMono : Theme.fontUI
+            font.family: row.decision && Bosun.kindOf(row.decision) === "permission" ? Theme.fontMono : Theme.fontUI
             font.pixelSize: 13
         }
     }

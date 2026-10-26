@@ -256,7 +256,7 @@ Item {
             setExpanded(false);
             return true;
         }
-        const live = decisionLive ? decision.kind : "";
+        const live = decisionLive ? Bosun.kindOf(decision) : "";
         switch (event.text) {
         case "j":
             move(1);
