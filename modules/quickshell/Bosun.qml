@@ -9,13 +9,19 @@ import Quickshell.Io
 // The bosun daemon as `bosun watch` streams it: the Claude Code sessions it
 // runs, the decisions waiting on an answer and the messages between sessions.
 // The stream ends whenever the daemon stops, and starts again a few seconds
-// later. Answers and commands go through the `bosun` command, one at a time. A
-// decision that comes to wait on the user raises a notification.
+// later. Answers and commands go through the `bosun` command, one at a time,
+// with a pause or unpause beside them. A decision that comes to wait on the
+// user raises a notification.
 Singleton {
     id: root
 
     // False until the daemon answers, as on a host that runs none.
     property bool connected: false
+    // While `bosun pause` holds every session stopped, until `bosun unpause`.
+    property bool paused: false
+    // "pause" or "unpause" while the panel's runs: each stops or resumes the
+    // sessions one by one.
+    readonly property string fleetOp: fleet.running ? fleet.op : ""
     // Each as `bosun status --json` gives it.
     property var sessions: []
     readonly property var master: sessions.find(s => s.node === "master") ?? null
@@ -26,7 +32,7 @@ Singleton {
     // What each worker does, as `activityOf` names it, in turn first: those
     // gone from Claude Code's listing left out.
     readonly property var activities: {
-        const order = ["turn", "blocked", "idle", "stopped"];
+        const order = ["turn", "blocked", "paused", "idle", "stopped"];
         return sessions.filter(s => s.node !== "master").map(activityOf).filter(a => a !== "").sort((a, b) => order.indexOf(a) - order.indexOf(b));
     }
     // What sessions told each other, oldest first, the latest ten as the daemon
@@ -46,10 +52,13 @@ Singleton {
     signal finished(var args, bool ok)
 
     // "turn", "blocked" in its own prompt, as a session waiting on a decision
-    // is too, "idle", "stopped", or "" once gone.
+    // is too, "idle", "paused" in its turn, which unpausing resumes,
+    // "stopped", or "" once gone.
     function activityOf(session) {
         if (session.status === "exited")
             return "";
+        if (session.paused)
+            return "paused";
         if (session.killed || session.status === "stopped")
             return "stopped";
         switch (session.status) {
@@ -206,6 +215,14 @@ Singleton {
         send(["model", name]);
     }
 
+    function pause() {
+        fleet.run("pause");
+    }
+
+    function unpause() {
+        fleet.run("unpause");
+    }
+
     // `bosun attach` has the daemon resume a stopped session before `claude
     // attach`, which would start Claude Code's supervisor in this kitty. `claude
     // attach` leaves the session running when it exits, as on Ctrl+Z. A failed
@@ -234,11 +251,12 @@ Singleton {
         } catch (e) {
             return;
         }
-        // The daemon leaves out an empty list.
+        // The daemon leaves out an empty list and a false `paused`.
         if (message.type === "snapshot") {
             sessions = message.sessions ?? [];
             decisions = message.decisions ?? [];
             messages = message.messages ?? [];
+            paused = message.paused === true;
             connected = true;
             return;
         }
@@ -256,6 +274,10 @@ Singleton {
         case "message":
             messages = [...messages, event].slice(-10);
             break;
+        case "paused":
+        case "unpaused":
+            paused = event.kind === "paused";
+            break;
         }
     }
 
@@ -269,6 +291,7 @@ Singleton {
         }
         onExited: {
             root.connected = false;
+            root.paused = false;
             root.sessions = [];
             root.decisions = [];
             root.messages = [];
@@ -304,6 +327,26 @@ Singleton {
         onExited: exitCode => {
             root.finished(args, exitCode === 0);
             Qt.callLater(next);
+        }
+    }
+
+    // Beside `cli`, so an answer sent while a pause or unpause runs waits for
+    // neither.
+    Process {
+        id: fleet
+
+        property string op: ""
+
+        function run(name) {
+            if (running)
+                return;
+            op = name;
+            command = [Programs.bosun, name];
+            running = true;
+        }
+
+        stderr: StdioCollector {
+            onStreamFinished: root.error = text.trim().replace(/^bosun: /, "")
         }
     }
 

@@ -5,12 +5,13 @@ import QtQuick.Controls.Basic
 import Quickshell
 import Quickshell.Io
 
-// Under the bosun module: the decisions waiting on the user, each with its
-// answer, then those waiting on the master, which the user may answer too,
-// then the master's model and a field to tell it, then the tree of sessions.
-// A click on a session opens it in a terminal, and Kill on a worker stops it,
-// at a second click. New worker opens a form under the tree that starts one
-// under the master. Last, the messages between sessions.
+// Under the bosun module: while the fleet is paused, a banner with Resume, then
+// the decisions waiting on the user, each with its answer, then those waiting
+// on the master, which the user may answer too, then the master's model and a
+// field to tell it, then the tree of sessions. A click on a session opens it in
+// a terminal, Kill on a worker stops it, and Pause all stops every session,
+// each at a second click. New worker opens a form under the tree that starts
+// one under the master. Last, the messages between sessions.
 Panel {
     id: panel
 
@@ -18,6 +19,8 @@ Panel {
     property bool spawning: false
     // The worker a first click on Kill armed.
     property string killing: ""
+    // While a first click on Pause all has armed it.
+    property bool pausing: false
     // Where a new worker may start: each directory Claude Code trusts that
     // holds a repository.
     property var repos: []
@@ -46,6 +49,8 @@ Panel {
     function stateOf(session) {
         if (session.killed)
             return "killed";
+        if (session.paused)
+            return "paused";
         if (session.limitedUntil)
             return `limited until ${Qt.formatTime(new Date(session.limitedUntil), "HH:mm")}`;
         return session.state ? `${session.status} · ${session.state}` : session.status;
@@ -59,6 +64,16 @@ Panel {
         }
         killing = "";
         Bosun.kill(node);
+    }
+
+    function pause() {
+        if (!pausing) {
+            pausing = true;
+            disarm.restart();
+            return;
+        }
+        pausing = false;
+        Bosun.pause();
     }
 
     function findRepos() {
@@ -96,7 +111,10 @@ Panel {
         id: disarm
 
         interval: 3000
-        onTriggered: panel.killing = ""
+        onTriggered: {
+            panel.killing = "";
+            panel.pausing = false;
+        }
     }
 
     // A line of text and a glyph that sends it, as Return does, then clears.
@@ -382,7 +400,7 @@ Panel {
             anchors.rightMargin: 8
             anchors.verticalCenter: parent.verticalCenter
             text: [panel.stateOf(row.session)].concat(row.session.model ? [row.session.model] : []).join(" · ")
-            color: Theme.foregroundMuted
+            color: row.session.paused === true ? Theme.yellow : Theme.foregroundMuted
             font.pixelSize: 14
         }
     }
@@ -475,6 +493,43 @@ Panel {
             width: scroller.width - (scroller.interactive ? 14 : 0)
             spacing: 20
 
+            Rectangle {
+                width: parent.width
+                height: Math.max(pausedText.implicitHeight, resumeButton.height) + 24
+                visible: Bosun.paused
+                radius: Theme.radius - 4
+                color: Theme.alpha(Theme.yellow, 0.15)
+
+                BarText {
+                    id: pausedText
+
+                    x: 12
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: resumeButton.x - x - 12
+                    wrapMode: Text.Wrap
+                    color: Theme.yellow
+                    font.pixelSize: 14
+                    text: {
+                        if (Bosun.fleetOp === "pause")
+                            return "Pausing: stopping every session";
+                        const turns = Bosun.sessions.filter(s => s.paused).map(s => s.node);
+                        return turns.length > 0 ? `Paused. Resume restarts the turns of ${turns.join(", ")}.` : "Paused. No session was in its turn.";
+                    }
+                }
+
+                TextButton {
+                    id: resumeButton
+
+                    anchors.right: parent.right
+                    anchors.rightMargin: 12
+                    anchors.verticalCenter: parent.verticalCenter
+                    enabled: Bosun.fleetOp === ""
+                    text: "Resume"
+                    hoverFill: Theme.alpha(Theme.blue, 0.5)
+                    onClicked: Bosun.unpause()
+                }
+            }
+
             Column {
                 width: parent.width
                 visible: Bosun.mine.length > 0
@@ -565,21 +620,34 @@ Panel {
 
                 Item {
                     width: parent.width
-                    height: newButton.height + 6
+                    height: sessionButtons.height + 6
 
                     Caption {
-                        anchors.verticalCenter: newButton.verticalCenter
+                        anchors.verticalCenter: sessionButtons.verticalCenter
                         text: Bosun.connected ? "Sessions" : "The bosun daemon is not running"
                     }
 
-                    TextButton {
-                        id: newButton
+                    Row {
+                        id: sessionButtons
 
                         anchors.right: parent.right
                         visible: Bosun.connected
-                        text: "New worker"
-                        lit: panel.spawning
-                        onClicked: panel.spawning = !panel.spawning
+                        spacing: 6
+
+                        TextButton {
+                            visible: !Bosun.paused
+                            enabled: Bosun.fleetOp === ""
+                            text: Bosun.fleetOp === "unpause" ? "Resuming…" : panel.pausing ? "Pause every session?" : "Pause all"
+                            hoverFill: Theme.alpha(Theme.yellow, 0.5)
+                            lit: panel.pausing
+                            onClicked: panel.pause()
+                        }
+
+                        TextButton {
+                            text: "New worker"
+                            lit: panel.spawning
+                            onClicked: panel.spawning = !panel.spawning
+                        }
                     }
                 }
 

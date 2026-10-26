@@ -1,10 +1,11 @@
 import QtQuick
 import Quickshell
 
-// The bosun fleet: a robot, blue while a session is in its turn, a dot for
-// each worker, and how many decisions wait on the user, yellow while any does.
-// A dot is blue in a turn, yellow blocked in its own prompt, grey idle, and a
-// ring once stopped. Click opens the bosun panel.
+// The bosun fleet: a robot, blue while a session is in its turn, a yellow
+// pause glyph while the fleet is paused, a dot for each worker, and how many
+// decisions wait on the user, yellow while any does. A dot is blue in a turn,
+// yellow blocked in its own prompt, grey idle, and a ring once stopped, yellow
+// if the pause stopped it in its turn. Click opens the bosun panel.
 Pill {
     id: agents
 
@@ -13,6 +14,7 @@ Pill {
         const names = {
             turn: "in a turn",
             blocked: "blocked",
+            paused: "paused in a turn",
             idle: "idle",
             stopped: "stopped"
         };
@@ -40,7 +42,7 @@ Pill {
     lit: panel.active
     tooltip: {
         const waiting = count === 0 ? "Nothing waits on you" : count === 1 ? "1 decision waits on you" : `${count} decisions wait on you`;
-        return fleet ? `${fleet} · ${waiting}` : waiting;
+        return [Bosun.paused ? "Paused" : "", fleet, waiting].filter(part => part !== "").join(" · ");
     }
     onClicked: button => {
         if (button === Qt.LeftButton)
@@ -69,6 +71,13 @@ Pill {
         color: Bosun.working ? Theme.blue : Theme.foregroundStrong
     }
 
+    BarText {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: Bosun.paused
+        text: "\u{F03E4}"
+        color: Theme.yellow
+    }
+
     Row {
         anchors.verticalCenter: parent.verticalCenter
         visible: Bosun.activities.length > 0
@@ -94,8 +103,8 @@ Pill {
                     }
                     return "transparent";
                 }
-                border.width: modelData === "stopped" ? 1.5 : 0
-                border.color: Theme.foregroundMuted
+                border.width: modelData === "stopped" || modelData === "paused" ? 1.5 : 0
+                border.color: modelData === "paused" ? Theme.yellow : Theme.foregroundMuted
             }
         }
     }
