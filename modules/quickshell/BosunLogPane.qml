@@ -92,7 +92,16 @@ BosunPane {
         visible: pane.said !== ""
         wrapMode: Text.Wrap
         font.pixelSize: 14
-        text: pane.known && pane.entry.kind === "settled" && pane.entry.behavior === "deny" ? `Denied with: ${pane.said}` : pane.said
+        text: pane.known && ["settled", "prompt"].includes(pane.entry.kind) && pane.entry.behavior === "deny" ? `Denied with: ${pane.said}` : pane.said
+    }
+
+    BarText {
+        width: parent.width
+        visible: (pane.entry?.error ?? "") !== ""
+        wrapMode: Text.Wrap
+        color: Theme.red
+        font.pixelSize: 14
+        text: `Failed: ${pane.entry?.error ?? ""}`
     }
 
     BarText {

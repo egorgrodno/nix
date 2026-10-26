@@ -179,7 +179,7 @@ Singleton {
 
     // The kinds of log entry the panel shows; any other is one bosun cannot
     // show yet.
-    readonly property var logKinds: ["decision", "escalated", "settled", "tell", "message", "spawned", "resumed", "merged", "killed", "paused", "unpaused", "model", "turn_end", "exit", "say", "interrupt"]
+    readonly property var logKinds: ["decision", "escalated", "settled", "tell", "message", "spawned", "resumed", "merged", "killed", "paused", "unpaused", "model", "turn_end", "exit", "say", "interrupt", "prompt"]
 
     function knows(entry) {
         return logKinds.includes(entry.kind) && (!["decision", "escalated", "settled"].includes(entry.kind) || entry.decision);
@@ -260,6 +260,8 @@ Singleton {
             return `${who} said to ${entry.node}`;
         case "interrupt":
             return `${who} interrupted ${entry.node}`;
+        case "prompt":
+            return `${who} ${entry.behavior === "deny" ? "denied" : "approved"} ${entry.node}'s own permission prompt`;
         }
         return `${entry.node} stopped`;
     }
@@ -269,6 +271,9 @@ Singleton {
     function logDetail(entry) {
         if (!knows(entry))
             return entry.kind ?? "";
+        // An action of the user's that failed.
+        if (entry.error)
+            return `failed: ${entry.error}`;
         const d = entry.decision;
         switch (entry.kind) {
         case "decision":
@@ -440,7 +445,7 @@ Singleton {
     }
 
     function logGlyph(entry) {
-        if (!knows(entry))
+        if (!knows(entry) || entry.error)
             return alert;
         switch (entry.kind) {
         case "decision":
@@ -462,6 +467,8 @@ Singleton {
             return "\u{F12F5}";
         case "interrupt":
             return interrupt;
+        case "prompt":
+            return entry.behavior === "deny" ? "\u{F015A}" : "\u{F05E1}";
         case "spawned":
             return "\u{F0419}";
         case "resumed":
@@ -484,6 +491,8 @@ Singleton {
     function logColor(entry) {
         if (!knows(entry))
             return Theme.yellow;
+        if (entry.error)
+            return Theme.red;
         switch (entry.kind) {
         case "settled":
             switch (outcomeOf(entry)) {
@@ -494,6 +503,8 @@ Singleton {
                 return Theme.red;
             }
             break;
+        case "prompt":
+            return entry.behavior === "deny" ? Theme.red : Theme.green;
         case "spawned":
             return Theme.blue;
         case "merged":
