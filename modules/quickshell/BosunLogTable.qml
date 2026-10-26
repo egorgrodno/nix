@@ -15,13 +15,15 @@ Item {
     readonly property Item keyboardHome: table
     // The selected entry's seq, or -1.
     property int selectedSeq: -1
-    // "all", "decisions", "messages", "sessions" or "yours".
-    property string kind: "all"
-    // The session the entries are about, or "" for any.
-    property string session: ""
-    property string text: ""
+    // The filters, which BosunKept keeps: "all", "decisions", "messages",
+    // "sessions" or "yours"; the session the entries are about, or "" for any;
+    // and text.
+    readonly property string kind: BosunKept.logKind
+    readonly property string session: BosunKept.logSession
+    readonly property string text: BosunKept.logText
     // Lights the selected row's edge while the keyboard is here.
     readonly property bool focused: activeFocus
+    property bool scrollRestored: false
     readonly property var rows: {
         const words = text.trim().toLowerCase();
         return Bosun.log.filter(e => {
@@ -65,11 +67,45 @@ Item {
             opened(link.key, link.item);
     }
 
-    onSelectedSeqChanged: Qt.callLater(() => {
-        const index = rows.findIndex(e => e.seq === selectedSeq);
-        if (index >= 0)
-            list.positionViewAtIndex(index, ListView.Contain);
-    })
+    // Until the scroll is restored, it is not kept.
+    function restoreScroll() {
+        scrollRestored = false;
+        restoring.restart();
+    }
+
+    onVisibleChanged: {
+        if (visible)
+            restoreScroll();
+        else
+            scrollRestored = false;
+    }
+    Component.onCompleted: if (visible)
+        restoreScroll()
+    onSelectedSeqChanged: revealing.restart()
+
+    // Once the rows have laid out. Timers rather than Qt.callLater, which
+    // outlives the table.
+    Timer {
+        id: revealing
+
+        interval: 0
+        onTriggered: {
+            const index = table.rows.findIndex(e => e.seq === table.selectedSeq);
+            if (index >= 0)
+                list.positionViewAtIndex(index, ListView.Contain);
+        }
+    }
+
+    Timer {
+        id: restoring
+
+        interval: 0
+        onTriggered: {
+            const kept = BosunKept.scroll("log") ?? list.contentY;
+            list.contentY = Math.max(list.originY, Math.min(kept, list.originY + list.contentHeight - list.height));
+            table.scrollRestored = true;
+        }
+    }
 
     Item {
         id: header
@@ -136,7 +172,7 @@ Item {
                         lit: table.kind === modelData.key
                         hoverFill: lit ? Theme.blue : Theme.tint(0.12)
                         textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
-                        onClicked: table.kind = modelData.key
+                        onClicked: BosunKept.logKind = modelData.key
                     }
                 }
             }
@@ -192,7 +228,7 @@ Item {
                     font.pixelSize: 13
                     font.hintingPreference: Font.PreferFullHinting
                     renderType: Text.CurveRendering
-                    onTextEdited: table.text = text
+                    onTextEdited: BosunKept.logText = text
                     Keys.onReturnPressed: table.forceActiveFocus()
                     Keys.onEnterPressed: table.forceActiveFocus()
                     Keys.onTabPressed: table.forceActiveFocus()
@@ -268,6 +304,8 @@ Item {
         width: parent.width - 2 * x
         clip: true
         boundsBehavior: Flickable.StopAtBounds
+        onContentYChanged: if (table.scrollRestored)
+            BosunKept.keepScroll("log", contentY)
         model: ScriptModel {
             values: table.rows
             objectProp: "seq"
@@ -369,7 +407,7 @@ Item {
 
                 TapHandler {
                     onTapped: {
-                        table.session = choice.modelData;
+                        BosunKept.logSession = choice.modelData;
                         picker.visible = false;
                     }
                 }

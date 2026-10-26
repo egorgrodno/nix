@@ -10,9 +10,19 @@ Rectangle {
     property bool sendGlyph: true
     property alias text: input.text
     readonly property bool focused: input.activeFocus
+    // What BosunKept keeps the text under until it is sent, or "" to keep
+    // none. A field that serves many keys shows each one's own.
+    property string draftKey: ""
 
     signal sent(string text)
     signal leave
+
+    onDraftKeyChanged: if (draftKey !== "")
+        input.text = BosunKept.draft(draftKey)
+    onTextChanged: if (draftKey !== "")
+        BosunKept.keepDraft(draftKey, input.text)
+    Component.onCompleted: if (draftKey !== "")
+        input.text = BosunKept.draft(draftKey)
 
     function send() {
         const text = input.text.trim();

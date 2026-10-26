@@ -65,6 +65,7 @@ BosunPane {
 
             width: parent.width
             placeholder: "Tell the desk"
+            draftKey: "tell"
             onSent: text => Bosun.tell(text)
             onLeave: pane.leave()
         },

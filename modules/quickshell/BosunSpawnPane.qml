@@ -6,8 +6,8 @@ import Quickshell
 import Quickshell.Io
 
 // The New worker form, which starts one under the master in a repository
-// Claude Code trusts. What was typed stays through Cancel, Escape and a
-// failed spawn, and clears once the daemon has started the worker.
+// Claude Code trusts. What was typed stays through Cancel, Escape, closing the
+// panel and a failed spawn, and clears once the daemon has started the worker.
 BosunPane {
     id: pane
 
@@ -15,6 +15,7 @@ BosunPane {
     property string model: ""
     property string effort: ""
     property bool waiting: false
+    property bool restored: false
     // Each directory Claude Code trusts that holds a repository.
     property var repos: []
     readonly property bool valid: /^[a-z0-9][a-z0-9-]{0,39}$/.test(nameField.text) && repo !== "" && promptField.text.trim() !== ""
@@ -36,6 +37,33 @@ BosunPane {
         else
             promptField.forceActiveFocus();
         return true;
+    }
+
+    // Into BosunKept, once the form has taken what it kept.
+    function keepForm() {
+        if (!restored)
+            return;
+        const empty = nameField.text === "" && promptField.text === "" && repo === "" && model === "" && effort === "";
+        BosunKept.keepDraft("spawn", empty ? null : {
+            name: nameField.text,
+            repo: repo,
+            model: model,
+            effort: effort,
+            prompt: promptField.text
+        });
+    }
+
+    onRepoChanged: keepForm()
+    onModelChanged: keepForm()
+    onEffortChanged: keepForm()
+    Component.onCompleted: {
+        const kept = BosunKept.draft("spawn") || {};
+        nameField.text = kept.name ?? "";
+        promptField.text = kept.prompt ?? "";
+        repo = kept.repo ?? "";
+        model = kept.model ?? "";
+        effort = kept.effort ?? "";
+        restored = true;
     }
 
     function findRepos() {
@@ -115,6 +143,7 @@ BosunPane {
             selectedTextColor: Theme.backgroundMain
             font.family: Theme.fontUI
             font.pixelSize: 14
+            onTextChanged: pane.keepForm()
             onAccepted: promptField.forceActiveFocus()
             Keys.onTabPressed: promptField.forceActiveFocus()
             Keys.onEscapePressed: pane.cancelled()
@@ -176,6 +205,7 @@ BosunPane {
             selectedTextColor: Theme.backgroundMain
             font.family: Theme.fontUI
             font.pixelSize: 14
+            onTextChanged: pane.keepForm()
             Keys.onTabPressed: nameField.forceActiveFocus()
             Keys.onEscapePressed: pane.cancelled()
             Keys.onPressed: event => {

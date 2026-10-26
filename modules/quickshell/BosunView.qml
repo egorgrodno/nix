@@ -19,23 +19,16 @@ Item {
     // the list beside the pane.
     readonly property Item keyboardHome: logShown ? logTable : sidebar.visible ? sidebar : rail
 
-    // The selected row's key, as BosunSidebar names them, or "spawn" while the
-    // New worker form is open.
-    property string selected: ""
-    // What the form returns to.
-    property string beforeSpawn: ""
-    // The selected decision, kept once it no longer waits on the user.
-    property var held: null
+    // BosunKept holds what the panel shows, so it opens where it closed.
+    readonly property string selected: BosunKept.selected
+    readonly property var held: BosunKept.held
+    readonly property bool expanded: BosunKept.expanded
     // The key a first press armed: "a", "d" or "p".
     property string armed: ""
     // The worker a first click on Kill armed.
     property string killing: ""
-    // The Log entry selected, kept once it scrolls out of the sidebar.
-    property var logEntry: null
-    // While the panel fills the work area.
-    property bool expanded: false
-    // While the expanded panel shows the whole sidebar beside the rail.
-    property bool sidebarShown: false
+    // The decision the user's last answer from the panel settled.
+    property string answered: ""
 
     readonly property string paneKind: {
         if (selected === "spawn")
@@ -65,9 +58,14 @@ Item {
     readonly property var session: {
         if (selected === "desk")
             return Bosun.master;
+        if (paneKind !== "session")
+            return null;
         const node = selected.slice("session:".length);
-        return Bosun.sessions.find(s => s.node === node) ?? null;
+        return Bosun.sessions.find(s => s.node === node) ?? (held?.node === node && held?.kind === undefined ? held : null);
     }
+    // BosunKept sets `held` just before `selected`, so each match checks it
+    // belongs to the key.
+    readonly property var logEntry: paneKind === "log" && `log:${held?.seq}` === selected ? held : null
 
     function defaultKey() {
         if (!Bosun.connected)
@@ -75,18 +73,8 @@ Item {
         return Bosun.mine.length > 0 ? `decision:${Bosun.mine[0].id}` : "desk";
     }
 
-    // `item` is what to show for the key once its row is gone: a settled
-    // decision or a Log entry, as the Log holds them.
     function select(key, item) {
-        if (key === selected)
-            return;
-        armed = "";
-        killing = "";
-        const live = Bosun.mine.find(d => `decision:${d.id}` === key);
-        held = live ?? (key.startsWith("decision:") ? item ?? null : null);
-        if (key.startsWith("log:"))
-            logEntry = item ?? Bosun.log.find(e => `log:${e.seq}` === key) ?? logEntry;
-        selected = key;
+        BosunKept.select(key, item);
     }
 
     // Through the Log's table while it shows and the sidebar does not have the
@@ -97,7 +85,7 @@ Item {
             return;
         }
         const keys = sidebar.keys;
-        const from = keys.indexOf(selected === "spawn" ? beforeSpawn : selected);
+        const from = keys.indexOf(selected === "spawn" ? BosunKept.beforeSpawn : selected);
         if (keys.length === 0)
             return;
         select(keys[from < 0 ? 0 : Math.max(0, Math.min(keys.length - 1, from + step))]);
@@ -129,14 +117,14 @@ Item {
     function openLog() {
         if (paneKind === "log")
             return;
-        const entry = logEntry ?? Bosun.log[Bosun.log.length - 1];
+        const entry = BosunKept.logEntry ?? Bosun.log[Bosun.log.length - 1];
         if (entry)
             select(`log:${entry.seq}`, entry);
     }
 
     function setExpanded(on) {
-        expanded = on;
-        Qt.callLater(keepKeyboard);
+        BosunKept.expanded = on;
+        following.restart();
     }
 
     // An item that hides keeps the keyboard, so it follows the list as the
@@ -176,7 +164,7 @@ Item {
         if (!Bosun.connected)
             return;
         if (selected !== "spawn") {
-            beforeSpawn = selected;
+            BosunKept.beforeSpawn = selected;
             select("spawn");
             spawnPane.findRepos();
         }
@@ -184,7 +172,7 @@ Item {
     }
 
     function closeSpawn() {
-        select(beforeSpawn !== "" ? beforeSpawn : defaultKey());
+        select(BosunKept.beforeSpawn !== "" ? BosunKept.beforeSpawn : defaultKey());
         keyboardHome.forceActiveFocus();
     }
 
@@ -222,12 +210,11 @@ Item {
         Bosun.kill(node);
     }
 
-    // Once the user's answer settles the selected decision, to the next one
-    // waiting. The daemon logs the answer just after it settles the decision.
+    // Once the user's answer from the panel settles the selected decision, to
+    // the next one waiting. The decision may go before the answer's command
+    // exits, or after.
     function advance() {
-        if (!held || selected !== `decision:${held.id}` || Bosun.mine.some(d => d.id === held.id) || Bosun.mine.length === 0)
-            return;
-        if (Bosun.settledEntry(held.id)?.by !== "user")
+        if (!held || selected !== `decision:${held.id}` || answered !== held.id || Bosun.mine.some(d => d.id === held.id) || Bosun.mine.length === 0)
             return;
         const next = Bosun.mine.find(d => Number(d.id) > Number(held.id)) ?? Bosun.mine[Bosun.mine.length - 1];
         select(`decision:${next.id}`);
@@ -307,20 +294,26 @@ Item {
         return false;
     }
 
-    onKeyboardHomeChanged: Qt.callLater(keepKeyboard)
+    onKeyboardHomeChanged: following.restart()
+    // A notification's click moves the selection too.
+    onSelectedChanged: {
+        armed = "";
+        killing = "";
+    }
     Component.onCompleted: {
-        select(defaultKey());
+        if (selected === "")
+            select(defaultKey());
         keyboardHome.forceActiveFocus();
     }
+    Component.onDestruction: BosunKept.save()
 
+    // The selection stays where it is as rows come and go: only the user's
+    // own answer from the panel moves it on.
     Connections {
         target: Bosun
 
         function onMineChanged() {
-            const live = Bosun.mine.find(d => `decision:${d.id}` === view.selected);
-            if (live)
-                view.held = live;
-            else if (view.held && view.selected === `decision:${view.held.id}`)
+            if (view.paneKind === "decision" && !view.decisionLive)
                 Qt.callLater(view.advance);
         }
 
@@ -328,13 +321,15 @@ Item {
             view.advance();
         }
 
-        function onConnectedChanged() {
-            view.select(view.defaultKey());
+        function onFinished(args, ok) {
+            if (ok && ["approve", "deny", "reply", "dismiss"].includes(args[0])) {
+                view.answered = args[1];
+                view.advance();
+            }
         }
 
-        // A session gone takes its row with it.
-        function onSessionsChanged() {
-            if (view.selected.startsWith("session:") && view.session === null)
+        function onConnectedChanged() {
+            if (view.selected === "")
                 view.select(view.defaultKey());
         }
     }
@@ -347,6 +342,15 @@ Item {
             view.armed = "";
             view.killing = "";
         }
+    }
+
+    // Once the list has changed. A timer rather than Qt.callLater, which
+    // outlives the panel as it closes.
+    Timer {
+        id: following
+
+        interval: 0
+        onTriggered: view.keepKeyboard()
     }
 
     Item {
@@ -457,9 +461,9 @@ Item {
                 height: parent.height
                 visible: view.expanded
                 section: view.section
-                sidebarShown: view.sidebarShown
+                sidebarShown: BosunKept.sidebarShown
                 onPicked: name => view.openSection(name)
-                onSidebarToggled: view.sidebarShown = !view.sidebarShown
+                onSidebarToggled: BosunKept.sidebarShown = !BosunKept.sidebarShown
                 Keys.onPressed: event => event.accepted = view.press(event)
             }
 
@@ -474,10 +478,10 @@ Item {
                 x: view.expanded ? rail.width + 1 : 0
                 height: parent.height
                 width: 380
-                visible: !view.expanded || view.sidebarShown
+                visible: !view.expanded || BosunKept.sidebarShown
                 expanded: view.expanded
                 selected: view.selected
-                held: view.held
+                held: view.paneKind === "decision" ? view.decision : null
                 onChosen: key => {
                     view.select(key);
                     sidebar.forceActiveFocus();
@@ -541,6 +545,7 @@ Item {
 
                     anchors.fill: parent
                     visible: view.paneKind === "decision" && view.decision !== null
+                    scrollKey: visible ? view.selected : ""
                     decision: view.decision
                     live: view.decisionLive
                     armed: view.armed
@@ -552,6 +557,7 @@ Item {
 
                     anchors.fill: parent
                     visible: view.paneKind === "desk"
+                    scrollKey: visible ? "desk" : ""
                     onLeave: view.keyboardHome.forceActiveFocus()
                 }
 
@@ -571,6 +577,7 @@ Item {
 
                     anchors.fill: parent
                     visible: view.paneKind === "log" && view.logEntry !== null
+                    scrollKey: visible ? view.selected : ""
                     entry: view.logEntry
                     onOpened: (key, item) => view.select(key, item)
                 }
@@ -580,6 +587,7 @@ Item {
 
                     anchors.fill: parent
                     visible: view.paneKind === "spawn" && Bosun.connected
+                    scrollKey: visible ? "spawn" : ""
                     onCancelled: view.closeSpawn()
                     onStarted: view.closeSpawn()
                 }

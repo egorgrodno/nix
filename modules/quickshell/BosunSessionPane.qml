@@ -80,6 +80,7 @@ BosunPane {
             width: parent.width
             visible: pane.isMaster && !Bosun.desk && Bosun.connected
             placeholder: "Tell the master"
+            draftKey: "tell:master"
             onSent: text => Bosun.tell(text)
             onLeave: pane.leave()
         },

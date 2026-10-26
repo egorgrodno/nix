@@ -19,9 +19,7 @@ BosunPane {
     readonly property string decisionId: decision?.id ?? ""
     readonly property string kind: decision?.kind ?? ""
     readonly property var session: Bosun.sessions.find(s => s.node === decision?.node) ?? null
-    // What was typed for each decision, by id, so a note survives moving
-    // away and back.
-    property var drafts: ({})
+    // Who settled it, how and when: "Allowed by the master at 17:44."
     readonly property string settledText: {
         if (live || !decision)
             return "";
@@ -29,25 +27,26 @@ BosunPane {
             return "The master is deciding it, and passes it to you only if it needs you.";
         const entry = Bosun.settledEntry(decisionId);
         const outcome = entry ? BosunLook.outcomeOf(entry) : "";
-        const verb = {
-            allowed: "approved",
-            denied: "denied",
-            answered: "answered",
-            dismissed: "dismissed"
-        }[outcome];
+        const at = entry?.at ? ` at ${Qt.formatTime(new Date(entry.at), "HH:mm")}` : "";
+        const by = {
+            user: "you",
+            master: "the master",
+            desk: "the desk",
+            bosun: "bosun"
+        }[entry?.by] ?? entry?.from ?? "";
+        const outcomeWord = outcome.charAt(0).toUpperCase() + outcome.slice(1);
         let text = "It no longer waits on you.";
         if (outcome === "withdrawn")
-            text = entry.cause ? `Withdrawn when ${entry.cause}.` : "Withdrawn.";
-        else if (entry?.by === "user")
-            text = `You ${verb} it.`;
-        else if (entry?.by === "desk")
-            text = `The desk ${verb} it on your word: “${entry.words ?? ""}”.`;
-        else if (entry?.by === "master")
-            text = `The master ${verb} it.`;
+            text = `Withdrawn${at}${entry.cause ? `, when ${entry.cause}` : ""}.`;
         else if (entry?.by === "session")
-            text = `It was ${verb} in ${decision.node}'s own prompt.`;
-        else if (entry)
-            text = `bosun ${verb} it.`;
+            text = `${outcomeWord} in ${decision.node}'s own prompt${at}.`;
+        else if (entry) {
+            const said = entry.text ? `: “${entry.text}”` : "";
+            const word = entry.by === "desk" && entry.words ? `, on your word “${entry.words}”` : "";
+            text = `${outcomeWord} by ${by}${at}${word}${said}`;
+            if (!text.endsWith("”"))
+                text += ".";
+        }
         return `${text} It stays here until you move to something else.`;
     }
 
@@ -81,12 +80,6 @@ BosunPane {
         else
             focusNote();
         return live && kind !== "notice";
-    }
-
-    onDecisionIdChanged: {
-        noteField.text = drafts[decisionId]?.note ?? "";
-        replyField.text = drafts[decisionId]?.reply ?? "";
-        scrollToTop();
     }
 
     title: {
@@ -200,9 +193,7 @@ BosunPane {
                 height: 34
                 sendGlyph: false
                 placeholder: "Deny with what to do instead (optional)"
-                onTextChanged: pane.drafts[pane.decisionId] = Object.assign({}, pane.drafts[pane.decisionId], {
-                    note: text
-                })
+                draftKey: pane.decisionId ? "deny:" + pane.decisionId : ""
                 onSent: pane.deny()
                 onLeave: pane.leave()
             }
@@ -235,9 +226,7 @@ BosunPane {
             width: parent.width
             visible: pane.live && pane.kind === "question"
             placeholder: `Answer ${pane.decision?.node ?? ""}`
-            onTextChanged: pane.drafts[pane.decisionId] = Object.assign({}, pane.drafts[pane.decisionId], {
-                reply: text
-            })
+            draftKey: pane.decisionId ? "reply:" + pane.decisionId : ""
             onSent: text => Bosun.reply(pane.decisionId, text)
             onLeave: pane.leave()
         },

@@ -20,6 +20,7 @@ Item {
     property bool expanded: false
     // Lights the selected row's edge while the keyboard is here.
     readonly property bool focused: activeFocus
+    property bool scrollRestored: false
     readonly property var waiting: {
         const mine = Bosun.mine;
         if (!held || mine.some(d => d.id === held.id))
@@ -98,7 +99,43 @@ Item {
             list.positionViewAtIndex(index, ListView.Contain);
     }
 
-    onSelectedChanged: Qt.callLater(() => reveal(selected))
+    // Until the scroll is restored, it is not kept.
+    function restoreScroll() {
+        scrollRestored = false;
+        restoring.restart();
+    }
+
+    // The selection moves from outside too, as a notification's click does,
+    // even while the panel closes.
+    onSelectedChanged: revealing.restart()
+    onVisibleChanged: {
+        if (visible)
+            restoreScroll();
+        else
+            scrollRestored = false;
+    }
+    Component.onCompleted: if (visible)
+        restoreScroll()
+
+    // Once the rows have laid out. Timers rather than Qt.callLater, which
+    // outlives the sidebar.
+    Timer {
+        id: revealing
+
+        interval: 0
+        onTriggered: sidebar.reveal(sidebar.selected)
+    }
+
+    Timer {
+        id: restoring
+
+        interval: 0
+        onTriggered: {
+            const kept = BosunKept.scroll("sidebar") ?? list.contentY;
+            list.contentY = Math.max(list.originY, Math.min(kept, list.originY + list.contentHeight - list.height));
+            sidebar.scrollRestored = true;
+        }
+    }
 
     ListView {
         id: list
@@ -108,6 +145,8 @@ Item {
         anchors.bottomMargin: 8
         clip: true
         boundsBehavior: Flickable.StopAtBounds
+        onContentYChanged: if (sidebar.scrollRestored)
+            BosunKept.keepScroll("sidebar", contentY)
         model: ScriptModel {
             values: sidebar.rows
             objectProp: "key"
@@ -300,7 +339,7 @@ Item {
     }
 
     // Its kind's glyph, the session, the tool or "asks", whether it is
-    // reserved or settled, and under them the command, the path or the
+    // reserved, or how it settled, and under them the command, the path or the
     // question.
     component DecisionRow: RowBase {
         id: row
@@ -367,7 +406,15 @@ Item {
                 id: badgeText
 
                 anchors.centerIn: parent
-                text: row.live ? `${BosunLook.reserved} reserved` : "settled"
+                text: {
+                    if (row.live)
+                        return `${BosunLook.reserved} reserved`;
+                    if (Bosun.masters.some(d => d.id === row.decisionId))
+                        return `${BosunLook.master} with the master`;
+                    const entry = Bosun.settledEntry(row.decisionId);
+                    const outcome = entry ? BosunLook.outcomeOf(entry) : "settled";
+                    return outcome === "withdrawn" ? `${BosunLook.cancel} withdrawn` : outcome;
+                }
                 color: row.live ? Theme.yellow : Theme.foregroundMuted
                 font.pixelSize: 12
             }

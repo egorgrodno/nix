@@ -14,9 +14,29 @@ Item {
     property alias actions: actionRow.data
     property alias foot: footColumn.data
     readonly property real bodyWidth: bodyColumn.width
+    // What BosunKept keeps the body's scroll under, or "" to keep none.
+    property string scrollKey: ""
+    // Until the scroll is restored, it is not kept.
+    property bool restoring: false
 
-    function scrollToTop() {
-        scroller.contentY = 0;
+    function restoreScroll() {
+        restoring = true;
+        restorer.restart();
+    }
+
+    onScrollKeyChanged: restoreScroll()
+    Component.onCompleted: restoreScroll()
+
+    // Once the body has laid out for the key. A timer rather than
+    // Qt.callLater, which outlives the pane.
+    Timer {
+        id: restorer
+
+        interval: 0
+        onTriggered: {
+            scroller.contentY = Math.max(0, Math.min(BosunKept.scroll(pane.scrollKey) ?? 0, scroller.contentHeight - scroller.height));
+            pane.restoring = false;
+        }
     }
 
     BarText {
@@ -72,6 +92,8 @@ Item {
         clip: true
         interactive: contentHeight > height
         boundsBehavior: Flickable.StopAtBounds
+        onContentYChanged: if (!pane.restoring && pane.scrollKey !== "")
+            BosunKept.keepScroll(pane.scrollKey, contentY)
 
         ScrollBar.vertical: ScrollBar {
             policy: scroller.interactive ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff

@@ -165,9 +165,9 @@ Singleton {
     }
 
     // As the newest of one notification, which a later one replaces through
-    // its tag. A click opens the panel. A permission takes Deny and Approve
-    // there only when all of it, the master's note included, shows in the
-    // lines a card shows before its expander.
+    // its tag. A click opens the panel on it. A permission takes Deny and
+    // Approve there only when all of it, the master's note included, shows in
+    // the lines a card shows before its expander.
     function notify(decision) {
         const d = decision;
         const summary = d.kind === "permission" ? `${d.node} asks to use ${d.tool}` : d.kind === "question" ? `${d.node} asks` : `${d.node} says`;
@@ -431,8 +431,12 @@ Singleton {
         stdout: StdioCollector {
             onStreamFinished: {
                 const action = text.trim();
-                if (action === "default")
+                // The one thing that moves the panel's selection on its own.
+                if (action === "default") {
+                    if (notifier.decision !== "")
+                        BosunKept.select(`decision:${notifier.decision}`);
                     root.openRequested();
+                }
                 else if (notifier.decision !== "" && action === "approve")
                     root.approve(notifier.decision);
                 else if (notifier.decision !== "" && action === "deny")
