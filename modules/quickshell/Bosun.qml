@@ -7,10 +7,10 @@ import Quickshell.Hyprland
 import Quickshell.Io
 
 // The bosun daemon as `bosun watch` streams it: the Claude Code sessions it
-// runs and the decisions waiting on an answer. The stream ends whenever the
-// daemon stops, and starts again a few seconds later. Answers and commands go
-// through the `bosun` command, one at a time. A decision that comes to wait on
-// the user raises a notification.
+// runs, the decisions waiting on an answer and the messages between sessions.
+// The stream ends whenever the daemon stops, and starts again a few seconds
+// later. Answers and commands go through the `bosun` command, one at a time. A
+// decision that comes to wait on the user raises a notification.
 Singleton {
     id: root
 
@@ -23,6 +23,9 @@ Singleton {
     readonly property var mine: decisions.filter(d => d.holder === "user")
     readonly property var masters: decisions.filter(d => d.holder === "master")
     readonly property bool working: sessions.some(s => s.status === "busy" || s.status === "waiting")
+    // What sessions told each other, oldest first, the latest ten as the daemon
+    // keeps them: `from` told `node` the `text`.
+    property var messages: []
     // Why the last command failed, until the next one.
     property string error: ""
     readonly property ShellScreen screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
@@ -134,6 +137,7 @@ Singleton {
         if (message.type === "snapshot") {
             sessions = message.sessions ?? [];
             decisions = message.decisions ?? [];
+            messages = message.messages ?? [];
             connected = true;
             return;
         }
@@ -147,6 +151,9 @@ Singleton {
             break;
         case "settled":
             decisions = decisions.filter(d => d.id !== event.id);
+            break;
+        case "message":
+            messages = [...messages, event].slice(-10);
             break;
         }
     }
@@ -163,6 +170,7 @@ Singleton {
             root.connected = false;
             root.sessions = [];
             root.decisions = [];
+            root.messages = [];
             retry.start();
         }
     }

@@ -10,7 +10,7 @@ import Quickshell.Io
 // then the master's model and a field to tell it, then the tree of sessions.
 // A click on a session opens it in a terminal, and Kill on a worker stops it,
 // at a second click. New worker opens a form under the tree that starts one
-// under the master.
+// under the master. Last, the messages between sessions.
 Panel {
     id: panel
 
@@ -332,6 +332,64 @@ Panel {
         }
     }
 
+    // A message between sessions, its first line beside who sent it to whom,
+    // or under them the whole of it, which a click toggles.
+    component MessageRow: Item {
+        id: message
+
+        required property var modelData
+        property bool expanded: false
+
+        width: parent?.width ?? 0
+        height: body.y + body.height + 6
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Theme.radius - 4
+            color: messageHover.hovered ? Theme.tint(0.07) : "transparent"
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 150
+                    easing.type: Easing.OutQuad
+                }
+            }
+        }
+
+        HoverHandler {
+            id: messageHover
+        }
+
+        TapHandler {
+            onTapped: message.expanded = !message.expanded
+        }
+
+        BarText {
+            id: names
+
+            x: 8
+            y: 6
+            width: Math.min(implicitWidth, parent.width - 16)
+            elide: Text.ElideRight
+            text: `${message.modelData.from} → ${message.modelData.node}`
+            color: Theme.foregroundMuted
+            font.pixelSize: 14
+        }
+
+        BarText {
+            id: body
+
+            x: message.expanded ? 8 : names.x + names.width + 8
+            y: message.expanded ? names.y + names.height + 2 : names.y
+            width: parent.width - x - 8
+            wrapMode: message.expanded ? Text.Wrap : Text.NoWrap
+            maximumLineCount: message.expanded ? 30 : 1
+            elide: Text.ElideRight
+            text: message.expanded ? message.modelData.text : message.modelData.text.split("\n")[0]
+            font.pixelSize: 14
+        }
+    }
+
     Column {
         width: panel.contentWidth
         visible: Bosun.mine.length > 0
@@ -618,6 +676,26 @@ Panel {
                     onClicked: form.start()
                 }
             }
+        }
+    }
+
+    Column {
+        width: panel.contentWidth
+        visible: Bosun.messages.length > 0
+        spacing: 2
+
+        Caption {
+            bottomPadding: 6
+            text: "Messages"
+        }
+
+        Repeater {
+            // By reference, so a message opened stays open as newer ones come.
+            model: ScriptModel {
+                values: Bosun.messages
+            }
+
+            delegate: MessageRow {}
         }
     }
 
