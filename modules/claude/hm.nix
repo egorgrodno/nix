@@ -30,7 +30,7 @@
       After = [ "graphical-session.target" ];
     };
     Service = {
-      ExecStart = "${lib.getExe pkgs.bosun} daemon";
+      ExecStart = "${lib.getExe pkgs.bosun} daemon -max-depth 10 -max-children 20";
       # Every background session runs in the cgroup of the first `claude --bg`,
       # usually this unit's, so the default would stop them all with the daemon.
       KillMode = "process";
