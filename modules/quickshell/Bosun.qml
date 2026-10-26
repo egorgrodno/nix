@@ -24,9 +24,13 @@ Singleton {
     // Why the last command failed, until the next one.
     property string error: ""
     readonly property ShellScreen screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
+    // Claude Code's aliases, which the panel offers.
+    readonly property var models: ["fable", "opus", "sonnet", "haiku"]
 
     // The module on the focused screen opens or closes its panel.
     signal toggleRequested
+    // A command sent through `send` has exited, with status 0 if `ok`.
+    signal finished(var args, bool ok)
 
     function approve(id) {
         send(["approve", id]);
@@ -46,6 +50,16 @@ Singleton {
 
     function tell(text) {
         send(["tell", text]);
+    }
+
+    // A worker under the master, on the daemon's worker model when `model` is
+    // empty.
+    function spawn(name, repo, prompt, model) {
+        send(["spawn"].concat(model ? ["-model", model] : [], ["--", name, repo, prompt]));
+    }
+
+    function kill(node) {
+        send(["kill", node]);
     }
 
     // `bosun attach` has the daemon resume a stopped session before `claude
@@ -116,11 +130,13 @@ Singleton {
         id: cli
 
         property var queue: []
+        property var args: []
 
         function next() {
             if (running || queue.length === 0)
                 return;
-            command = [Programs.bosun].concat(queue[0]);
+            args = queue[0];
+            command = [Programs.bosun].concat(args);
             queue = queue.slice(1);
             running = true;
         }
@@ -128,7 +144,10 @@ Singleton {
         stderr: StdioCollector {
             onStreamFinished: root.error = text.trim().replace(/^bosun: /, "")
         }
-        onExited: Qt.callLater(next)
+        onExited: exitCode => {
+            root.finished(args, exitCode === 0);
+            Qt.callLater(next);
+        }
     }
 
     IpcHandler {

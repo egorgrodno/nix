@@ -1,14 +1,27 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import QtQuick.Controls.Basic
 import Quickshell
+import Quickshell.Io
 
 // Under the bosun module: the decisions waiting on the user, each with its
 // answer, then those waiting on the master, which the user may answer too,
 // then a field to tell the master, then the tree of sessions. A click on a
-// session opens it in a terminal.
+// session opens it in a terminal, and Kill on a worker stops it, at a second
+// click. New worker opens a form under the tree that starts one under the
+// master.
 Panel {
     id: panel
+
+    // While the form for a new worker is open.
+    property bool spawning: false
+    // The worker a first click on Kill armed.
+    property string killing: ""
+    // Where a new worker may start: each directory Claude Code trusts that
+    // holds a repository.
+    property var repos: []
+    readonly property string home: Quickshell.env("HOME")
 
     boxWidth: 440
 
@@ -45,6 +58,54 @@ Panel {
         if (session.limitedUntil)
             return `limited until ${Qt.formatTime(new Date(session.limitedUntil), "HH:mm")}`;
         return session.state ? `${session.status} · ${session.state}` : session.status;
+    }
+
+    function kill(node) {
+        if (killing !== node) {
+            killing = node;
+            disarm.restart();
+            return;
+        }
+        killing = "";
+        Bosun.kill(node);
+    }
+
+    function findRepos() {
+        claudeState.reload();
+        let trusted = [];
+        try {
+            const projects = JSON.parse(claudeState.text()).projects ?? {};
+            trusted = Object.keys(projects).filter(p => projects[p].hasTrustDialogAccepted === true);
+        } catch (e) {}
+        repoFinder.command = [Programs.sh, "-c", "for d; do [ -e \"$d/.git\" ] && printf '%s\\n' \"$d\"; done", "sh", ...trusted];
+        repoFinder.running = true;
+    }
+
+    onSpawningChanged: if (spawning)
+        findRepos()
+
+    // Claude Code's own state, which records each directory's trust.
+    FileView {
+        id: claudeState
+
+        path: `${panel.home}/.claude.json`
+        blockAllReads: true
+        printErrors: false
+    }
+
+    Process {
+        id: repoFinder
+
+        stdout: StdioCollector {
+            onStreamFinished: panel.repos = text.split("\n").filter(p => p !== "").sort()
+        }
+    }
+
+    Timer {
+        id: disarm
+
+        interval: 3000
+        onTriggered: panel.killing = ""
     }
 
     // A line of text and a glyph that sends it, as Return does, then clears.
@@ -213,6 +274,8 @@ Panel {
         required property var modelData
         readonly property var session: modelData
         readonly property bool attachable: (session.id ?? "") !== "" && session.status !== "exited"
+        readonly property bool killable: attachable && session.node !== "master" && session.killed !== true
+        readonly property bool armed: panel.killing === session.node
         readonly property bool working: session.status === "busy" || session.status === "waiting"
         readonly property bool resting: ["stopped", "exited"].includes(session.status) || session.killed === true
 
@@ -245,12 +308,25 @@ Panel {
         BarText {
             anchors.left: parent.left
             anchors.leftMargin: 8 + 16 * (row.session.depth ?? 0)
-            anchors.right: detail.left
+            anchors.right: killButton.visible ? killButton.left : detail.left
             anchors.rightMargin: 8
             anchors.verticalCenter: parent.verticalCenter
             elide: Text.ElideRight
             text: row.session.node
             color: row.working ? Theme.blue : row.resting ? Theme.foregroundMuted : Theme.foregroundStrong
+        }
+
+        TextButton {
+            id: killButton
+
+            anchors.right: detail.left
+            anchors.rightMargin: 8
+            anchors.verticalCenter: parent.verticalCenter
+            visible: row.killable && (hover.hovered || row.armed)
+            text: row.armed ? `Kill ${row.session.node}?` : "Kill"
+            hoverFill: Theme.alpha(Theme.red, 0.5)
+            lit: row.armed
+            onClicked: panel.kill(row.session.node)
         }
 
         BarText {
@@ -323,15 +399,204 @@ Panel {
         width: panel.contentWidth
         spacing: 2
 
-        Caption {
-            bottomPadding: 6
-            text: Bosun.connected ? "Sessions" : "The bosun daemon is not running"
+        Item {
+            width: parent.width
+            height: newButton.height + 6
+
+            Caption {
+                anchors.verticalCenter: newButton.verticalCenter
+                text: Bosun.connected ? "Sessions" : "The bosun daemon is not running"
+            }
+
+            TextButton {
+                id: newButton
+
+                anchors.right: parent.right
+                visible: Bosun.connected
+                text: "New worker"
+                lit: panel.spawning
+                onClicked: panel.spawning = !panel.spawning
+            }
         }
 
         Repeater {
             model: panel.tree
 
             delegate: SessionRow {}
+        }
+    }
+
+    // It stays until the daemon has started the worker, keeping what was
+    // typed through a failed spawn.
+    Column {
+        id: form
+
+        property string repo: ""
+        property string model: ""
+        property bool waiting: false
+        readonly property bool valid: /^[a-z0-9][a-z0-9-]{0,39}$/.test(nameField.text) && repo !== "" && promptField.text.trim() !== ""
+
+        function start() {
+            if (!valid || waiting)
+                return;
+            waiting = true;
+            Bosun.spawn(nameField.text, repo, promptField.text.trim(), model);
+        }
+
+        width: panel.contentWidth
+        visible: panel.spawning && Bosun.connected
+        spacing: 8
+
+        Connections {
+            target: Bosun
+
+            function onFinished(args, ok) {
+                if (args[0] !== "spawn" || !form.waiting)
+                    return;
+                form.waiting = false;
+                if (!ok)
+                    return;
+                nameField.text = "";
+                promptField.text = "";
+                form.repo = "";
+                form.model = "";
+                panel.spawning = false;
+            }
+        }
+
+        Caption {
+            text: "New worker"
+        }
+
+        TextField {
+            id: nameField
+
+            width: parent.width
+            height: 32
+            leftPadding: 10
+            rightPadding: 10
+            topPadding: 0
+            bottomPadding: 0
+            verticalAlignment: TextInput.AlignVCenter
+            placeholderText: "Name: lowercase letters, digits and hyphens"
+            placeholderTextColor: Theme.foregroundMuted
+            color: Theme.foregroundStrong
+            selectionColor: Theme.blue
+            selectedTextColor: Theme.backgroundMain
+            font.family: Theme.fontUI
+            font.pixelSize: 14
+            onAccepted: promptField.forceActiveFocus()
+
+            background: Rectangle {
+                radius: Theme.radius - 4
+                color: Theme.tint(0.06)
+                border.width: 1
+                border.color: nameField.activeFocus ? Theme.blue : Theme.tint(0.12)
+            }
+        }
+
+        Caption {
+            text: panel.repos.length > 0 ? "In a repository Claude Code trusts" : "Claude Code trusts no repository: run claude in one first"
+        }
+
+        Flow {
+            width: parent.width
+            spacing: 6
+
+            Repeater {
+                model: panel.repos
+
+                TextButton {
+                    required property string modelData
+
+                    text: modelData.startsWith(`${panel.home}/`) ? `~${modelData.slice(panel.home.length)}` : modelData
+                    lit: modelData === form.repo
+                    hoverFill: lit ? Theme.blue : Theme.tint(0.12)
+                    textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
+                    onClicked: form.repo = modelData
+                }
+            }
+        }
+
+        Caption {
+            text: "On a model"
+        }
+
+        Flow {
+            width: parent.width
+            spacing: 6
+
+            Repeater {
+                model: [""].concat(Bosun.models)
+
+                TextButton {
+                    required property string modelData
+
+                    text: modelData === "" ? "Default" : modelData
+                    lit: modelData === form.model
+                    hoverFill: lit ? Theme.blue : Theme.tint(0.12)
+                    textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
+                    onClicked: form.model = modelData
+                }
+            }
+        }
+
+        TextArea {
+            id: promptField
+
+            width: parent.width
+            padding: 10
+            wrapMode: TextEdit.Wrap
+            placeholderText: "Its task"
+            placeholderTextColor: Theme.foregroundMuted
+            color: Theme.foregroundStrong
+            selectionColor: Theme.blue
+            selectedTextColor: Theme.backgroundMain
+            font.family: Theme.fontUI
+            font.pixelSize: 14
+            Keys.onPressed: event => {
+                if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && event.modifiers & Qt.ControlModifier) {
+                    form.start();
+                    event.accepted = true;
+                }
+            }
+
+            background: Rectangle {
+                radius: Theme.radius - 4
+                color: Theme.tint(0.06)
+                border.width: 1
+                border.color: promptField.activeFocus ? Theme.blue : Theme.tint(0.12)
+            }
+        }
+
+        Item {
+            width: parent.width
+            height: startButton.height
+
+            Caption {
+                anchors.verticalCenter: parent.verticalCenter
+                text: "Ctrl Enter starts it"
+                font.pixelSize: 12
+            }
+
+            Row {
+                anchors.right: parent.right
+                spacing: 6
+
+                TextButton {
+                    text: "Cancel"
+                    onClicked: panel.spawning = false
+                }
+
+                TextButton {
+                    id: startButton
+
+                    enabled: form.valid && !form.waiting
+                    text: form.waiting ? "Starting…" : "Start"
+                    hoverFill: Theme.alpha(Theme.blue, 0.5)
+                    onClicked: form.start()
+                }
+            }
         }
     }
 
