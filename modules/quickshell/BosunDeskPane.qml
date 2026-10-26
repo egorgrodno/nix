@@ -3,9 +3,10 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 
-// The front desk: a field to tell it, which `bosun tell` reaches, Open,
-// which attaches to it in kitty, and the decisions it answered on the
-// user's word, newest first, each with the words it quoted as the yes.
+// The front desk: its model and effort switch, a field to tell it, which
+// `bosun tell` reaches, Open, which attaches to it in kitty, and the decisions
+// it answered on the user's word, newest first, each with the words it quoted
+// as the yes.
 BosunPane {
     id: pane
 
@@ -38,6 +39,12 @@ BosunPane {
             text: [pane.session?.model, pane.session?.effort].filter(part => part).join(" ") || (pane.session ? "default model" : "")
         }
     ]
+
+    BosunModelSwitch {
+        visible: Bosun.connected && pane.session !== null
+        node: "desk"
+        session: pane.session
+    }
 
     Caption {
         visible: Bosun.answered.length > 0

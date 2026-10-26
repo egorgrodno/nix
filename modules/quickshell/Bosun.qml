@@ -45,6 +45,8 @@ Singleton {
     property var log: []
     // Why the last command failed, until the next one.
     property string error: ""
+    // The node whose model switch has not finished.
+    property string switching: ""
     readonly property ShellScreen screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
     // Claude Code's aliases, which the panel offers.
     readonly property var models: ["fable", "opus", "sonnet", "haiku"]
@@ -57,6 +59,11 @@ Singleton {
     signal openRequested
     // A command sent through `send` has exited, with status 0 if `ok`.
     signal finished(var args, bool ok)
+
+    onFinished: args => {
+        if (args[0] === "model")
+            switching = "";
+    }
 
     // "turn", "blocked" in its own prompt, as a session waiting on a decision
     // is too, "idle", "paused" in its turn, which unpausing resumes,
@@ -236,9 +243,12 @@ Singleton {
         send(["kill", node]);
     }
 
-    // The daemon resumes the master on it, keeping its conversation.
-    function model(name) {
-        send(["model", name]);
+    // The daemon resumes the master or the desk on another model, effort or
+    // both, keeping its conversation; an empty one stays as it is. A desk in
+    // its turn can take 30 s to answer, which `switching` covers.
+    function model(node, model, effort) {
+        switching = node;
+        send(["model"].concat(effort ? ["-effort", effort] : [], [node], model ? [model] : []));
     }
 
     function pause() {

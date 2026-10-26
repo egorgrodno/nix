@@ -4,8 +4,8 @@ import QtQuick
 
 // A session: its state, where it works and on what model, Open, which
 // attaches to it in kitty, and Kill for a worker, at a second click. The
-// master's has its model switch, and while there is no desk a field to tell
-// it, since a tell then reaches the master.
+// master's has its model and effort switch, and while there is no desk a field
+// to tell it, since a tell then reaches the master.
 BosunPane {
     id: pane
 
@@ -30,25 +30,6 @@ BosunPane {
 
     title: node
     actions: [
-        Row {
-            visible: pane.isMaster && Bosun.connected
-            spacing: 4
-
-            Repeater {
-                model: Bosun.models
-
-                TextButton {
-                    required property string modelData
-
-                    text: modelData
-                    lit: modelData === pane.session?.model
-                    hoverFill: lit ? Theme.blue : Theme.tint(0.12)
-                    textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
-                    onClicked: if (!lit)
-                        Bosun.model(modelData)
-                }
-            }
-        },
         TextButton {
             visible: pane.attachable
             text: `${BosunLook.open}  Open`
@@ -85,6 +66,12 @@ BosunPane {
             text: pane.session?.parent ? `spawned by ${pane.session.parent}` : ""
         }
     ]
+
+    BosunModelSwitch {
+        visible: pane.isMaster && Bosun.connected
+        node: pane.node
+        session: pane.session
+    }
 
     foot: [
         BosunComposer {
