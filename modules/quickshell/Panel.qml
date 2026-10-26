@@ -99,15 +99,23 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "quickshell-panel"
 
-    // Placed once against a module: one that changes width while the panel is
-    // open would otherwise drag it along. Without one it stays centred as the
-    // screen changes size, as it does under the monitor panel's own changes.
-    Component.onCompleted: {
+    // Placed against a module when it opens and when its own width changes, not
+    // as the module changes width, which would drag it along. Without one it
+    // stays centred as the screen changes size, as it does under the monitor
+    // panel's own changes.
+    function place() {
         if (module) {
             const x = module.mapToItem(null, 0, 0).x;
             boxX = Math.max(Theme.outerGap, Math.min(x + (module.width - boxWidth) / 2, bar.width - Theme.outerGap - boxWidth));
         } else
             boxX = Qt.binding(() => Math.max(0, (screen?.width ?? boxWidth) - boxWidth) / 2);
+    }
+
+    onBoxWidthChanged: if (open && module)
+        place()
+
+    Component.onCompleted: {
+        place();
         open = true;
         Qt.callLater(() => settled = true);
         Notifications.panels = [...Notifications.panels, panel];

@@ -3,7 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 // bosun's name, the fleet's sessions counted by state, the decisions the
-// master holds, then Pause all, or Resume while paused, and New worker.
+// master holds, then Pause all, or Resume while paused, New worker, and Expand,
+// which switches between the normal size and the work area.
 Item {
     id: bar
 
@@ -11,6 +12,8 @@ Item {
     property bool pauseArmed: false
     // While the New worker form is open.
     property bool spawning: false
+    // While the panel fills the work area.
+    property bool expanded: false
     readonly property var counts: {
         const fleet = Bosun.sessions.filter(s => s.node !== "desk").map(s => BosunLook.stateOf(s));
         return BosunLook.stateOrder.map(key => ({
@@ -22,6 +25,7 @@ Item {
     signal pauseClicked
     signal resumeClicked
     signal newWorkerClicked
+    signal expandClicked
 
     height: 52
 
@@ -75,11 +79,10 @@ Item {
         anchors.right: parent.right
         anchors.rightMargin: 20
         anchors.verticalCenter: parent.verticalCenter
-        visible: Bosun.connected
         spacing: 8
 
         TextButton {
-            visible: !Bosun.paused || Bosun.fleetOp === "pause"
+            visible: Bosun.connected && (!Bosun.paused || Bosun.fleetOp === "pause")
             enabled: Bosun.fleetOp === ""
             text: Bosun.fleetOp === "pause" ? `${BosunLook.pause}  Pausing…` : bar.pauseArmed ? `${BosunLook.pause}  Pause every session?` : `${BosunLook.pause}  Pause all`
             hoverFill: Theme.alpha(Theme.yellow, 0.5)
@@ -88,7 +91,7 @@ Item {
         }
 
         TextButton {
-            visible: Bosun.paused && Bosun.fleetOp !== "pause"
+            visible: Bosun.connected && Bosun.paused && Bosun.fleetOp !== "pause"
             enabled: Bosun.fleetOp === ""
             text: Bosun.fleetOp === "unpause" ? `${BosunLook.play}  Resuming…` : `${BosunLook.play}  Resume`
             hoverFill: Theme.alpha(Theme.yellow, 0.5)
@@ -97,10 +100,31 @@ Item {
         }
 
         TextButton {
+            visible: Bosun.connected
             text: `${BosunLook.plus}  New worker`
             lit: bar.spawning
             hoverFill: lit ? Theme.alpha(Theme.blue, 0.5) : Theme.tint(0.12)
             onClicked: bar.newWorkerClicked()
+        }
+
+        TextButton {
+            id: expandButton
+
+            width: 28
+            text: bar.expanded ? BosunLook.collapse : BosunLook.expand
+            lit: bar.expanded
+            hoverFill: lit ? Theme.alpha(Theme.blue, 0.5) : Theme.tint(0.12)
+            onClicked: bar.expandClicked()
+
+            HoverHandler {
+                id: expandHover
+            }
+
+            Tooltip {
+                target: expandButton
+                text: bar.expanded ? "Back to the normal size" : "Expand to the work area"
+                hovered: expandHover.hovered
+            }
         }
     }
 

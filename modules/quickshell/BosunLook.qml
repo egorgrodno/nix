@@ -25,6 +25,12 @@ Singleton {
     readonly property string close: "\u{F0156}"
     readonly property string send: "\u{F048A}"
     readonly property string open: "\u{F03CC}"
+    readonly property string expand: "\u{F0616}"
+    readonly property string collapse: "\u{F0615}"
+    readonly property string history: "\u{F02DA}"
+    readonly property string dockLeft: "\u{F10AA}"
+    readonly property string filter: "\u{F0236}"
+    readonly property string chevronDown: "\u{F0140}"
 
     readonly property var states: ({
             working: {
@@ -266,6 +272,149 @@ Singleton {
     function logLine(entry) {
         const detail = logDetail(entry).split("\n")[0];
         return detail ? `${logTitle(entry)}: ${detail}` : logTitle(entry);
+    }
+
+    // Who acted, as the expanded Log's Who column names them: "you", "master",
+    // "front desk", "bosun" or the session, and for a tell or a message whom
+    // it reached.
+    function logWho(entry) {
+        const name = node => node === "desk" ? "front desk" : node ?? "";
+        const role = {
+            user: "you",
+            master: "master",
+            desk: "front desk",
+            bosun: "bosun"
+        }[entry.by] ?? name(entry.from || entry.node);
+        if (!knows(entry))
+            return role;
+        switch (entry.kind) {
+        case "tell":
+            return `${role} to ${name(entry.node)}`;
+        case "message":
+            return `${name(entry.from)} to ${name(entry.node)}`;
+        case "decision":
+            return entry.decision.node;
+        case "settled":
+            return entry.by === "session" ? entry.decision.node : role;
+        case "turn_end":
+        case "exit":
+            return entry.node;
+        }
+        return role;
+    }
+
+    // What a permission asks to do: "run go test ./...", or with `ing`
+    // "running go test ./...".
+    function actOf(decision, ing) {
+        const verb = {
+            Bash: ["run", "running"],
+            Edit: ["edit", "editing"],
+            MultiEdit: ["edit", "editing"],
+            NotebookEdit: ["edit", "editing"],
+            Write: ["write", "writing"]
+        }[decision.tool];
+        const detail = Bosun.detailOf(decision);
+        if (!verb)
+            return `${ing ? "using" : "use"} ${decision.tool}: ${detail}`;
+        return `${verb[ing ? 1 : 0]} ${detail}`;
+    }
+
+    // What happened, after Who, on one line: the expanded Log's What column.
+    function logWhat(entry) {
+        const line = text => (text ?? "").replace(/\s+/g, " ").trim();
+        const after = text => line(text) ? `: ${line(text)}` : "";
+        if (!knows(entry))
+            return `bosun can't show this entry yet: ${entry.kind ?? ""}`;
+        const d = entry.decision;
+        switch (entry.kind) {
+        case "decision":
+            if (d.kind === "permission")
+                return `Asked to ${line(actOf(d))}`;
+            return d.kind === "question" ? `Asked: ${line(d.question)}` : `Said: ${line(d.note)}`;
+        case "escalated":
+            return `Passed ${decisionName(d)} to you${after(entry.text)}`;
+        case "settled":
+            switch (outcomeOf(entry)) {
+            case "withdrawn":
+                return `${decisionName(d)} withdrawn${entry.cause ? ` when ${entry.cause}` : ""}`;
+            case "dismissed":
+                return `Dismissed ${decisionName(d)}`;
+            case "answered":
+                return `Answered ${d.node}${after(entry.text)}`;
+            case "allowed":
+                return entry.by === "session" ? `Allowed ${line(actOf(d, true))} in its own prompt` : `Allowed ${d.node} to ${line(actOf(d))}`;
+            }
+            if (entry.by === "session")
+                return `Denied ${line(actOf(d, true))} in its own prompt`;
+            return `Denied ${d.node} ${line(actOf(d, true))}${entry.text ? `: “${line(entry.text)}”` : ""}`;
+        case "tell":
+        case "message":
+            return line(entry.text);
+        case "spawned":
+            return `Spawned ${entry.node}${entry.repo ? ` in ${tilde(entry.repo)}` : ""}${entry.model ? ` on ${[entry.model, entry.effort].filter(part => part).join(" ")}` : ""}`;
+        case "resumed":
+            return `Gave ${entry.node} a new prompt${after(entry.text)}`;
+        case "merged":
+            return `Merged ${entry.node}${after(entry.text)}`;
+        case "killed":
+            return `Killed ${entry.node}`;
+        case "paused":
+            return "Paused the fleet";
+        case "unpaused":
+            return "Resumed the fleet";
+        case "model":
+            return `Switched ${entry.node} to ${[entry.model, entry.effort].filter(part => part).join(" ")}`;
+        case "turn_end":
+            return entry.text ? `Ended its turn: “${line(entry.text)}”` : "Ended its turn";
+        }
+        return `Stopped${after(entry.text)}`;
+    }
+
+    // The expanded Log's kind filter an entry falls under besides All:
+    // "decisions", "messages", "sessions", or "" for one bosun cannot show.
+    function logGroup(entry) {
+        if (!knows(entry))
+            return "";
+        if (["decision", "escalated", "settled"].includes(entry.kind))
+            return "decisions";
+        return ["tell", "message"].includes(entry.kind) ? "messages" : "sessions";
+    }
+
+    // The sessions an entry is about, which its session filter matches.
+    function logSessions(entry) {
+        return [entry.node, entry.from, entry.decision?.node].filter((node, i, all) => node && all.indexOf(node) === i);
+    }
+
+    // What an entry names, which Enter opens: its decision, else the desk for
+    // a tell, else its session while it is in the fleet, as { key, text,
+    // item }, `item` being what the panel holds once the key's row is gone.
+    function logLink(entry) {
+        if (!knows(entry))
+            return null;
+        if (entry.decision)
+            return {
+                key: `decision:${entry.decision.id}`,
+                text: `Decision ${entry.decision.id}`,
+                item: entry.decision
+            };
+        if (entry.kind === "tell" || entry.node === "desk")
+            return {
+                key: "desk",
+                text: "Desk",
+                item: null
+            };
+        return sessionLink(entry.node);
+    }
+
+    // A session's link, while it is in the fleet.
+    function sessionLink(node) {
+        if (!node || !Bosun.sessions.some(s => s.node === node))
+            return null;
+        return {
+            key: `session:${node}`,
+            text: `Open ${node}`,
+            item: null
+        };
     }
 
     // "14:02" today, else "Oct 25".

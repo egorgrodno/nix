@@ -5,15 +5,19 @@ import Quickshell
 
 // The bosun panel's content: the titlebar, a banner while the fleet is
 // paused, then the sidebar, and beside it the selected row whole, or the New
-// worker form. Keys act only while no text field has focus, which starts in
-// the sidebar. Approving, denying and pausing take a second press of the same
-// key within three seconds: the first arms and lights the button, and any
-// other key or a move disarms it.
+// worker form. Expanded to the work area, the sidebar shrinks to a rail of its
+// sections, which can show the sidebar beside it again. There the Log becomes
+// a table with the selected entry whole beside it, and any other pane keeps to
+// a column narrow enough to read. Keys act only while no text field has
+// focus, which starts in the sidebar. Approving, denying and pausing take a
+// second press of the same key within three seconds: the first arms and
+// lights the button, and any other key or a move disarms it.
 Item {
     id: view
 
-    // Where Panel.qml sends the keyboard from a field a press lands outside.
-    readonly property Item keyboardHome: sidebar
+    // Where Panel.qml sends the keyboard from a field a press lands outside:
+    // the list beside the pane.
+    readonly property Item keyboardHome: logShown ? logTable : sidebar.visible ? sidebar : rail
 
     // The selected row's key, as BosunSidebar names them, or "spawn" while the
     // New worker form is open.
@@ -28,6 +32,10 @@ Item {
     property string killing: ""
     // The Log entry selected, kept once it scrolls out of the sidebar.
     property var logEntry: null
+    // While the panel fills the work area.
+    property bool expanded: false
+    // While the expanded panel shows the whole sidebar beside the rail.
+    property bool sidebarShown: false
 
     readonly property string paneKind: {
         if (selected === "spawn")
@@ -36,11 +44,22 @@ Item {
             return Bosun.desk ? "desk" : "session";
         return selected.split(":")[0];
     }
+    // The rail's section the selection is in.
+    readonly property string section: {
+        if (selected === "desk")
+            return "desk";
+        return ({
+                decision: "waiting",
+                session: "fleet",
+                log: "log"
+            })[paneKind] ?? "";
+    }
+    readonly property bool logShown: expanded && paneKind === "log"
     readonly property var decision: {
         if (paneKind !== "decision")
             return null;
         const id = selected.slice("decision:".length);
-        return Bosun.mine.find(d => d.id === id) ?? (held?.id === id ? held : null);
+        return Bosun.decisions.find(d => d.id === id) ?? (held?.id === id ? held : null);
     }
     readonly property bool decisionLive: decision !== null && Bosun.mine.some(d => d.id === decision.id)
     readonly property var session: {
@@ -56,16 +75,78 @@ Item {
         return Bosun.mine.length > 0 ? `decision:${Bosun.mine[0].id}` : "desk";
     }
 
-    function select(key) {
+    // `item` is what to show for the key once its row is gone: a settled
+    // decision or a Log entry, as the Log holds them.
+    function select(key, item) {
+        if (key === selected)
+            return;
+        armed = "";
+        killing = "";
+        const live = Bosun.mine.find(d => `decision:${d.id}` === key);
+        held = live ?? (key.startsWith("decision:") ? item ?? null : null);
+        if (key.startsWith("log:"))
+            logEntry = item ?? Bosun.log.find(e => `log:${e.seq}` === key) ?? logEntry;
         selected = key;
     }
 
+    // Through the Log's table while it shows and the sidebar does not have the
+    // keyboard, else through the sidebar's rows, shown or not.
     function move(step) {
+        if (logShown && !sidebar.activeFocus) {
+            logTable.move(step);
+            return;
+        }
         const keys = sidebar.keys;
         const from = keys.indexOf(selected === "spawn" ? beforeSpawn : selected);
         if (keys.length === 0)
             return;
         select(keys[from < 0 ? 0 : Math.max(0, Math.min(keys.length - 1, from + step))]);
+    }
+
+    // A rail glyph: its section's first row, unless the selection is in it.
+    function openSection(name) {
+        if (name === section)
+            return;
+        switch (name) {
+        case "waiting":
+            if (sidebar.waiting.length > 0)
+                select(`decision:${sidebar.waiting[0].id}`);
+            break;
+        case "desk":
+            select("desk");
+            break;
+        case "fleet":
+            if (sidebar.tree.length > 0)
+                select(`session:${sidebar.tree[0].node}`);
+            break;
+        case "log":
+            openLog();
+            break;
+        }
+    }
+
+    // The entry last selected, else the latest.
+    function openLog() {
+        if (paneKind === "log")
+            return;
+        const entry = logEntry ?? Bosun.log[Bosun.log.length - 1];
+        if (entry)
+            select(`log:${entry.seq}`, entry);
+    }
+
+    function setExpanded(on) {
+        expanded = on;
+        Qt.callLater(keepKeyboard);
+    }
+
+    // An item that hides keeps the keyboard, so it follows the list as the
+    // list changes.
+    function keepKeyboard() {
+        const focused = view.Window.activeFocusItem;
+        for (let item = focused; focused?.visible && item; item = item.parent)
+            if (item === view)
+                return;
+        keyboardHome.forceActiveFocus();
     }
 
     function currentPane() {
@@ -104,7 +185,7 @@ Item {
 
     function closeSpawn() {
         select(beforeSpawn !== "" ? beforeSpawn : defaultKey());
-        sidebar.forceActiveFocus();
+        keyboardHome.forceActiveFocus();
     }
 
     function arm(key) {
@@ -159,6 +240,7 @@ Item {
         armed = "";
         if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))
             return false;
+        const onLog = logShown && (logTable.activeFocus || rail.activeFocus);
         switch (event.key) {
         case Qt.Key_Down:
             move(1);
@@ -168,14 +250,23 @@ Item {
             return true;
         case Qt.Key_Return:
         case Qt.Key_Enter:
-            focusPane();
+            if (onLog)
+                logTable.openNamed();
+            else
+                focusPane();
             return true;
         case Qt.Key_Tab:
         case Qt.Key_Backtab:
-            if (sidebar.activeFocus)
+            if (sidebar.activeFocus || rail.activeFocus || logTable.activeFocus)
                 focusPane();
             else
-                sidebar.forceActiveFocus();
+                keyboardHome.forceActiveFocus();
+            return true;
+        // Out of the expanded size, else on to Panel.qml, which closes.
+        case Qt.Key_Escape:
+            if (!expanded)
+                return false;
+            setExpanded(false);
             return true;
         }
         const live = decisionLive ? decision.kind : "";
@@ -209,24 +300,17 @@ Item {
             if (!Bosun.connected || Bosun.fleetOp !== "")
                 return false;
             return twice("p", was, () => Bosun.paused ? Bosun.unpause() : Bosun.pause());
+        case "f":
+            setExpanded(!expanded);
+            return true;
         }
         return false;
     }
 
-    onSelectedChanged: {
-        armed = "";
-        killing = "";
-        const live = Bosun.mine.find(d => `decision:${d.id}` === selected);
-        if (live)
-            held = live;
-        else if (!held || selected !== `decision:${held.id}`)
-            held = null;
-        if (selected.startsWith("log:"))
-            logEntry = Bosun.log.find(e => `log:${e.seq}` === selected) ?? logEntry;
-    }
+    onKeyboardHomeChanged: Qt.callLater(keepKeyboard)
     Component.onCompleted: {
         select(defaultKey());
-        sidebar.forceActiveFocus();
+        keyboardHome.forceActiveFocus();
     }
 
     Connections {
@@ -274,9 +358,11 @@ Item {
             width: parent.width
             pauseArmed: view.armed === "p"
             spawning: view.selected === "spawn"
+            expanded: view.expanded
             onPauseClicked: view.pause()
             onResumeClicked: Bosun.unpause()
             onNewWorkerClicked: view.selected === "spawn" ? view.closeSpawn() : view.openSpawn()
+            onExpandClicked: view.setExpanded(!view.expanded)
         }
 
         Rectangle {
@@ -352,97 +438,159 @@ Item {
             }
         }
 
-        BosunSidebar {
-            id: sidebar
-
-            anchors.top: errorStrip.bottom
-            anchors.bottom: parent.bottom
-            width: 380
-            selected: view.selected
-            held: view.held
-            onChosen: key => {
-                view.select(key);
-                sidebar.forceActiveFocus();
-            }
-            Keys.onPressed: event => event.accepted = view.press(event)
-        }
-
-        Rectangle {
-            anchors.top: errorStrip.bottom
-            anchors.bottom: parent.bottom
-            anchors.left: sidebar.right
-            width: 1
-            color: Theme.tint(0.08)
-        }
-
+        // The rail while expanded, the sidebar, the Log's table while it
+        // shows, and the pane, each after a 1-pixel rule.
         Item {
-            id: detail
+            id: body
+
+            // Where the panes start, past the rail and the sidebar.
+            readonly property real paneLeft: (view.expanded ? rail.width + 1 : 0) + (sidebar.visible ? sidebar.width + 1 : 0)
+            readonly property real rest: width - paneLeft
 
             anchors.top: errorStrip.bottom
             anchors.bottom: parent.bottom
-            anchors.left: sidebar.right
-            anchors.leftMargin: 1
-            anchors.right: parent.right
+            width: parent.width
 
-            // The pane's own keyboard, where the keys act as in the sidebar.
-            Item {
-                id: paneKeys
+            BosunRail {
+                id: rail
 
+                height: parent.height
+                visible: view.expanded
+                section: view.section
+                sidebarShown: view.sidebarShown
+                onPicked: name => view.openSection(name)
+                onSidebarToggled: view.sidebarShown = !view.sidebarShown
                 Keys.onPressed: event => event.accepted = view.press(event)
             }
 
-            Caption {
-                anchors.centerIn: parent
-                visible: !Bosun.connected
-                text: "bosun watch reconnects once the daemon runs"
+            Rule {
+                x: rail.width
+                visible: rail.visible
             }
 
-            BosunDecisionPane {
-                id: decisionPane
+            BosunSidebar {
+                id: sidebar
 
-                anchors.fill: parent
-                visible: view.paneKind === "decision" && view.decision !== null
-                decision: view.decision
-                live: view.decisionLive
-                armed: view.armed
-                onLeave: sidebar.forceActiveFocus()
+                x: view.expanded ? rail.width + 1 : 0
+                height: parent.height
+                width: 380
+                visible: !view.expanded || view.sidebarShown
+                expanded: view.expanded
+                selected: view.selected
+                held: view.held
+                onChosen: key => {
+                    view.select(key);
+                    sidebar.forceActiveFocus();
+                }
+                onLogExpanded: {
+                    view.setExpanded(true);
+                    view.openLog();
+                }
+                Keys.onPressed: event => event.accepted = view.press(event)
             }
 
-            BosunDeskPane {
-                id: deskPane
-
-                anchors.fill: parent
-                visible: view.paneKind === "desk"
-                onLeave: sidebar.forceActiveFocus()
+            Rule {
+                x: sidebar.x + sidebar.width
+                visible: sidebar.visible
             }
 
-            BosunSessionPane {
-                id: sessionPane
+            BosunLogTable {
+                id: logTable
 
-                anchors.fill: parent
-                visible: view.paneKind === "session" && view.session !== null
-                session: view.session
-                killArmed: view.killing !== "" && view.killing === (view.session?.node ?? "")
-                onKillClicked: view.kill(view.session.node)
-                onLeave: sidebar.forceActiveFocus()
+                x: body.paneLeft
+                width: body.rest - detail.column - 1
+                height: parent.height
+                visible: view.logShown
+                selectedSeq: view.selected.startsWith("log:") ? Number(view.selected.slice("log:".length)) : -1
+                onChosen: entry => view.select(`log:${entry.seq}`, entry)
+                onOpened: (key, item) => view.select(key, item)
+                Keys.onPressed: event => event.accepted = view.press(event)
             }
 
-            BosunLogPane {
-                id: logPane
-
-                anchors.fill: parent
-                visible: view.paneKind === "log" && view.logEntry !== null
-                entry: view.logEntry
+            Rule {
+                x: logTable.x + logTable.width
+                visible: logTable.visible
             }
 
-            BosunSpawnPane {
-                id: spawnPane
+            // The selected row whole: beside the Log's table at 860 pixels,
+            // else in what the panel leaves, at most 1200 wide.
+            Item {
+                id: detail
 
-                anchors.fill: parent
-                visible: view.paneKind === "spawn" && Bosun.connected
-                onCancelled: view.closeSpawn()
-                onStarted: view.closeSpawn()
+                readonly property real column: view.logShown ? 860 : view.expanded ? Math.min(body.rest, 1200) : body.rest
+
+                x: view.logShown ? body.width - column : body.paneLeft + (body.rest - column) / 2
+                width: column
+                height: parent.height
+
+                // The pane's own keyboard, where the keys act as in the sidebar.
+                Item {
+                    id: paneKeys
+
+                    Keys.onPressed: event => event.accepted = view.press(event)
+                }
+
+                Caption {
+                    anchors.centerIn: parent
+                    visible: !Bosun.connected
+                    text: "bosun watch reconnects once the daemon runs"
+                }
+
+                BosunDecisionPane {
+                    id: decisionPane
+
+                    anchors.fill: parent
+                    visible: view.paneKind === "decision" && view.decision !== null
+                    decision: view.decision
+                    live: view.decisionLive
+                    armed: view.armed
+                    onLeave: view.keyboardHome.forceActiveFocus()
+                }
+
+                BosunDeskPane {
+                    id: deskPane
+
+                    anchors.fill: parent
+                    visible: view.paneKind === "desk"
+                    onLeave: view.keyboardHome.forceActiveFocus()
+                }
+
+                BosunSessionPane {
+                    id: sessionPane
+
+                    anchors.fill: parent
+                    visible: view.paneKind === "session" && view.session !== null
+                    session: view.session
+                    killArmed: view.killing !== "" && view.killing === (view.session?.node ?? "")
+                    onKillClicked: view.kill(view.session.node)
+                    onLeave: view.keyboardHome.forceActiveFocus()
+                }
+
+                BosunLogPane {
+                    id: logPane
+
+                    anchors.fill: parent
+                    visible: view.paneKind === "log" && view.logEntry !== null
+                    entry: view.logEntry
+                    onOpened: (key, item) => view.select(key, item)
+                }
+
+                BosunSpawnPane {
+                    id: spawnPane
+
+                    anchors.fill: parent
+                    visible: view.paneKind === "spawn" && Bosun.connected
+                    onCancelled: view.closeSpawn()
+                    onStarted: view.closeSpawn()
+                }
             }
         }
+    }
+
+    // The line between two of the body's columns.
+    component Rule: Rectangle {
+        width: 1
+        height: parent?.height ?? 0
+        color: Theme.tint(0.08)
     }
 }

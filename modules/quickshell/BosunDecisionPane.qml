@@ -25,6 +25,8 @@ BosunPane {
     readonly property string settledText: {
         if (live || !decision)
             return "";
+        if (Bosun.masters.some(d => d.id === decisionId))
+            return "The master is deciding it, and passes it to you only if it needs you.";
         const entry = Bosun.settledEntry(decisionId);
         const outcome = entry ? BosunLook.outcomeOf(entry) : "";
         const verb = {

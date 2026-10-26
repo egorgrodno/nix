@@ -2,15 +2,24 @@ import QtQuick
 
 // Under the bosun module, 1400×880 cut to the work area, the monitor less
 // the outer gaps and both bars, as `fitWorkArea` in modules/desktop cuts
-// windows.
+// windows. Expanded, it fills the work area.
 Panel {
     id: panel
 
-    boxWidth: Math.min(1400, (screen?.width ?? 1400) - 2 * Theme.outerGap)
+    readonly property int areaWidth: (screen?.width ?? 1400) - 2 * Theme.outerGap
+    readonly property int areaHeight: (screen?.height ?? 880) - 2 * (Theme.barHeight + Theme.outerGap)
+
+    boxWidth: view.expanded ? areaWidth : Math.min(1400, areaWidth)
     padding: 0
+    // The surface spans the screen from the start, so expanding never resizes
+    // it.
+    margins.left: 0
+    implicitWidth: screen?.width ?? 0
 
     BosunView {
+        id: view
+
         width: panel.contentWidth
-        height: Math.min(880, (panel.screen?.height ?? 880) - 2 * (Theme.barHeight + Theme.outerGap))
+        height: view.expanded ? panel.areaHeight : Math.min(880, panel.areaHeight)
     }
 }

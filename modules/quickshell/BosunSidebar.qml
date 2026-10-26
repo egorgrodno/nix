@@ -16,6 +16,8 @@ Item {
     // The selected decision once it no longer waits on the user, which its
     // row keeps showing until the selection moves.
     property var held: null
+    // While the panel fills the work area, where the Log has its own table.
+    property bool expanded: false
     // Lights the selected row's edge while the keyboard is here.
     readonly property bool focused: activeFocus
     readonly property var waiting: {
@@ -87,6 +89,8 @@ Item {
     readonly property var keys: rows.filter(r => !["head", "none"].includes(r.type)).map(r => r.key)
 
     signal chosen(string key)
+    // The Log header's expand glyph, which expands the panel onto the Log.
+    signal logExpanded
 
     function reveal(key) {
         const index = rows.findIndex(r => r.key === key);
@@ -197,7 +201,7 @@ Item {
     }
 
     // A section's name, and for Waiting on you how many wait, yellow while any
-    // does.
+    // does. The Log's has a glyph that expands the panel onto it.
     component Header: Item {
         id: head
 
@@ -224,6 +228,32 @@ Item {
             visible: head.waiting
             text: `${head.count}`
             color: headText.color
+        }
+
+        BarText {
+            id: expandGlyph
+
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            anchors.verticalCenter: headText.verticalCenter
+            visible: head.name === "Log" && !sidebar.expanded
+            text: BosunLook.expand
+            color: expandHover.hovered ? Theme.foregroundStrong : Theme.foregroundMuted
+            font.pixelSize: 14
+
+            HoverHandler {
+                id: expandHover
+            }
+
+            TapHandler {
+                onTapped: sidebar.logExpanded()
+            }
+
+            Tooltip {
+                target: expandGlyph
+                text: "The whole Log, expanded to the work area"
+                hovered: expandHover.hovered
+            }
         }
     }
 

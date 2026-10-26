@@ -3,8 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 // A Log entry whole: who acted and when, its text, and for a decision its
-// call or question, the answer it was given and why it was withdrawn. An
-// entry of a kind the panel does not know shows its kind and raw JSON.
+// call or question, the answer it was given and why it was withdrawn, then a
+// button for each thing it names. An entry of a kind the panel does not know
+// shows its kind and raw JSON.
 BosunPane {
     id: pane
 
@@ -25,6 +26,16 @@ BosunPane {
         }
         return entry.text ?? "";
     }
+    // What it names, as the expanded Log links it, and a message's sender.
+    readonly property var links: {
+        if (!entry)
+            return [];
+        const links = [BosunLook.logLink(entry), entry.kind === "message" ? BosunLook.sessionLink(entry.from) : null];
+        return links.filter((link, i) => link && links.findIndex(l => l?.key === link.key) === i);
+    }
+
+    // A button followed: the key to select and what to hold for it.
+    signal opened(string key, var item)
 
     title: entry ? BosunLook.logTitle(entry) : ""
     aside: decision ? `#${decision.id}` : ""
@@ -116,6 +127,22 @@ BosunPane {
         model: pane.decision?.kind === "permission" ? Bosun.callOf(pane.decision) : []
 
         delegate: BosunCallBlock {}
+    }
+
+    Row {
+        visible: pane.links.length > 0
+        spacing: 8
+
+        Repeater {
+            model: pane.links
+
+            TextButton {
+                required property var modelData
+
+                text: modelData.text
+                onClicked: pane.opened(modelData.key, modelData.item)
+            }
+        }
     }
 
     Column {
