@@ -269,8 +269,18 @@ Panel {
                 text: {
                     const d = card.decision;
                     const what = d.kind === "permission" ? d.tool : d.kind === "question" ? "asks" : "says";
-                    return [d.node, what].concat(d.reserved ? [d.reserved] : []).join(" · ");
+                    return [d.node, what].concat(d.reserved ? [`reserved: ${d.reserved}`] : [], d.userOnly ? ["only you may answer"] : []).join(" · ");
                 }
+            }
+
+            // What auto mode last refused this session.
+            BarText {
+                width: parent.width
+                visible: (card.decision.refused ?? "") !== ""
+                wrapMode: Text.Wrap
+                color: Theme.yellow
+                font.pixelSize: 14
+                text: `Refused: ${card.decision.refused ?? ""}`
             }
 
             BarText {
