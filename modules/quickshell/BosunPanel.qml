@@ -23,7 +23,7 @@ Panel {
     property var repos: []
     readonly property string home: Quickshell.env("HOME")
 
-    boxWidth: 440
+    boxWidth: 720
 
     // Depth first, each session under its parent, as `bosun status` prints it.
     readonly property var tree: {
@@ -49,6 +49,77 @@ Panel {
         if (session.limitedUntil)
             return `limited until ${Qt.formatTime(new Date(session.limitedUntil), "HH:mm")}`;
         return session.state ? `${session.status} · ${session.state}` : session.status;
+    }
+
+    // The whole of a permission's call, as blocks for CallBlock: the parts the
+    // tool acts on, what takes a command out of the sandbox or onto the
+    // network, then every other field of its input, so the user approves
+    // nothing unseen.
+    function callOf(decision) {
+        const input = decision.input ?? {};
+        const blocks = [];
+        const shown = new Set(["dangerouslyDisableSandbox", "allowed_domains"]);
+        const show = (key, kind, label) => {
+            shown.add(key);
+            const value = input[key];
+            if (value !== undefined && value !== null && value !== "")
+                blocks.push({
+                    kind: kind,
+                    label: label,
+                    text: typeof value === "string" ? value : JSON.stringify(value, null, 2)
+                });
+        };
+        const replaces = edit => edit.replace_all === true ? "Replaces everywhere" : "Replaces";
+        switch (decision.tool) {
+        case "Bash":
+            show("description", "note", "");
+            show("command", "code", "");
+            break;
+        case "Edit":
+            show("file_path", "code", "");
+            show("old_string", "removed", replaces(input));
+            show("new_string", "added", "With");
+            shown.add("replace_all");
+            break;
+        case "MultiEdit":
+            show("file_path", "code", "");
+            shown.add("edits");
+            for (const edit of input.edits ?? [])
+                blocks.push({
+                    kind: "removed",
+                    label: replaces(edit),
+                    text: edit.old_string ?? ""
+                }, {
+                    kind: "added",
+                    label: "With",
+                    text: edit.new_string ?? ""
+                });
+            break;
+        case "Write":
+            show("file_path", "code", "");
+            show("content", "added", "Writes");
+            break;
+        case "NotebookEdit":
+            show("notebook_path", "code", "");
+            show("new_source", "added", "Writes");
+            break;
+        }
+        if (input.dangerouslyDisableSandbox === true)
+            blocks.push({
+                kind: "flag",
+                label: "",
+                text: "Runs outside the sandbox"
+            });
+        if (Array.isArray(input.allowed_domains) && input.allowed_domains.length > 0)
+            blocks.push({
+                kind: "flag",
+                label: "",
+                text: `Reaches ${input.allowed_domains.join(", ")}`
+            });
+        for (const key of Object.keys(input))
+            if (!shown.has(key))
+                show(key, "code", key);
+        return blocks;
     }
 
     function kill(node) {
@@ -170,8 +241,59 @@ Panel {
         }
     }
 
+    // A part of a call, whole under its label, on a tint that marks what it is.
+    component CallBlock: Column {
+        id: block
+
+        required property var modelData
+        readonly property string kind: modelData.kind
+        readonly property bool mono: ["code", "removed", "added"].includes(kind)
+        readonly property bool boxed: kind !== "note"
+
+        width: parent?.width ?? 0
+        spacing: 4
+
+        Caption {
+            visible: block.modelData.label !== ""
+            text: block.modelData.label
+        }
+
+        Rectangle {
+            width: parent.width
+            height: blockText.implicitHeight + 2 * blockText.y
+            radius: 4
+            color: {
+                switch (block.kind) {
+                case "removed":
+                    return Theme.alpha(Theme.red, 0.15);
+                case "added":
+                    return Theme.alpha(Theme.green, 0.15);
+                case "flag":
+                    return Theme.alpha(Theme.yellow, 0.15);
+                case "note":
+                    return "transparent";
+                }
+                return Theme.tint(0.06);
+            }
+
+            BarText {
+                id: blockText
+
+                x: block.boxed ? 8 : 0
+                y: block.boxed ? 6 : 0
+                width: parent.width - 2 * x
+                wrapMode: Text.Wrap
+                font.family: block.mono ? Theme.fontMono : Theme.fontUI
+                font.pixelSize: block.mono ? 13 : 14
+                color: block.kind === "flag" ? Theme.yellow : block.kind === "note" ? Theme.foregroundMuted : Theme.foregroundStrong
+                text: block.modelData.text
+            }
+        }
+    }
+
     // A decision and its answers: Deny and Approve for a permission, a reply
-    // field for a question, Dismiss for a notice.
+    // field for a question, Dismiss for a notice. A permission shows its whole
+    // call.
     component DecisionCard: Rectangle {
         id: card
 
@@ -205,12 +327,16 @@ Panel {
 
             BarText {
                 width: parent.width
+                visible: card.decision.kind !== "permission"
                 wrapMode: Text.Wrap
-                maximumLineCount: 8
-                elide: Text.ElideRight
-                font.family: card.decision.kind === "permission" ? Theme.fontMono : Theme.fontUI
                 font.pixelSize: 14
-                text: card.decision.kind === "permission" ? Bosun.detailOf(card.decision) : card.decision.kind === "question" ? card.decision.question : card.decision.note
+                text: card.decision.kind === "question" ? card.decision.question : card.decision.note ?? ""
+            }
+
+            Repeater {
+                model: card.decision.kind === "permission" ? panel.callOf(card.decision) : []
+
+                delegate: CallBlock {}
             }
 
             // Why the master escalated it.
@@ -390,316 +516,350 @@ Panel {
         }
     }
 
-    Column {
+    // All but the error, scrolling once taller than the strip between the
+    // bars leaves, with a bar that shows there is more.
+    Flickable {
+        id: scroller
+
+        readonly property real limit: (panel.screen?.height ?? 800) - 2 * (Theme.barHeight + Theme.outerGap) - 2 * panel.padding - (errorText.visible ? errorText.height + 20 : 0)
+
         width: panel.contentWidth
-        visible: Bosun.mine.length > 0
-        spacing: 8
+        height: Math.min(contentHeight, limit)
+        contentHeight: sections.implicitHeight
+        clip: true
+        interactive: contentHeight > height
+        boundsBehavior: Flickable.StopAtBounds
 
-        Caption {
-            text: "Waiting on you"
-        }
+        ScrollBar.vertical: ScrollBar {
+            policy: scroller.interactive ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
 
-        Repeater {
-            // By id, so a reply being typed survives other decisions coming and going.
-            model: ScriptModel {
-                values: Bosun.mine
-                objectProp: "id"
+            contentItem: Rectangle {
+                implicitWidth: 4
+                radius: 2
+                color: Theme.tint(0.25)
             }
-
-            delegate: DecisionCard {}
-        }
-    }
-
-    Column {
-        width: panel.contentWidth
-        visible: Bosun.masters.length > 0
-        spacing: 8
-
-        Caption {
-            text: "Waiting on the master"
         }
 
-        Repeater {
-            model: ScriptModel {
-                values: Bosun.masters
-                objectProp: "id"
-            }
+        Column {
+            id: sections
 
-            delegate: DecisionCard {}
-        }
-    }
+            width: scroller.width - (scroller.interactive ? 14 : 0)
+            spacing: 20
 
-    Column {
-        width: panel.contentWidth
-        visible: Bosun.connected
-        spacing: 8
+            Column {
+                width: parent.width
+                visible: Bosun.mine.length > 0
+                spacing: 8
 
-        Item {
-            width: parent.width
-            height: modelRow.height
-
-            Caption {
-                readonly property string model: Bosun.master?.model ?? ""
-
-                anchors.verticalCenter: parent.verticalCenter
-                text: Bosun.models.includes(model) ? "Master" : `Master · ${model || "default model"}`
-            }
-
-            Row {
-                id: modelRow
-
-                anchors.right: parent.right
-                spacing: 6
+                Caption {
+                    text: "Waiting on you"
+                }
 
                 Repeater {
-                    model: Bosun.models
+                    // By id, so a reply being typed survives other decisions coming and going.
+                    model: ScriptModel {
+                        values: Bosun.mine
+                        objectProp: "id"
+                    }
+
+                    delegate: DecisionCard {}
+                }
+            }
+
+            Column {
+                width: parent.width
+                visible: Bosun.masters.length > 0
+                spacing: 8
+
+                Caption {
+                    text: "Waiting on the master"
+                }
+
+                Repeater {
+                    model: ScriptModel {
+                        values: Bosun.masters
+                        objectProp: "id"
+                    }
+
+                    delegate: DecisionCard {}
+                }
+            }
+
+            Column {
+                width: parent.width
+                visible: Bosun.connected
+                spacing: 8
+
+                Item {
+                    width: parent.width
+                    height: modelRow.height
+
+                    Caption {
+                        readonly property string model: Bosun.master?.model ?? ""
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: Bosun.models.includes(model) ? "Master" : `Master · ${model || "default model"}`
+                    }
+
+                    Row {
+                        id: modelRow
+
+                        anchors.right: parent.right
+                        spacing: 6
+
+                        Repeater {
+                            model: Bosun.models
+
+                            TextButton {
+                                required property string modelData
+
+                                text: modelData
+                                lit: modelData === Bosun.master?.model
+                                hoverFill: lit ? Theme.blue : Theme.tint(0.12)
+                                textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
+                                onClicked: if (!lit)
+                                    Bosun.model(modelData)
+                            }
+                        }
+                    }
+                }
+
+                SendField {
+                    placeholder: "Tell the master"
+                    onSent: text => Bosun.tell(text)
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: 2
+
+                Item {
+                    width: parent.width
+                    height: newButton.height + 6
+
+                    Caption {
+                        anchors.verticalCenter: newButton.verticalCenter
+                        text: Bosun.connected ? "Sessions" : "The bosun daemon is not running"
+                    }
 
                     TextButton {
-                        required property string modelData
+                        id: newButton
 
-                        text: modelData
-                        lit: modelData === Bosun.master?.model
-                        hoverFill: lit ? Theme.blue : Theme.tint(0.12)
-                        textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
-                        onClicked: if (!lit)
-                            Bosun.model(modelData)
+                        anchors.right: parent.right
+                        visible: Bosun.connected
+                        text: "New worker"
+                        lit: panel.spawning
+                        onClicked: panel.spawning = !panel.spawning
+                    }
+                }
+
+                Repeater {
+                    model: panel.tree
+
+                    delegate: SessionRow {}
+                }
+            }
+
+            // It stays until the daemon has started the worker, keeping what was
+            // typed through a failed spawn.
+            Column {
+                id: form
+
+                property string repo: ""
+                property string model: ""
+                property bool waiting: false
+                readonly property bool valid: /^[a-z0-9][a-z0-9-]{0,39}$/.test(nameField.text) && repo !== "" && promptField.text.trim() !== ""
+
+                function start() {
+                    if (!valid || waiting)
+                        return;
+                    waiting = true;
+                    Bosun.spawn(nameField.text, repo, promptField.text.trim(), model);
+                }
+
+                width: parent.width
+                visible: panel.spawning && Bosun.connected
+                spacing: 8
+
+                Connections {
+                    target: Bosun
+
+                    function onFinished(args, ok) {
+                        if (args[0] !== "spawn" || !form.waiting)
+                            return;
+                        form.waiting = false;
+                        if (!ok)
+                            return;
+                        nameField.text = "";
+                        promptField.text = "";
+                        form.repo = "";
+                        form.model = "";
+                        panel.spawning = false;
+                    }
+                }
+
+                Caption {
+                    text: "New worker"
+                }
+
+                TextField {
+                    id: nameField
+
+                    width: parent.width
+                    height: 32
+                    leftPadding: 10
+                    rightPadding: 10
+                    topPadding: 0
+                    bottomPadding: 0
+                    verticalAlignment: TextInput.AlignVCenter
+                    placeholderText: "Name: lowercase letters, digits and hyphens"
+                    placeholderTextColor: Theme.foregroundMuted
+                    color: Theme.foregroundStrong
+                    selectionColor: Theme.blue
+                    selectedTextColor: Theme.backgroundMain
+                    font.family: Theme.fontUI
+                    font.pixelSize: 14
+                    onAccepted: promptField.forceActiveFocus()
+
+                    background: Rectangle {
+                        radius: Theme.radius - 4
+                        color: Theme.tint(0.06)
+                        border.width: 1
+                        border.color: nameField.activeFocus ? Theme.blue : Theme.tint(0.12)
+                    }
+                }
+
+                Caption {
+                    text: panel.repos.length > 0 ? "In a repository Claude Code trusts" : "Claude Code trusts no repository: run claude in one first"
+                }
+
+                Flow {
+                    width: parent.width
+                    spacing: 6
+
+                    Repeater {
+                        model: panel.repos
+
+                        TextButton {
+                            required property string modelData
+
+                            text: modelData.startsWith(`${panel.home}/`) ? `~${modelData.slice(panel.home.length)}` : modelData
+                            lit: modelData === form.repo
+                            hoverFill: lit ? Theme.blue : Theme.tint(0.12)
+                            textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
+                            onClicked: form.repo = modelData
+                        }
+                    }
+                }
+
+                Caption {
+                    text: "On a model"
+                }
+
+                Flow {
+                    width: parent.width
+                    spacing: 6
+
+                    Repeater {
+                        model: [""].concat(Bosun.models)
+
+                        TextButton {
+                            required property string modelData
+
+                            text: modelData === "" ? "Default" : modelData
+                            lit: modelData === form.model
+                            hoverFill: lit ? Theme.blue : Theme.tint(0.12)
+                            textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
+                            onClicked: form.model = modelData
+                        }
+                    }
+                }
+
+                TextArea {
+                    id: promptField
+
+                    width: parent.width
+                    padding: 10
+                    wrapMode: TextEdit.Wrap
+                    placeholderText: "Its task"
+                    placeholderTextColor: Theme.foregroundMuted
+                    color: Theme.foregroundStrong
+                    selectionColor: Theme.blue
+                    selectedTextColor: Theme.backgroundMain
+                    font.family: Theme.fontUI
+                    font.pixelSize: 14
+                    Keys.onPressed: event => {
+                        if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && event.modifiers & Qt.ControlModifier) {
+                            form.start();
+                            event.accepted = true;
+                        }
+                    }
+
+                    background: Rectangle {
+                        radius: Theme.radius - 4
+                        color: Theme.tint(0.06)
+                        border.width: 1
+                        border.color: promptField.activeFocus ? Theme.blue : Theme.tint(0.12)
+                    }
+                }
+
+                Item {
+                    width: parent.width
+                    height: startButton.height
+
+                    Caption {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: "Ctrl Enter starts it"
+                        font.pixelSize: 12
+                    }
+
+                    Row {
+                        anchors.right: parent.right
+                        spacing: 6
+
+                        TextButton {
+                            text: "Cancel"
+                            onClicked: panel.spawning = false
+                        }
+
+                        TextButton {
+                            id: startButton
+
+                            enabled: form.valid && !form.waiting
+                            text: form.waiting ? "Starting…" : "Start"
+                            hoverFill: Theme.alpha(Theme.blue, 0.5)
+                            onClicked: form.start()
+                        }
                     }
                 }
             }
-        }
 
-        SendField {
-            placeholder: "Tell the master"
-            onSent: text => Bosun.tell(text)
-        }
-    }
+            Column {
+                width: parent.width
+                visible: Bosun.messages.length > 0
+                spacing: 2
 
-    Column {
-        width: panel.contentWidth
-        spacing: 2
-
-        Item {
-            width: parent.width
-            height: newButton.height + 6
-
-            Caption {
-                anchors.verticalCenter: newButton.verticalCenter
-                text: Bosun.connected ? "Sessions" : "The bosun daemon is not running"
-            }
-
-            TextButton {
-                id: newButton
-
-                anchors.right: parent.right
-                visible: Bosun.connected
-                text: "New worker"
-                lit: panel.spawning
-                onClicked: panel.spawning = !panel.spawning
-            }
-        }
-
-        Repeater {
-            model: panel.tree
-
-            delegate: SessionRow {}
-        }
-    }
-
-    // It stays until the daemon has started the worker, keeping what was
-    // typed through a failed spawn.
-    Column {
-        id: form
-
-        property string repo: ""
-        property string model: ""
-        property bool waiting: false
-        readonly property bool valid: /^[a-z0-9][a-z0-9-]{0,39}$/.test(nameField.text) && repo !== "" && promptField.text.trim() !== ""
-
-        function start() {
-            if (!valid || waiting)
-                return;
-            waiting = true;
-            Bosun.spawn(nameField.text, repo, promptField.text.trim(), model);
-        }
-
-        width: panel.contentWidth
-        visible: panel.spawning && Bosun.connected
-        spacing: 8
-
-        Connections {
-            target: Bosun
-
-            function onFinished(args, ok) {
-                if (args[0] !== "spawn" || !form.waiting)
-                    return;
-                form.waiting = false;
-                if (!ok)
-                    return;
-                nameField.text = "";
-                promptField.text = "";
-                form.repo = "";
-                form.model = "";
-                panel.spawning = false;
-            }
-        }
-
-        Caption {
-            text: "New worker"
-        }
-
-        TextField {
-            id: nameField
-
-            width: parent.width
-            height: 32
-            leftPadding: 10
-            rightPadding: 10
-            topPadding: 0
-            bottomPadding: 0
-            verticalAlignment: TextInput.AlignVCenter
-            placeholderText: "Name: lowercase letters, digits and hyphens"
-            placeholderTextColor: Theme.foregroundMuted
-            color: Theme.foregroundStrong
-            selectionColor: Theme.blue
-            selectedTextColor: Theme.backgroundMain
-            font.family: Theme.fontUI
-            font.pixelSize: 14
-            onAccepted: promptField.forceActiveFocus()
-
-            background: Rectangle {
-                radius: Theme.radius - 4
-                color: Theme.tint(0.06)
-                border.width: 1
-                border.color: nameField.activeFocus ? Theme.blue : Theme.tint(0.12)
-            }
-        }
-
-        Caption {
-            text: panel.repos.length > 0 ? "In a repository Claude Code trusts" : "Claude Code trusts no repository: run claude in one first"
-        }
-
-        Flow {
-            width: parent.width
-            spacing: 6
-
-            Repeater {
-                model: panel.repos
-
-                TextButton {
-                    required property string modelData
-
-                    text: modelData.startsWith(`${panel.home}/`) ? `~${modelData.slice(panel.home.length)}` : modelData
-                    lit: modelData === form.repo
-                    hoverFill: lit ? Theme.blue : Theme.tint(0.12)
-                    textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
-                    onClicked: form.repo = modelData
-                }
-            }
-        }
-
-        Caption {
-            text: "On a model"
-        }
-
-        Flow {
-            width: parent.width
-            spacing: 6
-
-            Repeater {
-                model: [""].concat(Bosun.models)
-
-                TextButton {
-                    required property string modelData
-
-                    text: modelData === "" ? "Default" : modelData
-                    lit: modelData === form.model
-                    hoverFill: lit ? Theme.blue : Theme.tint(0.12)
-                    textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
-                    onClicked: form.model = modelData
-                }
-            }
-        }
-
-        TextArea {
-            id: promptField
-
-            width: parent.width
-            padding: 10
-            wrapMode: TextEdit.Wrap
-            placeholderText: "Its task"
-            placeholderTextColor: Theme.foregroundMuted
-            color: Theme.foregroundStrong
-            selectionColor: Theme.blue
-            selectedTextColor: Theme.backgroundMain
-            font.family: Theme.fontUI
-            font.pixelSize: 14
-            Keys.onPressed: event => {
-                if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && event.modifiers & Qt.ControlModifier) {
-                    form.start();
-                    event.accepted = true;
-                }
-            }
-
-            background: Rectangle {
-                radius: Theme.radius - 4
-                color: Theme.tint(0.06)
-                border.width: 1
-                border.color: promptField.activeFocus ? Theme.blue : Theme.tint(0.12)
-            }
-        }
-
-        Item {
-            width: parent.width
-            height: startButton.height
-
-            Caption {
-                anchors.verticalCenter: parent.verticalCenter
-                text: "Ctrl Enter starts it"
-                font.pixelSize: 12
-            }
-
-            Row {
-                anchors.right: parent.right
-                spacing: 6
-
-                TextButton {
-                    text: "Cancel"
-                    onClicked: panel.spawning = false
+                Caption {
+                    bottomPadding: 6
+                    text: "Messages"
                 }
 
-                TextButton {
-                    id: startButton
+                Repeater {
+                    // By reference, so a message opened stays open as newer ones come.
+                    model: ScriptModel {
+                        values: Bosun.messages
+                    }
 
-                    enabled: form.valid && !form.waiting
-                    text: form.waiting ? "Starting…" : "Start"
-                    hoverFill: Theme.alpha(Theme.blue, 0.5)
-                    onClicked: form.start()
+                    delegate: MessageRow {}
                 }
             }
-        }
-    }
-
-    Column {
-        width: panel.contentWidth
-        visible: Bosun.messages.length > 0
-        spacing: 2
-
-        Caption {
-            bottomPadding: 6
-            text: "Messages"
-        }
-
-        Repeater {
-            // By reference, so a message opened stays open as newer ones come.
-            model: ScriptModel {
-                values: Bosun.messages
-            }
-
-            delegate: MessageRow {}
         }
     }
 
     BarText {
+        id: errorText
+
         width: panel.contentWidth
         visible: Bosun.error !== ""
         wrapMode: Text.Wrap
