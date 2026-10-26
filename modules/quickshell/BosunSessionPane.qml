@@ -3,9 +3,10 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 // A session: its state, repository, branch and parent, its conversation, and
-// a composer that sends as the user. The master's and the desk's model and
-// effort switch beside Interrupt, Kill for a worker at a second click, and
-// Open in kitty, which attaches to it.
+// a composer that sends as the user, or tells the master while there is no
+// desk. The master's and the desk's model and effort switch beside Interrupt,
+// Kill for a worker at a second click, and Open in kitty, which attaches to
+// it. A session gone from the fleet keeps what it showed, and offers nothing.
 BosunPane {
     id: pane
 
@@ -19,6 +20,8 @@ BosunPane {
     // The daemon's `model` switches only these.
     readonly property bool switchable: !gone && ["master", "desk"].includes(node) && Bosun.connected
     readonly property bool sayable: attachable && session?.killed !== true && Bosun.connected
+    // A tell queues in the daemon and outlasts a pause, which a say does not.
+    readonly property bool tells: node === "master" && !Bosun.desk && !gone && Bosun.connected
     readonly property string stateKey: session ? BosunLook.stateOf(session) : "stopped"
     readonly property alias conversation: conversationView
 
@@ -111,42 +114,47 @@ BosunPane {
             id: composer
 
             width: parent.width
-            visible: pane.sayable
+            visible: pane.tells || pane.sayable
             placeholder: {
+                if (pane.tells)
+                    return "Tell the master";
                 if (conversationView.inTurn)
                     return `Message ${pane.node} as you. It reads it between tool calls, mid-turn too.`;
                 if (pane.session?.status === "stopped")
                     return `Message ${pane.node} as you. It resumes with it.`;
                 return `Message ${pane.node} as you`;
             }
-            draftKey: `say:${pane.node}`
-            onSent: text => Bosun.say(pane.node, text)
+            draftKey: pane.tells ? "tell:master" : `say:${pane.node}`
+            onSent: text => pane.tells ? Bosun.tell(text) : Bosun.say(pane.node, text)
             onLeave: pane.leave()
         },
         BosunHints {
-            model: (composer.visible ? [
-                    {
+            model: {
+                const hints = [];
+                if (composer.visible)
+                    hints.push({
                         keys: ["Enter"],
                         text: "send"
-                    },
-                    {
+                    }, {
                         keys: ["Esc"],
                         text: "back to the list"
-                    },
-                    {
+                    });
+                if (composer.visible && !pane.tells)
+                    hints.push({
                         keys: ["/"],
                         text: "commands such as /compact"
+                    });
+                return hints.concat([
+                    {
+                        keys: ["j", "k"],
+                        text: "move"
+                    },
+                    {
+                        keys: ["n"],
+                        text: "new worker"
                     }
-                ] : []).concat([
-                {
-                    keys: ["j", "k"],
-                    text: "move"
-                },
-                {
-                    keys: ["n"],
-                    text: "new worker"
-                }
-            ])
+                ]);
+            }
         }
     ]
 }
