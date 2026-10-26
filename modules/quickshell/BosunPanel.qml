@@ -6,8 +6,8 @@ import Quickshell
 import Quickshell.Io
 
 // Under the bosun module: while the fleet is paused, a banner with Resume, then
-// the decisions waiting on the user, each with its answer, then those waiting
-// on the master, which the user may answer too, then the master's model and a
+// a count of the decisions the master holds, then the decisions waiting on the
+// user, each with its answer, then the master's model and a
 // field to tell the desk, then the tree of sessions, the desk first. A click on
 // a session opens it in a terminal, Kill on a worker stops it, and Pause all stops every session,
 // each at a second click. New worker opens a form under the tree that starts
@@ -531,6 +531,13 @@ Panel {
                 }
             }
 
+            // Only a count: the master answers these, and the user only the ones it
+            // escalates.
+            Caption {
+                visible: Bosun.masters.length > 0
+                text: `${Bosun.masters.length} with the master`
+            }
+
             Column {
                 width: parent.width
                 visible: Bosun.mine.length > 0
@@ -544,25 +551,6 @@ Panel {
                     // By id, so a reply being typed survives other decisions coming and going.
                     model: ScriptModel {
                         values: Bosun.mine
-                        objectProp: "id"
-                    }
-
-                    delegate: DecisionCard {}
-                }
-            }
-
-            Column {
-                width: parent.width
-                visible: Bosun.masters.length > 0
-                spacing: 8
-
-                Caption {
-                    text: "Waiting on the master"
-                }
-
-                Repeater {
-                    model: ScriptModel {
-                        values: Bosun.masters
                         objectProp: "id"
                     }
 
