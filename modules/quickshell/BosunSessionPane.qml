@@ -102,6 +102,7 @@ BosunPane {
 
             anchors.fill: parent
             node: pane.visible ? pane.node : ""
+            scrollKey: conversationView.node !== "" ? `session:${conversationView.node}` : ""
             parentNode: pane.session?.parent ?? ""
             live: !pane.gone
             busy: ["busy", "waiting"].includes(pane.session?.status)

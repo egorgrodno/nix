@@ -28,13 +28,14 @@ Item {
 
     // Each id's place in `entries`.
     property var places: ({})
-    // Set by a reset: the entries line after it is the latest page, with
-    // `more`.
+    // From a start or a reset until the latest page, with `more`.
     property bool opening: false
 
     // Around putting older entries at the start, for a view to keep its place.
     signal prepending
     signal prepended
+    // The latest page has come, after a start or a reset.
+    signal opened
 
     function clear() {
         entries = [];
@@ -78,15 +79,17 @@ Item {
         }
         switch (message.type) {
         case "reset":
+            opening = true;
             clear();
             older.running = false;
-            opening = true;
             break;
         case "entries":
             merge(message.entries ?? [], false);
-            if (opening)
+            if (opening) {
+                opening = false;
                 more = message.more === true;
-            opening = false;
+                opened();
+            }
             break;
         case "progress":
             progress = message;
@@ -95,6 +98,7 @@ Item {
     }
 
     function restart() {
+        opening = true;
         clear();
         follow.running = false;
         older.running = false;

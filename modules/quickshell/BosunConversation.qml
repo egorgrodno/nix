@@ -58,6 +58,11 @@ Item {
     property var flipped: ({})
     // Whether the view keeps to the newest entry.
     property bool following: true
+    // What BosunKept keeps the view's place under, or "" to keep none.
+    property string scrollKey: ""
+    // While the view moves on its own, which neither keeps its place nor
+    // stops it following.
+    property bool restoring: false
 
     // A decision's row is selected, as the sidebar does.
     signal decisionOpened(string id)
@@ -96,8 +101,14 @@ Item {
 
     // Once the view has laid out what changed.
     function restore(at) {
+        restoring = true;
         restorer.at = at;
         restorer.restart();
+    }
+
+    function keep() {
+        if (scrollKey !== "" && !restoring && !feed.opening)
+            BosunKept.keepScroll(scrollKey, position());
     }
 
     onNodeChanged: {
@@ -114,6 +125,7 @@ Item {
         live: conversation.live
         onPrepending: kept = conversation.position()
         onPrepended: conversation.restore(kept)
+        onOpened: conversation.restore(conversation.scrollKey !== "" ? BosunKept.scroll(conversation.scrollKey) : null)
     }
 
     // Timers rather than Qt.callLater, which can outlive a pane destroyed in
@@ -126,14 +138,14 @@ Item {
         interval: 0
         onTriggered: {
             const index = at && !at.follow ? shown.values.findIndex(e => e.id === at.id) : -1;
-            if (index < 0) {
-                conversation.following = true;
+            conversation.following = index < 0;
+            if (index < 0)
                 list.positionViewAtEnd();
-                return;
+            else {
+                list.positionViewAtIndex(index, ListView.Beginning);
+                list.contentY += at.offset ?? 0;
             }
-            conversation.following = false;
-            list.positionViewAtIndex(index, ListView.Beginning);
-            list.contentY += at.offset ?? 0;
+            conversation.restoring = false;
         }
     }
 
@@ -141,7 +153,11 @@ Item {
         id: toEnd
 
         interval: 0
-        onTriggered: list.positionViewAtEnd()
+        onTriggered: {
+            conversation.restoring = true;
+            list.positionViewAtEnd();
+            conversation.restoring = false;
+        }
     }
 
     // Ticks the times, each second in a turn, as a running call counts them.
@@ -204,7 +220,13 @@ Item {
 
         onContentHeightChanged: if (conversation.following)
             toEnd.restart()
-        onMovementEnded: conversation.following = atYEnd
+        // The scroll bar moves the view without a movement.
+        onContentYChanged: {
+            if (conversation.restoring || feed.opening)
+                return;
+            conversation.following = atYEnd;
+            conversation.keep();
+        }
         onAtYBeginningChanged: if (atYBeginning && !conversation.following)
             feed.loadOlder()
 
