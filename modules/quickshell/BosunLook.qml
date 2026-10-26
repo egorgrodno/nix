@@ -121,6 +121,35 @@ Singleton {
         return "\u{F1064}";
     }
 
+    // The glyph for a session's activity line: its tool's, or a message's when
+    // no call came after the last message.
+    function activityGlyph(activity) {
+        switch (activity.tool) {
+        case undefined:
+        case "":
+            return "\u{F12F5}";
+        case "Read":
+        case "Glob":
+        case "Grep":
+            return "\u{F0349}";
+        case "WebFetch":
+        case "WebSearch":
+            return "\u{F059F}";
+        case "Task":
+        case "Agent":
+            return robot;
+        }
+        return decisionGlyph({
+            kind: "permission",
+            tool: activity.tool
+        });
+    }
+
+    // What follows the glyph: the call's argument, or the message's start.
+    function activityText(activity) {
+        return activity.tool ? activity.arg ?? activity.tool : activity.text ?? "";
+    }
+
     function tilde(path) {
         const home = Quickshell.env("HOME");
         return path?.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path ?? "";

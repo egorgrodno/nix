@@ -292,6 +292,11 @@ Singleton {
         case "sessions":
             sessions = event.sessions ?? [];
             break;
+        case "activity":
+            sessions = sessions.map(s => s.node === event.node ? Object.assign({}, s, {
+                activity: event.activity
+            }) : s);
+            break;
         case "decision":
             add(event.decision);
             break;

@@ -411,13 +411,17 @@ Item {
         readonly property string stateKey: session ? BosunLook.stateOf(session) : "stopped"
         readonly property bool resting: ["stopped", "killed"].includes(stateKey)
 
-        height: 32
+        readonly property var activity: session?.activity ?? null
+        readonly property string activityLine: activity ? BosunLook.activityText(activity) : ""
+        readonly property color activityColor: stateKey === "working" ? Theme.blue : Theme.foregroundMuted
+
+        height: activityLine ? 52 : 32
 
         BarText {
             id: stateGlyph
 
             x: 20 + 16 * (row.session?.depth ?? 0)
-            anchors.verticalCenter: parent.verticalCenter
+            y: 8
             text: BosunLook.states[row.stateKey].glyph
             color: BosunLook.stateColor(row.stateKey)
             font.pixelSize: 14
@@ -434,11 +438,13 @@ Item {
         }
 
         BarText {
+            id: nameText
+
             anchors.left: stateGlyph.right
             anchors.leftMargin: 8
             anchors.right: modelText.left
             anchors.rightMargin: 8
-            anchors.verticalCenter: parent.verticalCenter
+            y: 8
             elide: Text.ElideRight
             text: row.node
             color: row.resting ? Theme.foregroundMuted : Theme.foregroundStrong
@@ -450,8 +456,35 @@ Item {
 
             anchors.right: parent.right
             anchors.rightMargin: 20
-            anchors.verticalCenter: parent.verticalCenter
+            y: 8
             text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
+        }
+
+        // What the session does, under its name: its tool's glyph and the call
+        // in monospace, or the start of its last message. Blue in its turn.
+        Row {
+            visible: row.activityLine !== ""
+            x: nameText.x
+            y: 30
+            width: parent.width - x - 20
+            spacing: 6
+
+            BarText {
+                id: activityGlyph
+
+                text: row.activity ? BosunLook.activityGlyph(row.activity) : ""
+                color: row.activityColor
+                font.pixelSize: 12
+            }
+
+            BarText {
+                width: parent.width - activityGlyph.width - parent.spacing
+                elide: Text.ElideRight
+                text: row.activityLine
+                color: row.activityColor
+                font.family: row.activity?.tool ? Theme.fontMono : Theme.fontUI
+                font.pixelSize: 12
+            }
         }
     }
 
