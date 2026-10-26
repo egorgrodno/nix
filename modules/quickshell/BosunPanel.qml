@@ -51,77 +51,6 @@ Panel {
         return session.state ? `${session.status} · ${session.state}` : session.status;
     }
 
-    // The whole of a permission's call, as blocks for CallBlock: the parts the
-    // tool acts on, what takes a command out of the sandbox or onto the
-    // network, then every other field of its input, so the user approves
-    // nothing unseen.
-    function callOf(decision) {
-        const input = decision.input ?? {};
-        const blocks = [];
-        const shown = new Set(["dangerouslyDisableSandbox", "allowed_domains"]);
-        const show = (key, kind, label) => {
-            shown.add(key);
-            const value = input[key];
-            if (value !== undefined && value !== null && value !== "")
-                blocks.push({
-                    kind: kind,
-                    label: label,
-                    text: typeof value === "string" ? value : JSON.stringify(value, null, 2)
-                });
-        };
-        const replaces = edit => edit.replace_all === true ? "Replaces everywhere" : "Replaces";
-        switch (decision.tool) {
-        case "Bash":
-            show("description", "note", "");
-            show("command", "code", "");
-            break;
-        case "Edit":
-            show("file_path", "code", "");
-            show("old_string", "removed", replaces(input));
-            show("new_string", "added", "With");
-            shown.add("replace_all");
-            break;
-        case "MultiEdit":
-            show("file_path", "code", "");
-            shown.add("edits");
-            for (const edit of input.edits ?? [])
-                blocks.push({
-                    kind: "removed",
-                    label: replaces(edit),
-                    text: edit.old_string ?? ""
-                }, {
-                    kind: "added",
-                    label: "With",
-                    text: edit.new_string ?? ""
-                });
-            break;
-        case "Write":
-            show("file_path", "code", "");
-            show("content", "added", "Writes");
-            break;
-        case "NotebookEdit":
-            show("notebook_path", "code", "");
-            show("new_source", "added", "Writes");
-            break;
-        }
-        if (input.dangerouslyDisableSandbox === true)
-            blocks.push({
-                kind: "flag",
-                label: "",
-                text: "Runs outside the sandbox"
-            });
-        if (Array.isArray(input.allowed_domains) && input.allowed_domains.length > 0)
-            blocks.push({
-                kind: "flag",
-                label: "",
-                text: `Reaches ${input.allowed_domains.join(", ")}`
-            });
-        for (const key of Object.keys(input))
-            if (!shown.has(key))
-                show(key, "code", key);
-        return blocks;
-    }
-
     function kill(node) {
         if (killing !== node) {
             killing = node;
@@ -334,7 +263,7 @@ Panel {
             }
 
             Repeater {
-                model: card.decision.kind === "permission" ? panel.callOf(card.decision) : []
+                model: card.decision.kind === "permission" ? Bosun.callOf(card.decision) : []
 
                 delegate: CallBlock {}
             }

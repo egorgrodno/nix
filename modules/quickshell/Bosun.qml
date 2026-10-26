@@ -70,26 +70,105 @@ Singleton {
         return JSON.stringify(input);
     }
 
+    // The whole of a permission's call, as blocks for the panel's CallBlock:
+    // the parts the tool acts on, what takes a command out of the sandbox or
+    // onto the network, then every other field of its input, so the user
+    // approves nothing unseen.
+    function callOf(decision) {
+        const input = decision.input ?? {};
+        const blocks = [];
+        const shown = new Set(["dangerouslyDisableSandbox", "allowed_domains"]);
+        const show = (key, kind, label) => {
+            shown.add(key);
+            const value = input[key];
+            if (value !== undefined && value !== null && value !== "")
+                blocks.push({
+                    kind: kind,
+                    label: label,
+                    text: typeof value === "string" ? value : JSON.stringify(value, null, 2)
+                });
+        };
+        const replaces = edit => edit.replace_all === true ? "Replaces everywhere" : "Replaces";
+        switch (decision.tool) {
+        case "Bash":
+            show("description", "note", "");
+            show("command", "code", "");
+            break;
+        case "Edit":
+            show("file_path", "code", "");
+            show("old_string", "removed", replaces(input));
+            show("new_string", "added", "With");
+            shown.add("replace_all");
+            break;
+        case "MultiEdit":
+            show("file_path", "code", "");
+            shown.add("edits");
+            for (const edit of input.edits ?? [])
+                blocks.push({
+                    kind: "removed",
+                    label: replaces(edit),
+                    text: edit.old_string ?? ""
+                }, {
+                    kind: "added",
+                    label: "With",
+                    text: edit.new_string ?? ""
+                });
+            break;
+        case "Write":
+            show("file_path", "code", "");
+            show("content", "added", "Writes");
+            break;
+        case "NotebookEdit":
+            show("notebook_path", "code", "");
+            show("new_source", "added", "Writes");
+            break;
+        }
+        if (input.dangerouslyDisableSandbox === true)
+            blocks.push({
+                kind: "flag",
+                label: "",
+                text: "Runs outside the sandbox"
+            });
+        if (Array.isArray(input.allowed_domains) && input.allowed_domains.length > 0)
+            blocks.push({
+                kind: "flag",
+                label: "",
+                text: `Reaches ${input.allowed_domains.join(", ")}`
+            });
+        for (const key of Object.keys(input))
+            if (!shown.has(key))
+                show(key, "code", key);
+        return blocks;
+    }
+
     // As the newest of one notification, which a later one replaces through
-    // its tag. A click opens the panel.
+    // its tag. A click opens the panel. A permission takes Deny and Approve
+    // there only when all of it, the master's note included, shows in the
+    // lines a card shows before its expander.
     function notify(decision) {
         const d = decision;
         const summary = d.kind === "permission" ? `${d.node} asks to use ${d.tool}` : d.kind === "question" ? `${d.node} asks` : `${d.node} says`;
-        const text = d.kind === "permission" ? detailOf(d) : d.kind === "question" ? d.question : d.note;
-        const why = d.kind !== "notice" && d.note ? `\n\nMaster: ${d.note}` : "";
+        const text = d.kind === "permission" ? callOf(d).filter(b => b.kind !== "note").map(b => b.label ? `${b.label}: ${b.text}` : b.text) : [d.kind === "question" ? d.question : d.note];
+        const lines = text.concat(d.kind !== "notice" && d.note ? [`Master: ${d.note}`] : []).join("\n").split("\n");
+        const whole = lines.length <= 3 && lines.every(line => {
+            bodyLine.text = line;
+            return bodyLine.advanceWidth <= 280;
+        });
+        const answers = d.kind === "permission" && whole ? ["--action=deny=Deny", "--action=approve=Approve"] : [];
         // The bar reads a body as markup.
-        const body = (text + why).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        notifier.post([summary, body]);
+        const body = lines.slice(0, 20).join("\n").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        notifier.post(d.id, answers.concat(["--", summary, body]));
     }
 
-    // Once nothing waits on the user.
+    // Once its decision no longer waits on the user.
     function withdraw() {
+        notifier.decision = "";
         for (const entry of Notifications.entries)
             if (entry.tag === "bosun")
                 entry.notification?.expire();
     }
 
-    onMineChanged: if (mine.length === 0)
+    onMineChanged: if (notifier.decision !== "" && !mine.some(d => d.id === notifier.decision))
         withdraw()
 
     function approve(id) {
@@ -234,9 +313,15 @@ Singleton {
         id: notifier
 
         property var pending: null
+        // The id of the decision the notification shows, which its Deny and
+        // Approve answer.
+        property string decision: ""
 
-        function post(args) {
-            pending = args;
+        function post(id, args) {
+            pending = {
+                id: id,
+                args: args
+            };
             if (running)
                 running = false;
             else
@@ -246,16 +331,33 @@ Singleton {
         function next() {
             if (running || pending === null)
                 return;
-            command = [Programs.notifySend, "--app-name=bosun", "--hint=string:x-dunst-stack-tag:bosun", "--action=default=Open", "--"].concat(pending);
+            decision = pending.id;
+            command = [Programs.notifySend, "--app-name=bosun", "--hint=string:x-dunst-stack-tag:bosun", "--action=default=Open"].concat(pending.args);
             pending = null;
             running = true;
         }
 
         stdout: StdioCollector {
-            onStreamFinished: if (text.trim() === "default")
-                root.openRequested()
+            onStreamFinished: {
+                const action = text.trim();
+                if (action === "default")
+                    root.openRequested();
+                else if (notifier.decision !== "" && action === "approve")
+                    root.approve(notifier.decision);
+                else if (notifier.decision !== "" && action === "deny")
+                    root.deny(notifier.decision);
+            }
         }
         onExited: Qt.callLater(next)
+    }
+
+    // A line of a notification's body, which a card in the notification
+    // panel wraps past 288 pixels.
+    TextMetrics {
+        id: bodyLine
+
+        font.family: Theme.fontUI
+        font.pixelSize: 14
     }
 
     IpcHandler {
