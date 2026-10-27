@@ -138,8 +138,11 @@ Item {
             return {
                 follow: true
             };
-        const item = list.itemAt(10, list.contentY + 1);
-        const index = list.indexAt(10, list.contentY + 1);
+        // Past the header, which a scroll to the top shows, and the spacing
+        // between rows, neither of which holds an entry.
+        const y = Math.max(list.contentY, list.originY + (list.headerItem?.height ?? 0)) + 1;
+        const index = [y, y + list.spacing].map(at => list.indexAt(10, at)).find(i => i >= 0) ?? -1;
+        const item = list.itemAtIndex(index);
         if (!item || index < 0)
             return {
                 follow: true
