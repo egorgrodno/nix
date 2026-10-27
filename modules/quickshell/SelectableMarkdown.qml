@@ -16,14 +16,13 @@ SelectableText {
     // Qt's plain text marks each cell's start with U+FDD0 and a table's end
     // with U+FDD1.
     function copied() {
-        const [from, to] = chosenRange();
         const plain = getText(0, length);
         const pads = new Set();
         for (const span of MarkdownHtml.spans(plain, codes))
             pads.add(span.start).add(span.end - 1);
         let out = "";
         let rowY = null;
-        for (let p = from; p < to; p++) {
+        for (let p = selectionStart; p < selectionEnd; p++) {
             const c = plain[p];
             if (pads.has(p))
                 continue;
@@ -41,8 +40,6 @@ SelectableText {
     }
 
     text: parsed.html
-    // Without the links, which draw in their own colour whatever the twin's.
-    origin: parsed.html.replace(/<a [^>]*>/g, "<span>").replace(/<\/a>/g, "</span>")
     textFormat: TextEdit.RichText
     wrapMode: TextEdit.WrapAtWordBoundaryOrAnywhere
     onLinkActivated: link => Launcher.run([Programs.xdgOpen, link])
