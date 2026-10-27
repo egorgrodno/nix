@@ -441,10 +441,27 @@ Item {
             text: BosunLook.age(Bosun.askedAt(row.decision ?? { id: row.decisionId }), sidebar.now)
         }
 
+        // Time left before the session's own prompt takes over, at a fixed
+        // width so the summary does not reflow as it ticks.
+        Caption {
+            id: leftText
+
+            readonly property real left: row.live ? BosunLook.untilExpiry(row.decision, sidebar.now) : -1
+
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            y: 30
+            width: 64
+            horizontalAlignment: Text.AlignRight
+            visible: left >= 0
+            text: `${BosunLook.clock} ${BosunLook.leftShort(left)}`
+            color: left < 300000 ? Theme.red : left < 900000 ? Theme.yellow : Theme.foregroundMuted
+        }
+
         BarText {
             x: nodeText.x
             y: 30
-            width: parent.width - x - 20
+            width: parent.width - x - 20 - (leftText.visible ? leftText.width + 8 : 0)
             elide: Text.ElideRight
             text: row.decision ? Bosun.summaryOf(row.decision).split("\n")[0] : ""
             color: Theme.foregroundMuted

@@ -130,6 +130,13 @@ Singleton {
         case "Bash":
             show("description", "note", "");
             show("command", "code", "");
+            shown.add("timeout");
+            if (typeof input.timeout === "number" && input.timeout > 0)
+                blocks.push({
+                    kind: "note",
+                    label: "Run limit of the command itself, once allowed",
+                    text: BosunLook.span(input.timeout)
+                });
             break;
         case "Edit":
             show("file_path", "code", "");

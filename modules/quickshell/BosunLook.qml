@@ -706,6 +706,17 @@ Singleton {
         return m % 60 > 0 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${Math.floor(m / 60)} h`;
     }
 
+    // Milliseconds until a decision's `expires`, or -1 without one.
+    function untilExpiry(decision, now) {
+        return decision?.expires ? Math.max(0, new Date(decision.expires).getTime() - now) : -1;
+    }
+
+    // "4m" or "<1m": the time left in a sidebar row's right column.
+    function leftShort(ms) {
+        const m = Math.floor(ms / 60000);
+        return m < 1 ? "<1m" : m < 60 ? `${m}m` : `${Math.floor(m / 60)}h`;
+    }
+
     // "just now", "4 min ago", "2 h ago", else the date.
     function ago(at, now) {
         if (!at)
