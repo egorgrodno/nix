@@ -569,8 +569,16 @@ Item {
             x: 20 + 16 * (row.session?.depth ?? 0)
             y: 8
             text: BosunLook.states[row.stateKey].glyph
-            color: BosunLook.stateColor(row.stateKey)
+            color: row.stateKey === "working" ? "transparent" : BosunLook.stateColor(row.stateKey)
             font.pixelSize: 14
+
+            // The glyph's box holds the spinner's place, so the row keeps its
+            // size. Not hidden by opacity, which the spinner would inherit.
+            BosunSpinner {
+                anchors.centerIn: parent
+                visible: row.stateKey === "working"
+                size: 12
+            }
 
             HoverHandler {
                 id: glyphHover

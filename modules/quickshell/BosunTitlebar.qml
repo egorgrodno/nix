@@ -60,6 +60,7 @@ Item {
 
                 glyph: BosunLook.states[modelData.key].glyph
                 glyphColor: BosunLook.stateColor(modelData.key)
+                spinning: modelData.key === "working"
                 n: modelData.n
                 word: BosunLook.states[modelData.key].word
             }
@@ -141,6 +142,8 @@ Item {
 
         property string glyph
         property color glyphColor: Theme.foregroundMuted
+        // A spinner in the glyph's place, whose box keeps the count's width.
+        property bool spinning: false
         property int n
         property string word
 
@@ -150,8 +153,15 @@ Item {
         BarText {
             anchors.verticalCenter: parent.verticalCenter
             text: count.glyph
-            color: count.glyphColor
+            color: count.spinning ? "transparent" : count.glyphColor
             font.pixelSize: 14
+
+            BosunSpinner {
+                anchors.centerIn: parent
+                visible: count.spinning
+                color: count.glyphColor
+                size: 12
+            }
         }
 
         BarText {

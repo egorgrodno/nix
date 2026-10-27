@@ -328,12 +328,12 @@ Item {
             spacing: 8
 
             // The chevron's box holds the spinner's place, so the row's width
-            // does not change as a call starts or ends.
+            // does not change as a call starts or ends. Not hidden by opacity,
+            // which the spinner would inherit.
             BarText {
                 anchors.verticalCenter: parent.verticalCenter
                 text: entry.open ? BosunLook.chevronDown : BosunLook.chevronRight
-                color: Theme.foregroundMuted
-                opacity: line.lit || !line.opens ? 0 : 1
+                color: line.lit || !line.opens ? "transparent" : Theme.foregroundMuted
                 font.pixelSize: 14
 
                 BosunSpinner {

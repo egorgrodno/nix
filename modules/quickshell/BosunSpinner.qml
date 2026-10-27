@@ -46,14 +46,13 @@ Item {
             }
         }
 
-        RotationAnimation on rotation {
+        // The angle comes from the clock, so a spinner its view rebuilds
+        // carries on where the last one was rather than jumping back.
+        FrameAnimation {
             id: turn
 
             running: root.visible && root.opacity > 0 && (root.Window.window?.visible ?? false)
-            from: 0
-            to: 360
-            duration: 900
-            loops: Animation.Infinite
+            onTriggered: dial.rotation = Date.now() % 900 / 900 * 360
         }
     }
 }
