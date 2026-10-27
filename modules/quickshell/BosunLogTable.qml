@@ -73,6 +73,7 @@ Item {
         restoring.restart();
     }
 
+    clip: true
     onVisibleChanged: {
         if (visible)
             restoreScroll();
@@ -107,24 +108,33 @@ Item {
         }
     }
 
+    // The title, and the filters beside it, or under it once the field
+    // beside it would be narrower than 160.
     Item {
         id: header
+
+        // Beside the title, what the filters have for their field.
+        readonly property real room: width - todayText.x - todayText.width - 24 - chips.width - sessionButton.width - 2 * filters.spacing
+        readonly property bool wraps: room < 160
 
         x: 28
         y: 18
         width: parent.width - 2 * x
-        height: 28
+        height: wraps ? 66 : 28
+        clip: true
 
         BarText {
             id: title
 
-            anchors.verticalCenter: parent.verticalCenter
+            y: (28 - height) / 2
             text: "Log"
             font.pixelSize: 20
             font.weight: Font.DemiBold
         }
 
         Caption {
+            id: todayText
+
             anchors.left: title.right
             anchors.leftMargin: 12
             anchors.baseline: title.baseline
@@ -132,11 +142,16 @@ Item {
         }
 
         Row {
+            id: filters
+
             anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
+            y: header.wraps ? 38 : 0
+            height: 28
             spacing: 10
 
             Row {
+                id: chips
+
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: 2
 
@@ -194,7 +209,7 @@ Item {
 
             Rectangle {
                 anchors.verticalCenter: parent.verticalCenter
-                width: 260
+                width: Math.max(120, Math.min(260, header.wraps ? header.width - chips.width - sessionButton.width - 2 * filters.spacing : header.room))
                 height: 28
                 radius: Theme.radius - 4
                 color: Theme.tint(0.06)
@@ -469,8 +484,7 @@ Item {
 
         BarText {
             x: columns.what
-            anchors.right: linkText.visible ? linkText.left : parent.right
-            anchors.rightMargin: 12
+            width: (linkText.visible ? linkText.x : parent.width) - 12 - x
             anchors.verticalCenter: parent.verticalCenter
             elide: Text.ElideRight
             text: BosunLook.logWhat(row.entry)

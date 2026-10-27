@@ -520,16 +520,18 @@ Item {
                 visible: logTable.visible
             }
 
-            // The selected row whole: beside the Log's table at 860 pixels,
-            // else in what the panel leaves, at most 1200 wide.
+            // The selected row whole: beside the Log's table at about a third
+            // of what the panel leaves, as the mockup has it, else in that, at
+            // most 1200 wide.
             Item {
                 id: detail
 
-                readonly property real column: view.logShown ? 860 : view.expanded ? Math.min(body.rest, 1200) : body.rest
+                readonly property real column: view.logShown ? Math.round(body.rest * 0.35) : view.expanded ? Math.min(body.rest, 1200) : body.rest
 
                 x: view.logShown ? body.width - column : body.paneLeft + (body.rest - column) / 2
                 width: column
                 height: parent.height
+                clip: true
 
                 // The pane's own keyboard, where the keys act as in the sidebar.
                 Item {
