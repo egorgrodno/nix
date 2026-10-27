@@ -637,7 +637,7 @@ Singleton {
 
     // The kinds of conversation entry the panel shows. Any other is one bosun
     // cannot show yet, but for `meta`, the bookkeeping it hides.
-    readonly property var entryKinds: ["prompt", "queued", "text", "thinking", "tool", "compact", "command"]
+    readonly property var entryKinds: ["prompt", "queued", "task", "text", "thinking", "tool", "compact", "command"]
 
     // Who a prompt came from: the user, bosun, Claude Code, the session's
     // parent, or another session's message.

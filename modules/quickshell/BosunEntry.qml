@@ -2,10 +2,10 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 
-// One entry of a session's conversation, as BosunFeed holds it: a prompt or
-// a message on a card, the assistant's text, and a line for a tool call,
-// thinking, a compaction or a command that opens at a click. An edit opens on
-// its diff. BosunDeskEntry shows the kinds BosunDesk adds. Any kind the panel
+// One entry of a session's conversation, as BosunFeed holds it: a prompt, a
+// message or a background task's end on a card, the assistant's text, and a
+// line for a tool call, thinking, a compaction or a command that opens at a
+// click. An edit opens on its diff. BosunDeskEntry shows the kinds BosunDesk adds. Any kind the panel
 // does not know shows as one bosun cannot show yet.
 Item {
     id: entry
@@ -39,6 +39,8 @@ Item {
             case "prompt":
             case "queued":
                 return promptCard;
+            case "task":
+                return taskCard;
             case "text":
                 return textBlock;
             case "tool":
@@ -98,6 +100,57 @@ Item {
                     text: entry.item.text ?? ""
                     color: card.queued ? Theme.foregroundMuted : Theme.foregroundStrong
                     font.pixelSize: 14
+                }
+            }
+        }
+    }
+
+    // Claude Code's report of a background task that ended, on a card of
+    // one line that opens on where its output went.
+    Component {
+        id: taskCard
+
+        Rectangle {
+            id: task
+
+            readonly property string details: {
+                const it = entry.item;
+                const lines = [it.outputFile ? `Output  ${it.outputFile}` : "", it.task ? `Task    ${it.task}` : ""].filter(line => line);
+                return lines.length > 0 ? lines.join("\n") : it.text ?? "";
+            }
+
+            height: taskBody.implicitHeight + 16
+            radius: Theme.radius - 4
+            color: Theme.tint(0.05)
+
+            Column {
+                id: taskBody
+
+                x: 12
+                y: 8
+                width: parent.width - 24
+                spacing: 6
+
+                Line {
+                    glyph: ({
+                            completed: BosunLook.check,
+                            failed: BosunLook.close,
+                            stopped: BosunLook.interrupt
+                        })[entry.item.status] ?? BosunLook.robot
+                    label: entry.item.summary || `Background task ${entry.item.status || "ended"}`
+                    opens: task.details !== ""
+                    aside: BosunLook.ago(entry.item.at, entry.conversation.now)
+                }
+
+                BarText {
+                    x: 24
+                    width: parent.width - x
+                    visible: entry.open && task.details !== ""
+                    wrapMode: Text.WrapAnywhere
+                    text: task.details
+                    color: Theme.foregroundMuted
+                    font.family: Theme.fontMono
+                    font.pixelSize: 13
                 }
             }
         }
