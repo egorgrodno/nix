@@ -507,10 +507,23 @@ Item {
         }
 
         Caption {
+            id: deskModel
+
             anchors.right: parent.right
             anchors.rightMargin: 20
             anchors.verticalCenter: deskGlyph.verticalCenter
             text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
+        }
+
+        // How full its context window is, left of the model.
+        BosunContextBar {
+            anchors.right: deskModel.text ? deskModel.left : parent.right
+            anchors.rightMargin: deskModel.text ? 8 : 20
+            anchors.verticalCenter: deskGlyph.verticalCenter
+            width: 32
+            height: 3
+            visible: row.session?.context !== undefined
+            context: row.session?.context ?? null
         }
 
         Row {
