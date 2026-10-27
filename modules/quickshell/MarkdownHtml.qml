@@ -53,6 +53,9 @@ Singleton {
         // takes no break around it. Qt folds the first break after a table
         // into its end, so an empty line there takes one of its own.
         const out = [];
+        // The open list levels, outermost first: indent, where the marker
+        // starts and its cell's width.
+        const levels = [];
         for (let i = 0; i < lines.length; i++) {
             const head = tableCells(lines[i]);
             const rule = i + 1 < lines.length ? tableCells(lines[i + 1]) : null;
@@ -68,12 +71,32 @@ Singleton {
                 continue;
             }
             const heading = /^#{1,6}\s+/.test(lines[i]);
-            const item = /^\s*[-*+]\s+/.test(lines[i]);
-            const html = inline(lines[i].replace(/^#{1,6}\s+/, "").replace(/^\s*[-*+]\s+/, ""));
-            out.push(item ? {
-                block: true,
-                html: bulletRow(html)
-            } : {
+            const item = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/.exec(lines[i]);
+            if (item) {
+                // Each deeper indent opens a level; a shallower one closes
+                // the levels it passes. A sub-item starts under its parent's text.
+                const indent = item[1].replace(/\t/g, "    ").length;
+                while (levels.length > 0 && indent < levels[levels.length - 1].indent)
+                    levels.pop();
+                if (levels.length === 0 || indent > levels[levels.length - 1].indent)
+                    levels.push({
+                        indent,
+                        left: levels.length > 0 ? levels[levels.length - 1].left + levels[levels.length - 1].width : 0,
+                        width: 0
+                    });
+                const level = levels[levels.length - 1];
+                const ordered = /^\d/.test(item[2]);
+                level.width = ordered ? 40 : 28;
+                const marker = ordered ? item[2] : ["•", "◦", "▪"][(levels.length - 1) % 3];
+                out.push({
+                    block: true,
+                    html: bulletRow(inline(item[3]), marker, level.left, level.width)
+                });
+                continue;
+            }
+            levels.length = 0;
+            const html = inline(lines[i].replace(/^#{1,6}\s+/, ""));
+            out.push({
                 block: false,
                 html: heading ? `<b>${html}</b>` : html
             });
@@ -86,9 +109,11 @@ Singleton {
     }
 
     // A bullet and its text as the two cells of a borderless row, so a line
-    // that wraps hangs under the text. The bullet cell's right padding is the gap.
-    function bulletRow(html) {
-        return `<table width="100%" cellspacing="0" cellpadding="0"><tr><td width="28" valign="top" style="padding-left: 6px; padding-right: 12px; color: ${Theme.foregroundMuted}">•</td><td valign="top">${html}</td></tr></table>`;
+    // that wraps hangs under the text. The marker cell's right padding is the
+    // gap, and a blank cell of `left` px before it nests the item.
+    function bulletRow(html, marker, left, width) {
+        const pad = left > 0 ? `<td width="${left}"></td>` : "";
+        return `<table width="100%" cellspacing="0" cellpadding="0"><tr>${pad}<td width="${width}" valign="top" style="padding-left: 6px; padding-right: 12px; color: ${Theme.foregroundMuted}">${marker}</td><td valign="top">${html}</td></tr></table>`;
     }
 
     // A table row's cells, trimmed, or null for a line without a pipe. A
