@@ -33,6 +33,11 @@ Singleton {
     property var drafts: ({})
     // By key, such as "sidebar" or a selection's key, anything JSON holds.
     property var scrolls: ({})
+    // The desk's activity `at` when its pane last showed. The daemon's
+    // `unseen` clears only on an attach, so the panel's dot also clears once
+    // the pane has shown what the desk did since.
+    property var deskSeen: null
+    readonly property bool deskUnread: Bosun.desk?.unseen === true && (Bosun.desk.activity?.at ?? "") !== deskSeen
 
     function draft(key) {
         return drafts[key] ?? "";
@@ -108,7 +113,8 @@ Singleton {
             logSession: logSession,
             logText: logText,
             drafts: drafts,
-            scrolls: scrolls
+            scrolls: scrolls,
+            deskSeen: deskSeen
         });
         if (text !== saving.written) {
             file.setText(text);
@@ -127,6 +133,7 @@ Singleton {
     onLogTextChanged: saving.restart()
     onDraftsChanged: saving.restart()
     onScrollsChanged: saving.restart()
+    onDeskSeenChanged: saving.restart()
 
     Component.onCompleted: {
         let kept = {};
@@ -144,6 +151,7 @@ Singleton {
         logText = kept.logText ?? "";
         drafts = kept.drafts ?? {};
         scrolls = kept.scrolls ?? {};
+        deskSeen = kept.deskSeen ?? null;
         refresh();
     }
 

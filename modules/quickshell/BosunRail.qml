@@ -36,7 +36,7 @@ Item {
             name: "desk"
             glyph: BosunLook.desk
             tip: Bosun.desk ? "Front desk" : "Desk: the master, until there is a desk"
-            dot: Bosun.desk?.unseen === true
+            dot: BosunKept.deskUnread
         }
 
         RailButton {

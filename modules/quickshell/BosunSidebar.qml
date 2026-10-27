@@ -490,7 +490,7 @@ Item {
             anchors.left: deskName.right
             anchors.leftMargin: 8
             anchors.verticalCenter: deskGlyph.verticalCenter
-            visible: Bosun.desk?.unseen === true
+            visible: BosunKept.deskUnread
             width: 6
             height: 6
             radius: 3

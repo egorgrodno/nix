@@ -74,6 +74,14 @@ BosunPane {
             busy: ["busy", "waiting"].includes(pane.session?.status)
             onDecisionOpened: id => pane.opened(`decision:${id}`, null)
             onOpened: (key, item) => pane.opened(key, item)
+
+            Binding {
+                target: BosunKept
+                property: "deskSeen"
+                value: pane.session?.activity?.at ?? ""
+                when: pane.visible && pane.session !== null
+                restoreMode: Binding.RestoreNone
+            }
         }
     ]
 
