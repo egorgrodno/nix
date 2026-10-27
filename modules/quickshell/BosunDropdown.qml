@@ -3,8 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 // A compact button showing the current value, which opens a small menu of the
-// values under it. The menu is an item of the panel, not a window of its own:
-// a popup window would leave the panel's focus grab, and clear it. Enter,
+// values under it. The menu is an item of the panel's window, not a window of
+// its own: a popup window would leave the panel's focus grab, and clear it. A
+// press outside the menu closes it and goes no further. Enter,
 // Space and Down open it from the keyboard, as does `show` for a pane's own
 // key; Down, Up and the layout's down and up keys move; Enter and Space pick;
 // Tab opens the `after` dropdown's menu instead; Escape closes it. Escape and a
@@ -132,74 +133,89 @@ Item {
         }
     }
 
-    // A click anywhere else in the panel closes the menu and goes no further.
+
+    // A press anywhere in the window but the menu closes it and goes no
+    // further, the button's included. It and the menu sit on the window's
+    // content item rather than here, since `z` orders siblings only: the items
+    // after this one in its pane, and the panel's own press area, would stack
+    // above both and take the clicks.
     MouseArea {
-        x: -5000
-        y: -5000
-        z: 99
-        width: 10000
-        height: 10000
+        id: outside
+
+        parent: dropdown.Window.contentItem
+        anchors.fill: parent
+        z: 1000
         visible: dropdown.open
-        onClicked: dropdown.open = false
-    }
+        acceptedButtons: Qt.AllButtons
+        // On release, so the release does not fall through to the item the
+        // press was kept from.
+        onReleased: dropdown.close()
 
-    Rectangle {
-        id: menu
+        Rectangle {
+            id: menu
 
-        y: parent.height + 4
-        z: 100
-        width: Math.max(button.width, column.implicitWidth + 8)
-        height: column.implicitHeight + 8
-        visible: dropdown.open
-        radius: Theme.radius - 4
-        color: Theme.backgroundRaised
-        border.width: 1
-        border.color: Theme.tint(0.12)
+            // Under the button, where it was as the menu opened.
+            readonly property point origin: dropdown.open ? dropdown.mapToItem(outside, 0, dropdown.height + 4) : Qt.point(0, 0)
 
-        Column {
-            id: column
+            x: origin.x
+            y: origin.y
+            width: Math.max(button.width, column.implicitWidth + 8)
+            height: column.implicitHeight + 8
+            radius: Theme.radius - 4
+            color: Theme.backgroundRaised
+            border.width: 1
+            border.color: Theme.tint(0.12)
 
-            x: 4
-            y: 4
+            // Takes presses on the menu's padding, below the entries.
+            MouseArea {
+                anchors.fill: parent
+            }
 
-            Repeater {
-                model: dropdown.entries
+            Column {
+                id: column
 
-                Rectangle {
-                    id: entry
+                x: 4
+                y: 4
 
-                    required property string modelData
-                    required property int index
-                    readonly property bool isCurrent: modelData === dropdown.lit
+                Repeater {
+                    model: dropdown.entries
 
-                    width: menu.width - 8
-                    height: 26
-                    radius: Theme.radius - 5
-                    color: entry.index === dropdown.index ? Theme.tint(0.12) : "transparent"
+                    Rectangle {
+                        id: entry
 
-                    BarText {
-                        x: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: dropdown.label(entry.modelData)
-                        color: entry.isCurrent ? Theme.blue : Theme.foregroundStrong
-                        font.pixelSize: 14
-                    }
+                        required property string modelData
+                        required property int index
+                        readonly property bool isCurrent: modelData === dropdown.lit
 
-                    BarText {
-                        anchors.right: parent.right
-                        anchors.rightMargin: 8
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: entry.isCurrent
-                        text: BosunLook.check
-                        color: Theme.blue
-                        font.pixelSize: 14
-                    }
+                        width: menu.width - 8
+                        height: 26
+                        radius: Theme.radius - 5
+                        color: entry.index === dropdown.index ? Theme.tint(0.12) : "transparent"
 
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        onEntered: dropdown.index = entry.index
-                        onClicked: dropdown.pick(entry.modelData)
+                        BarText {
+                            x: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: dropdown.label(entry.modelData)
+                            color: entry.isCurrent ? Theme.blue : Theme.foregroundStrong
+                            font.pixelSize: 14
+                        }
+
+                        BarText {
+                            anchors.right: parent.right
+                            anchors.rightMargin: 8
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: entry.isCurrent
+                            text: BosunLook.check
+                            color: Theme.blue
+                            font.pixelSize: 14
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            hoverEnabled: true
+                            onEntered: dropdown.index = entry.index
+                            onClicked: dropdown.pick(entry.modelData)
+                        }
                     }
                 }
             }
