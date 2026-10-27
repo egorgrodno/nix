@@ -108,13 +108,15 @@ Item {
         }
     }
 
-    // The title, and the filters beside it, or under it once the field
-    // beside it would be narrower than 160.
+    // The title, and the filters beside it. Once the field there would be
+    // narrower than 160, the field stays beside the title and the chips and
+    // the session go under it.
     Item {
         id: header
 
-        // Beside the title, what the filters have for their field.
-        readonly property real room: width - todayText.x - todayText.width - 24 - chips.width - sessionButton.width - 2 * filters.spacing
+        // Beside the title, what the filters leave for the field.
+        readonly property real beside: width - todayText.x - todayText.width - 24
+        readonly property real room: beside - filters.width - filters.spacing
         readonly property bool wraps: room < 160
 
         x: 28
@@ -144,7 +146,8 @@ Item {
         Row {
             id: filters
 
-            anchors.right: parent.right
+            anchors.right: header.wraps ? parent.right : field.left
+            anchors.rightMargin: header.wraps ? 0 : spacing
             y: header.wraps ? 38 : 0
             height: 28
             spacing: 10
@@ -196,8 +199,10 @@ Item {
                 id: sessionButton
 
                 anchors.verticalCenter: parent.verticalCenter
+                // At most 180, so a long session name cannot push the row
+                // past the header.
+                width: Math.min(180, sessionName.implicitWidth + 8 + sessionChevron.implicitWidth + 20)
                 height: 26
-                text: `${table.session || "Any session"}  ${BosunLook.chevronDown}`
                 lit: picker.visible
                 onClicked: {
                     const at = mapToItem(table, 0, height + 4);
@@ -205,57 +210,80 @@ Item {
                     picker.y = at.y;
                     picker.visible = !picker.visible;
                 }
-            }
-
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: Math.max(120, Math.min(260, header.wraps ? header.width - chips.width - sessionButton.width - 2 * filters.spacing : header.room))
-                height: 28
-                radius: Theme.radius - 4
-                color: Theme.tint(0.06)
-                border.width: 1
-                border.color: filterInput.activeFocus ? Theme.blue : Theme.tint(0.12)
 
                 BarText {
-                    id: filterGlyph
+                    id: sessionName
 
                     x: 10
+                    width: sessionChevron.x - 8 - x
                     anchors.verticalCenter: parent.verticalCenter
-                    text: BosunLook.filter
-                    color: Theme.foregroundMuted
+                    elide: Text.ElideRight
+                    text: table.session || "Any session"
                     font.pixelSize: 14
                 }
 
-                TextInput {
-                    id: filterInput
+                BarText {
+                    id: sessionChevron
 
-                    anchors.left: filterGlyph.right
-                    anchors.leftMargin: 8
                     anchors.right: parent.right
                     anchors.rightMargin: 10
                     anchors.verticalCenter: parent.verticalCenter
-                    clip: true
-                    text: table.text
-                    color: Theme.foregroundStrong
-                    selectionColor: Theme.blue
-                    selectByMouse: true
-                    font.family: Theme.fontUI
-                    font.pixelSize: 13
-                    font.hintingPreference: Font.PreferFullHinting
-                    renderType: Text.CurveRendering
-                    onTextEdited: BosunKept.logText = text
-                    Keys.onReturnPressed: table.forceActiveFocus()
-                    Keys.onEnterPressed: table.forceActiveFocus()
-                    Keys.onTabPressed: table.forceActiveFocus()
-                    Keys.onEscapePressed: table.forceActiveFocus()
+                    text: BosunLook.chevronDown
+                    font.pixelSize: 14
+                }
+            }
+        }
 
-                    BarText {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: filterInput.text === ""
-                        text: "Filter the log"
-                        color: Theme.foregroundMuted
-                        font.pixelSize: 13
-                    }
+        Rectangle {
+            id: field
+
+            anchors.right: parent.right
+            width: Math.max(120, Math.min(260, header.wraps ? header.beside : header.room))
+            height: 28
+            radius: Theme.radius - 4
+            color: Theme.tint(0.06)
+            border.width: 1
+            border.color: filterInput.activeFocus ? Theme.blue : Theme.tint(0.12)
+
+            BarText {
+                id: filterGlyph
+
+                x: 10
+                anchors.verticalCenter: parent.verticalCenter
+                text: BosunLook.filter
+                color: Theme.foregroundMuted
+                font.pixelSize: 14
+            }
+
+            TextInput {
+                id: filterInput
+
+                anchors.left: filterGlyph.right
+                anchors.leftMargin: 8
+                anchors.right: parent.right
+                anchors.rightMargin: 10
+                anchors.verticalCenter: parent.verticalCenter
+                clip: true
+                text: table.text
+                color: Theme.foregroundStrong
+                selectionColor: Theme.blue
+                selectByMouse: true
+                font.family: Theme.fontUI
+                font.pixelSize: 13
+                font.hintingPreference: Font.PreferFullHinting
+                renderType: Text.CurveRendering
+                onTextEdited: BosunKept.logText = text
+                Keys.onReturnPressed: table.forceActiveFocus()
+                Keys.onEnterPressed: table.forceActiveFocus()
+                Keys.onTabPressed: table.forceActiveFocus()
+                Keys.onEscapePressed: table.forceActiveFocus()
+
+                BarText {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: filterInput.text === ""
+                    text: "Filter the log"
+                    color: Theme.foregroundMuted
+                    font.pixelSize: 13
                 }
             }
         }
