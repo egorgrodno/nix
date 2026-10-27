@@ -19,6 +19,8 @@ BosunPane {
     readonly property string decisionId: decision?.id ?? ""
     readonly property string kind: decision ? Bosun.kindOf(decision) : ""
     readonly property var session: Bosun.sessions.find(s => s.node === decision?.node) ?? null
+    // What the header's age counts from.
+    property real now: Date.now()
     // Who settled it, how and when: "Allowed by the master at 17:44."
     readonly property string settledText: {
         if (live || !decision)
@@ -106,6 +108,10 @@ BosunPane {
     aside: decision ? `#${decision.id}` : ""
     facts: [
         BosunFact {
+            glyph: BosunLook.clock
+            text: BosunLook.ago(Bosun.askedAt(pane.decisionId), pane.now)
+        },
+        BosunFact {
             glyph: BosunLook.folder
             text: BosunLook.tilde(pane.session?.repo || pane.session?.dir)
         },
@@ -118,6 +124,15 @@ BosunPane {
             text: [pane.session?.model, pane.session?.effort].filter(part => part).join(" ")
         }
     ]
+
+    // Ticks the header's age.
+    Timer {
+        running: pane.visible
+        interval: 30000
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: pane.now = Date.now()
+    }
 
     Banner {
         visible: pane.settledText !== ""

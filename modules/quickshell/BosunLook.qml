@@ -594,4 +594,16 @@ Singleton {
             return `${span(ms).replace(/ \d+ min$/, "")} ago`;
         return Qt.formatDate(new Date(at), "MMM d");
     }
+
+    // "now", "4m", "2h" or "3d": an age in a sidebar row's right column.
+    function age(at, now) {
+        if (!at)
+            return "";
+        const m = Math.floor((now - new Date(at).getTime()) / 60000);
+        if (m < 1)
+            return "now";
+        if (m < 60)
+            return `${m}m`;
+        return m < 1440 ? `${Math.floor(m / 60)}h` : `${Math.floor(m / 1440)}d`;
+    }
 }

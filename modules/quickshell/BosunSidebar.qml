@@ -21,6 +21,8 @@ Item {
     // Lights the selected row's edge while the keyboard is here.
     readonly property bool focused: activeFocus
     property bool scrollRestored: false
+    // What the rows' ages count from.
+    property real now: Date.now()
     readonly property var waiting: {
         const mine = Bosun.mine;
         if (!held || mine.some(d => d.id === held.id))
@@ -124,6 +126,15 @@ Item {
 
         interval: 0
         onTriggered: sidebar.reveal(sidebar.selected)
+    }
+
+    // Ticks the rows' ages.
+    Timer {
+        running: sidebar.visible
+        interval: 30000
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: sidebar.now = Date.now()
     }
 
     Timer {
@@ -339,8 +350,8 @@ Item {
     }
 
     // Its kind's glyph, the session, the tool or "asks", whether it is
-    // reserved, or how it settled, and under them the command, the path or the
-    // question.
+    // reserved, or how it settled, its age, and under them the command, the
+    // path or the question.
     component DecisionRow: RowBase {
         id: row
 
@@ -374,8 +385,8 @@ Item {
         BarText {
             anchors.left: nodeText.right
             anchors.leftMargin: 8
-            anchors.right: badge.visible ? badge.left : parent.right
-            anchors.rightMargin: badge.visible ? 8 : 20
+            anchors.right: badge.visible ? badge.left : ageText.left
+            anchors.rightMargin: badge.visible || ageText.text ? 8 : 0
             anchors.baseline: kindGlyph.baseline
             elide: Text.ElideRight
             text: {
@@ -394,8 +405,8 @@ Item {
 
             readonly property bool reserved: (row.decision?.reserved ?? "") !== ""
 
-            anchors.right: parent.right
-            anchors.rightMargin: 20
+            anchors.right: ageText.left
+            anchors.rightMargin: ageText.text ? 8 : 0
             anchors.verticalCenter: kindGlyph.verticalCenter
             visible: reserved || !row.live
             width: badgeText.implicitWidth + 12
@@ -419,6 +430,15 @@ Item {
                 color: row.live ? Theme.yellow : Theme.foregroundMuted
                 font.pixelSize: 12
             }
+        }
+
+        Caption {
+            id: ageText
+
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            anchors.baseline: kindGlyph.baseline
+            text: BosunLook.age(Bosun.askedAt(row.decisionId), sidebar.now)
         }
 
         BarText {
@@ -597,7 +617,7 @@ Item {
         }
     }
 
-    // A Log entry on one line, and when it came.
+    // A Log entry on one line, and how long ago it came.
     component LogRow: RowBase {
         id: row
 
@@ -632,7 +652,7 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: 20
             anchors.verticalCenter: parent.verticalCenter
-            text: BosunLook.timeOf(row.entry)
+            text: BosunLook.age(row.entry.at, sidebar.now)
         }
     }
 }

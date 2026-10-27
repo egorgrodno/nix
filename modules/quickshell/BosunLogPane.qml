@@ -47,7 +47,12 @@ BosunPane {
         },
         BosunFact {
             glyph: BosunLook.clock
-            text: pane.entry?.at ? Qt.formatDateTime(new Date(pane.entry.at), "MMM d HH:mm") : ""
+            text: {
+                if (!pane.entry?.at)
+                    return "";
+                const at = new Date(pane.entry.at);
+                return at.toDateString() === new Date().toDateString() ? `Today at ${Qt.formatTime(at, "HH:mm")}` : Qt.formatDateTime(at, "MMM d HH:mm");
+            }
         },
         BosunFact {
             glyph: BosunLook.folder

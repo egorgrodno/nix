@@ -297,6 +297,12 @@ Singleton {
         fleet.run("unpause");
     }
 
+    // When the session asked the decision, from its log entry, or "" once
+    // the log no longer holds it.
+    function askedAt(id) {
+        return log.find(e => ["decision", "escalated"].includes(e.kind) && e.decision?.id === id)?.at ?? "";
+    }
+
     // `bosun attach` has the daemon resume a stopped session before `claude
     // attach`, which would start Claude Code's supervisor in this kitty. `claude
     // attach` leaves the session running when it exits, as on Ctrl+Z. A failed
