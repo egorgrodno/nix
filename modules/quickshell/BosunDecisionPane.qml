@@ -127,13 +127,13 @@ BosunPane {
 
     // Milliseconds until the daemon leaves the decision to the session's own
     // prompt, or -1 when it has no deadline or no longer waits.
-    readonly property real left: live ? BosunLook.untilExpiry(decision, now) : -1
+    readonly property real remaining: live ? BosunLook.untilExpiry(decision, now) : -1
 
     // Ticks the header's age, and every second the last two minutes of a
     // countdown.
     Timer {
         running: pane.visible
-        interval: pane.left >= 0 && pane.left < 120000 ? 1000 : 30000
+        interval: pane.remaining >= 0 && pane.remaining < 120000 ? 1000 : 30000
         repeat: true
         triggeredOnStart: true
         onTriggered: pane.now = Date.now()
@@ -147,10 +147,10 @@ BosunPane {
     }
 
     Banner {
-        visible: pane.left >= 0
+        visible: pane.remaining >= 0
         glyph: BosunLook.clock
-        tint: pane.left < 300000 ? Theme.red : pane.left < 900000 ? Theme.yellow : Theme.foregroundMuted
-        text: pane.left > 0 ? `Falls back to ${pane.decision?.node ?? "the session"}'s own prompt in ${BosunLook.span(pane.left)}. Nobody sees that prompt in a background session.` : `Now left to ${pane.decision?.node ?? "the session"}'s own prompt. Nobody sees that prompt in a background session.`
+        tint: pane.remaining < 300000 ? Theme.red : pane.remaining < 900000 ? Theme.yellow : Theme.foregroundMuted
+        text: pane.remaining > 0 ? `Falls back to ${pane.decision?.node ?? "the session"}'s own prompt in ${BosunLook.countdown(pane.remaining)}. Nobody sees that prompt in a background session.` : `Now left to ${pane.decision?.node ?? "the session"}'s own prompt. Nobody sees that prompt in a background session.`
     }
 
     // Why the master passed it on, first: it may say the decision needs no

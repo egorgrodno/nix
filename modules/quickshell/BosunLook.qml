@@ -711,6 +711,11 @@ Singleton {
         return decision?.expires ? Math.max(0, new Date(decision.expires).getTime() - now) : -1;
     }
 
+    // "42 min", then "95s" for the last two minutes, which the pane ticks each second.
+    function countdown(ms) {
+        return ms < 120000 ? `${Math.ceil(ms / 1000)}s` : span(ms);
+    }
+
     // "4m" or "<1m": the time left in a sidebar row's right column.
     function leftShort(ms) {
         const m = Math.floor(ms / 60000);

@@ -446,16 +446,16 @@ Item {
         Caption {
             id: leftText
 
-            readonly property real left: row.live ? BosunLook.untilExpiry(row.decision, sidebar.now) : -1
+            readonly property real remaining: row.live ? BosunLook.untilExpiry(row.decision, sidebar.now) : -1
 
             anchors.right: parent.right
             anchors.rightMargin: 20
             y: 30
             width: 64
             horizontalAlignment: Text.AlignRight
-            visible: left >= 0
-            text: `${BosunLook.clock} ${BosunLook.leftShort(left)}`
-            color: left < 300000 ? Theme.red : left < 900000 ? Theme.yellow : Theme.foregroundMuted
+            visible: remaining >= 0
+            text: `${BosunLook.clock} ${BosunLook.leftShort(remaining)}`
+            color: remaining < 300000 ? Theme.red : remaining < 900000 ? Theme.yellow : Theme.foregroundMuted
         }
 
         BarText {
