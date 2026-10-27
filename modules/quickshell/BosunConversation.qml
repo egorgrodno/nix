@@ -254,6 +254,9 @@ Item {
     onNodeChanged: {
         flipped = {};
         placed = false;
+        revealer.stop();
+        fadeIn.stop();
+        list.opacity = 0;
         following = true;
         sent = null;
     }
@@ -334,6 +337,8 @@ Item {
             }
             conversation.restoring = false;
             conversation.placed = true;
+            if (list.opacity === 0)
+                revealer.restart();
         }
     }
 
@@ -382,6 +387,25 @@ Item {
         }
     }
 
+    // Shows the list once it is placed and its rows have stopped growing,
+    // so a conversation opens where it will stay rather than at its top.
+    Timer {
+        id: revealer
+
+        interval: 50
+        onTriggered: fadeIn.start()
+    }
+
+    NumberAnimation {
+        id: fadeIn
+
+        target: list
+        property: "opacity"
+        to: 1
+        duration: 150
+        easing.type: Easing.OutCubic
+    }
+
     // Ticks the times, each second in a turn, as a running call counts them.
     Timer {
         running: conversation.visible
@@ -395,6 +419,7 @@ Item {
         id: list
 
         anchors.fill: parent
+        opacity: 0
         clip: true
         spacing: 12
         boundsBehavior: Flickable.StopAtBounds
@@ -472,8 +497,12 @@ Item {
             }
         }
 
-        onContentHeightChanged: if (conversation.following)
-            toEnd.restart()
+        onContentHeightChanged: {
+            if (conversation.following)
+                toEnd.restart();
+            if (revealer.running)
+                revealer.restart();
+        }
         // Only the user's scroll lets go of the end or takes the view back
         // to it: the list moves the view itself as rows and the footer grow,
         // short of the end until `toEnd` runs. The scroll bar moves it
