@@ -327,19 +327,19 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             spacing: 8
 
+            // The chevron's box holds the spinner's place, so the row's width
+            // does not change as a call starts or ends.
             BarText {
                 anchors.verticalCenter: parent.verticalCenter
-                text: line.lit ? BosunLook.running : entry.open ? BosunLook.chevronDown : BosunLook.chevronRight
-                color: line.lit ? Theme.blue : Theme.foregroundMuted
-                opacity: line.opens || line.lit ? 1 : 0
+                text: entry.open ? BosunLook.chevronDown : BosunLook.chevronRight
+                color: Theme.foregroundMuted
+                opacity: line.lit || !line.opens ? 0 : 1
                 font.pixelSize: 14
 
-                RotationAnimation on rotation {
-                    running: line.lit
-                    from: 0
-                    to: 360
-                    duration: 1000
-                    loops: Animation.Infinite
+                BosunSpinner {
+                    anchors.centerIn: parent
+                    visible: line.lit
+                    size: 12
                 }
             }
 

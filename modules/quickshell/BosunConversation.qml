@@ -267,13 +267,23 @@ Item {
             spacing: 12
 
             // What the turn does, as Claude Code's status line says.
-            BarText {
+            Row {
                 width: parent.width
                 visible: conversation.inTurn && (conversation.progress?.detail ?? "") !== ""
-                elide: Text.ElideRight
-                text: `${BosunLook.running}  ${conversation.progress?.detail ?? ""}`
-                color: Theme.blue
-                font.pixelSize: 13
+                spacing: 8
+
+                BosunSpinner {
+                    anchors.verticalCenter: parent.verticalCenter
+                    size: 12
+                }
+
+                BarText {
+                    width: parent.width - 20
+                    elide: Text.ElideRight
+                    text: conversation.progress?.detail ?? ""
+                    color: Theme.blue
+                    font.pixelSize: 13
+                }
             }
 
             NeedsCard {
