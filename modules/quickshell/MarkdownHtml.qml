@@ -13,14 +13,22 @@ Singleton {
         return (markdown.match(/`[^`\n]+`/g) ?? []).map(span => span.slice(1, -1));
     }
 
+    // A code span's text as `parse` writes it. One of up to 16 characters
+    // never breaks short of the line's width: a word joiner between each two,
+    // and its spaces no-break.
+    function glued(text) {
+        return text.length <= 16 ? [...text].map(c => c === " " ? "\u00a0" : c).join("\u2060") : text;
+    }
+
     // Where each of `codes` sits in a layout's plain text, as { start, end },
-    // its padding included. Qt collapses a run of spaces in the code, so the
-    // search lets any run stand for one.
+    // its padding included: a no-break space before, and a word joiner and a
+    // no-break space after. Qt collapses a run of spaces in a longer code, so
+    // the search lets any run stand for one.
     function spans(plain, codes) {
         const out = [];
         let from = 0;
         for (const text of codes) {
-            const find = new RegExp(`\u00a0${text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+")}\u00a0`, "g");
+            const find = new RegExp(`\u00a0${glued(text).replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+")}\u2060\u00a0`, "g");
             find.lastIndex = from;
             const match = find.exec(plain);
             if (!match)
@@ -36,7 +44,11 @@ Singleton {
 
     // A span already made a tag hides behind a placeholder from the rules
     // after it. A code span pads with a no-break space a side, in the body's
-    // font: Qt collapses any other space with the one beside the span.
+    // font: Qt collapses any other space with the one beside the span. A word
+    // joiner holds the trailing pad to the code, as Qt breaks before a
+    // no-break space after `|` or `-`. It sits in the code's font, as the
+    // body font's fallback for it makes the line a pixel taller. None leads,
+    // as it would let a leading `-x` split after its hyphen.
     //
     // `html` is the rich text; `tables` lists every table in it in order, the
     // bullets' included, as { cols, tints, html }: a tint for each row, or
@@ -47,7 +59,7 @@ Singleton {
         const restore = html => html.replace(/\u0001(\d+)\u0001/g, (_, i) => restore(kept[i]));
         const keep = html => `\u0001${kept.push(html) - 1}\u0001`;
         const link = (url, label) => keep(`<a href="${escape(url)}" style="color: ${Theme.blue}">${escape(label)}</a>`);
-        const code = text => keep(`&nbsp;<span style="font-family: '${Theme.fontMono}', monospace">${escape(text)}</span>&nbsp;`);
+        const code = text => keep(`&nbsp;<span style="font-family: '${Theme.fontMono}', monospace">${escape(glued(text))}\u2060</span>&nbsp;`);
         const inline = text => {
             const html = text.replace(/`([^`]+)`/g, (_, text) => code(text)).replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => link(url, label)).replace(/\bhttps?:\/\/[^\s<>]*[^\s<>.,;:!?'")\]]/g, url => link(url, url));
             return escape(html).replace(/\*\*(.+?)\*\*|__(.+?)__/g, (_, a, b) => `<b>${a ?? b}</b>`).replace(/(^|[^\w*])\*(?!\s)(.+?)\*(?![\w*])/g, "$1<i>$2</i>").replace(/(^|\W)_(?!\s)(.+?)_(?!\w)/g, "$1<i>$2</i>");

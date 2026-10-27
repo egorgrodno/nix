@@ -11,10 +11,20 @@ SelectableText {
     readonly property var codes: MarkdownHtml.codes(markdown)
     readonly property var parsed: MarkdownHtml.parse(markdown)
 
-    // The selection as it reads: a code span without its padding, and a
-    // table's cells apart by a tab within a row and by a line between rows.
-    // Qt's plain text marks each cell's start with U+FDD0 and a table's end
-    // with U+FDD1.
+    // Each code span's padding: the no-break space before, and the word
+    // joiner and no-break space after.
+    function pads() {
+        const out = [];
+        if (codes.length > 0)
+            for (const span of MarkdownHtml.spans(getText(0, length), codes))
+                out.push(span.start, span.start + 1, span.end - 2, span.end);
+        return out;
+    }
+
+    // The selection as it reads: a code span without its padding or word
+    // joiners, and a table's cells apart by a tab within a row and by a line
+    // between rows. Qt's plain text marks each cell's start with U+FDD0 and a
+    // table's end with U+FDD1.
     function copied() {
         const [from, to] = chosenRange();
         const plain = getText(0, length);
@@ -25,7 +35,7 @@ SelectableText {
         let rowY = null;
         for (let p = from; p < to; p++) {
             const c = plain[p];
-            if (pads.has(p))
+            if (pads.has(p) || c === "\u2060")
                 continue;
             if (c === "\ufdd0") {
                 const y = positionToRectangle(p + 1).y;

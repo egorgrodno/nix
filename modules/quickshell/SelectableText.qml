@@ -34,23 +34,57 @@ TextEdit {
         twin.active = false;
     }
 
-    // A press at (x, y) starts a selection there and clears any elsewhere,
-    // as a drag back from it changes only `selectionStart`.
+    // The text's padding, which `copied` leaves out, as a flat list of each
+    // run's start and end.
+    function pads() {
+        return [];
+    }
+
+    // Selects from `anchor` to `cursor`, but never ends a selection inside
+    // a padding, which would highlight what copy leaves out.
+    function choose(anchor, cursor) {
+        let from = Math.min(anchor, cursor);
+        let to = Math.max(anchor, cursor);
+        const runs = held;
+        for (let i = 0; i < runs.length; i += 2) {
+            if (from >= runs[i] && from < runs[i + 1])
+                from = runs[i + 1];
+            if (to > runs[i] && to <= runs[i + 1])
+                to = runs[i];
+        }
+        if (from >= to)
+            twin.item.cursorPosition = anchor;
+        else if (anchor < cursor)
+            twin.item.select(from, to);
+        else
+            twin.item.select(to, from);
+    }
+
+    // A press at (x, y) starts a selection there and clears any elsewhere.
     function press(x, y) {
         MouseSelection.take(root);
         twin.active = true;
-        twin.item.cursorPosition = twin.item.positionAt(x, y);
+        if (held === null)
+            held = pads();
+        anchor = twin.item.positionAt(x, y);
+        twin.item.cursorPosition = anchor;
     }
 
     // A drag to (x, y) takes the selection there.
     function drag(x, y) {
-        twin.item.moveCursorSelection(twin.item.positionAt(x, y));
+        choose(anchor, twin.item.positionAt(x, y));
     }
 
     function pickWord(x, y) {
         press(x, y);
         twin.item.selectWord();
+        choose(twin.item.selectionStart, twin.item.selectionEnd);
     }
+
+    // Where the press that started the selection fell.
+    property int anchor: 0
+    // `pads`, kept from the first press until the text changes.
+    property var held: null
 
     // What the selection is mixed against: the panel body, which most text
     // sits on. Code blocks and table rows lift it by a few percent at most.
@@ -66,6 +100,7 @@ TextEdit {
     renderType: TextEdit.CurveRendering
     textFormat: TextEdit.PlainText
     readOnly: true
+    onTextChanged: held = null
     Component.onDestruction: MouseSelection.drop(root)
 
     // Drives the twin's selection, as the TextEdit's own `selectByMouse`

@@ -14,8 +14,10 @@ Item {
 
     // { x, y, width, height } a box. A wrap inside a span falls after a code
     // character, so each line's box ends one cell past the last on it, or at
-    // a trailing space. Rich text's `text` reads back as the whole document
-    // in HTML, so the layout's other properties stand for its change.
+    // a trailing space or word joiner. A box narrower than a cell holds only
+    // padding, which a span wider than its line can wrap onto a line of its
+    // own. Rich text's `text` reads back as the whole document in HTML, so
+    // the layout's other properties stand for its change.
     readonly property var boxes: {
         layout.width;
         layout.length;
@@ -30,7 +32,7 @@ Item {
             for (let p = span.start + 1; p <= span.end; p++) {
                 const at = layout.positionToRectangle(p);
                 if (at.y !== start.y) {
-                    const right = /\s/.test(plain[p - 1]) ? last.x : last.x + cell;
+                    const right = /[\s\u2060]/.test(plain[p - 1]) ? last.x : last.x + cell;
                     out.push({
                         x: start.x,
                         y: start.y,
@@ -48,7 +50,7 @@ Item {
                 height: start.height
             });
         }
-        return out;
+        return out.filter(box => box.width >= cell);
     }
 
     FontMetrics {
