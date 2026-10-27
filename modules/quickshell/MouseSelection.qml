@@ -3,8 +3,8 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// The one SelectableText with a selection, which Ctrl+C copies. A new
-// selection clears the one before.
+// The one SelectableText with a selection, which Ctrl+C copies. A press in
+// another clears the one before.
 Singleton {
     property SelectableText owner: null
 

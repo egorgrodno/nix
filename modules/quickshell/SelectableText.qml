@@ -34,8 +34,10 @@ TextEdit {
         twin.active = false;
     }
 
-    // A press at (x, y) starts a selection there.
+    // A press at (x, y) starts a selection there and clears any elsewhere,
+    // as a drag back from it changes only `selectionStart`.
     function press(x, y) {
+        MouseSelection.take(root);
         twin.active = true;
         twin.item.cursorPosition = twin.item.positionAt(x, y);
     }
@@ -121,8 +123,6 @@ TextEdit {
             // a pixel and a translucent colour shows that as a darker band.
             selectionColor: Qt.tint(root.selectionBase, Theme.alpha(Theme.blue, 0.35))
             selectedTextColor: "transparent"
-            onSelectionEndChanged: if (selectionEnd > selectionStart)
-                MouseSelection.take(root)
         }
     }
 }
