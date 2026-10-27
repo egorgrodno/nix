@@ -67,6 +67,11 @@ Item {
     // Turns the feed's entries into those shown, as BosunDesk.shape does for
     // the desk; null shows them as they come.
     property var shape: null
+    // The rows `steady` handed out last, by id; set without a change signal,
+    // as the binding that reads it writes it.
+    readonly property var shownBefore: ({
+            rows: {}
+        })
 
     // A decision's row is selected, as the sidebar does.
     signal decisionOpened(string id)
@@ -94,6 +99,23 @@ Item {
             run = [];
         }
         return out.concat(run);
+    }
+
+    // Hands back the row shown before for each entry whose fields are all the
+    // same, since fold and shape build theirs anew on every update and the
+    // model refreshes a delegate whose row is not the same object.
+    function steady(entries) {
+        const before = shownBefore.rows;
+        const rows = {};
+        const out = entries.map(e => {
+            const was = before[e.id];
+            const keys = Object.keys(e);
+            const row = was && Object.keys(was).length === keys.length && keys.every(k => was[k] === e[k]) ? was : e;
+            rows[e.id] = row;
+            return row;
+        });
+        shownBefore.rows = rows;
+        return out;
     }
 
     function isOpen(id, byDefault) {
@@ -209,7 +231,7 @@ Item {
             id: shown
 
             objectProp: "id"
-            values: conversation.fold((conversation.shape ? conversation.shape(feed.entries) : feed.entries).filter(e => e.kind !== "meta" && !(e.kind === "queued" && e.taken)))
+            values: conversation.steady(conversation.fold((conversation.shape ? conversation.shape(feed.entries) : feed.entries).filter(e => e.kind !== "meta" && !(e.kind === "queued" && e.taken))))
         }
 
         delegate: BosunEntry {

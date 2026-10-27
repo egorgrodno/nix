@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 
 // An entry of the front desk's conversation of a kind BosunDesk adds: the
 // user's message on the right, the desk's answer with what it names to open,
@@ -165,7 +166,12 @@ Item {
                         spacing: 8
 
                         Repeater {
-                            model: card.outcome?.acts ?? []
+                            // A ScriptModel adds the chip for an act that
+                            // lands, where an array would rebuild them all.
+                            model: ScriptModel {
+                                objectProp: "seq"
+                                values: card.outcome?.acts ?? []
+                            }
 
                             Chip {
                                 required property var modelData
