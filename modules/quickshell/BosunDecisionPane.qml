@@ -258,7 +258,7 @@ BosunPane {
                 anchors.verticalCenter: parent.verticalCenter
                 height: 34
                 text: pane.armed === "y" ? `${BosunLook.check}  Press y again to approve` : `${BosunLook.check}  Approve`
-                hoverFill: Theme.blue
+                hoverFill: Theme.green
                 litTextColor: Theme.backgroundMain
                 lit: pane.armed === "y"
                 onClicked: pane.approve()
