@@ -179,9 +179,9 @@ BosunPane {
                 text: "Why the master passed it to you"
             }
 
-            BarText {
+            SelectableText {
                 width: parent.width
-                wrapMode: Text.Wrap
+                wrapMode: TextEdit.Wrap
                 font.pixelSize: 16
                 text: pane.decision?.note ?? ""
             }
@@ -207,10 +207,10 @@ BosunPane {
         spacing: 12
         opacity: pane.live ? 1 : 0.6
 
-        BarText {
+        SelectableText {
             width: parent.width
             visible: pane.kind === "question" || pane.decision?.kind === "notice"
-            wrapMode: Text.Wrap
+            wrapMode: TextEdit.Wrap
             font.pixelSize: 16
             text: (pane.kind === "question" ? pane.decision?.question : pane.decision?.note) ?? ""
         }

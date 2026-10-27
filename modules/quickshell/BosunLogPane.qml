@@ -75,44 +75,44 @@ BosunPane {
             text: "Why the master passed it to you"
         }
 
-        BarText {
+        SelectableText {
             width: parent.width
-            wrapMode: Text.Wrap
+            wrapMode: TextEdit.Wrap
             font.pixelSize: 14
             text: pane.entry?.text ?? ""
         }
     }
 
-    BarText {
+    SelectableText {
         width: parent.width
         visible: pane.known && pane.entry.kind === "settled" && pane.entry.withdrawn === true
-        wrapMode: Text.Wrap
+        wrapMode: TextEdit.Wrap
         color: Theme.foregroundMuted
         font.pixelSize: 14
         text: pane.entry?.cause ? `Withdrawn when ${pane.entry.cause}.` : "Withdrawn: nobody answered it."
     }
 
-    BarText {
+    SelectableText {
         width: parent.width
         visible: pane.said !== ""
-        wrapMode: Text.Wrap
+        wrapMode: TextEdit.Wrap
         font.pixelSize: 14
         text: pane.known && ["settled", "prompt"].includes(pane.entry.kind) && pane.entry.behavior === "deny" ? `Denied with: ${pane.said}` : pane.said
     }
 
-    BarText {
+    SelectableText {
         width: parent.width
         visible: (pane.entry?.error ?? "") !== ""
-        wrapMode: Text.Wrap
+        wrapMode: TextEdit.Wrap
         color: Theme.red
         font.pixelSize: 14
         text: `Failed: ${pane.entry?.error ?? ""}`
     }
 
-    BarText {
+    SelectableText {
         width: parent.width
         visible: (pane.entry?.words ?? "") !== ""
-        wrapMode: Text.Wrap
+        wrapMode: TextEdit.Wrap
         color: Theme.foregroundMuted
         font.pixelSize: 14
         text: `You said: “${pane.entry?.words ?? ""}”`
@@ -128,10 +128,10 @@ BosunPane {
             text: pane.decision?.kind === "permission" ? `${pane.decision.node} asked to use ${pane.decision.tool}` : `${pane.decision?.node ?? ""} asked`
         }
 
-        BarText {
+        SelectableText {
             width: parent.width
             visible: pane.decision?.kind !== "permission"
-            wrapMode: Text.Wrap
+            wrapMode: TextEdit.Wrap
             font.pixelSize: 14
             text: pane.decision ? Bosun.summaryOf(pane.decision) : ""
         }

@@ -65,13 +65,13 @@ Item {
                 border.width: said.waits ? 1 : 0
                 border.color: Theme.tint(0.16)
 
-                BarText {
+                SelectableText {
                     id: bubbleText
 
                     x: 12
                     y: 10
                     width: Math.min(implicitWidth, entry.bubbleWidth - 24)
-                    wrapMode: Text.Wrap
+                    wrapMode: TextEdit.Wrap
                     text: entry.item.text ?? ""
                     color: said.waits ? Theme.foregroundMuted : Theme.foregroundStrong
                     font.pixelSize: 14
@@ -200,18 +200,18 @@ Item {
                     }
                 }
 
-                BarText {
+                SelectableText {
                     width: parent.width
-                    wrapMode: Text.Wrap
+                    wrapMode: TextEdit.Wrap
                     text: entry.item.input?.text ?? ""
                     color: Theme.foregroundStrong
                     font.pixelSize: 14
                 }
 
-                BarText {
+                SelectableText {
                     width: parent.width
                     visible: card.result?.error === true
-                    wrapMode: Text.Wrap
+                    wrapMode: TextEdit.Wrap
                     text: card.result?.text ?? ""
                     color: Theme.red
                     font.pixelSize: 13
@@ -267,11 +267,11 @@ Item {
                 }
             }
 
-            BarText {
+            SelectableText {
                 x: 24
                 width: parent.width - x
                 visible: entry.open
-                wrapMode: Text.Wrap
+                wrapMode: TextEdit.Wrap
                 text: entry.item.text ?? ""
                 color: Theme.foregroundMuted
                 font.pixelSize: 14
@@ -353,16 +353,16 @@ Item {
                     }
                 }
 
-                BarText {
+                SelectableText {
                     width: parent.width
-                    wrapMode: Text.Wrap
+                    wrapMode: TextEdit.Wrap
                     text: given.what
                     font.pixelSize: 14
                 }
 
-                BarText {
+                SelectableText {
                     width: parent.width
-                    wrapMode: Text.Wrap
+                    wrapMode: TextEdit.Wrap
                     text: `You said: “${given.input.words}”`
                     color: Theme.foregroundMuted
                     font.pixelSize: 14

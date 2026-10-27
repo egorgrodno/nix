@@ -121,9 +121,9 @@ Item {
                     }
                 }
 
-                BarText {
+                SelectableText {
                     width: parent.width
-                    wrapMode: Text.Wrap
+                    wrapMode: TextEdit.Wrap
                     text: entry.item.text ?? ""
                     color: card.queued ? Theme.foregroundMuted : Theme.foregroundStrong
                     font.pixelSize: 14
@@ -169,11 +169,11 @@ Item {
                     aside: BosunLook.ago(entry.item.at, entry.conversation.now)
                 }
 
-                BarText {
+                SelectableText {
                     x: 24
                     width: parent.width - x
                     visible: entry.open && task.details !== ""
-                    wrapMode: Text.WrapAnywhere
+                    wrapMode: TextEdit.WrapAnywhere
                     text: task.details
                     color: Theme.foregroundMuted
                     font.family: Theme.fontMono
@@ -218,11 +218,11 @@ Item {
                 opens: parent.body !== ""
             }
 
-            BarText {
+            SelectableText {
                 x: 24
                 width: parent.width - x
                 visible: entry.open && parent.body !== ""
-                wrapMode: Text.Wrap
+                wrapMode: TextEdit.Wrap
                 text: parent.body
                 color: Theme.foregroundMuted
                 font.family: entry.kind === "command" ? Theme.fontMono : Theme.fontUI

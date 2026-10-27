@@ -36,13 +36,13 @@ Column {
             return Theme.tint(0.06);
         }
 
-        BarText {
+        SelectableText {
             id: blockText
 
             x: block.boxed ? (block.kind === "flag" ? 8 : 12) : 0
             y: block.boxed ? (block.kind === "flag" ? 3 : 10) : 0
             width: parent.width - 2 * x
-            wrapMode: Text.Wrap
+            wrapMode: TextEdit.Wrap
             font.family: block.mono ? Theme.fontMono : Theme.fontUI
             font.pixelSize: block.mono ? 13 : 14
             color: block.kind === "flag" ? Theme.yellow : block.kind === "note" ? Theme.foregroundMain : Theme.foregroundStrong

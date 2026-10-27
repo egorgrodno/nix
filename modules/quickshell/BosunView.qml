@@ -9,8 +9,9 @@ import Quickshell
 // sections, which can show the sidebar beside it again. There the Log becomes
 // a table with the selected entry whole beside it, and any other pane keeps to
 // a column narrow enough to read. Keys act only while no text field has
-// focus, which starts in the sidebar. Approving, denying, pausing and clearing
-// a conversation by key take a second press of the same key within three
+// focus, which starts in the sidebar, and Ctrl+C copies the text the mouse
+// selected, which never takes it. Approving, denying, pausing and clearing a
+// conversation by key take a second press of the same key within three
 // seconds, and so do Pause, Kill and Clear by click: the first arms and lights
 // the button, and any other key or a move disarms it. Approve and Deny act on
 // a single click.
@@ -270,6 +271,8 @@ Item {
         const was = armed;
         armed = "";
         killing = "";
+        if (event.matches(StandardKey.Copy))
+            return MouseSelection.copy();
         if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))
             return false;
         const onLog = logShown && (logTable.activeFocus || rail.activeFocus);

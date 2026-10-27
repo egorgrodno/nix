@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 // An assistant's text as Markdown, each fenced code block on a tint in
-// monospace.
+// monospace, and all of it selectable, a block at a time.
 Item {
     id: root
 
@@ -66,7 +66,7 @@ Item {
                 Component {
                     id: prose
 
-                    Markdown {
+                    SelectableMarkdown {
                         markdown: block.modelData.text
                         color: root.color
                         font.pixelSize: 14
@@ -81,13 +81,13 @@ Item {
                         radius: 4
                         color: Theme.tint(0.06)
 
-                        BarText {
+                        SelectableText {
                             id: codeText
 
                             x: 12
                             y: 10
                             width: parent.width - 2 * x
-                            wrapMode: Text.WrapAnywhere
+                            wrapMode: TextEdit.WrapAnywhere
                             text: block.modelData.text
                             color: root.color
                             font.family: Theme.fontMono
