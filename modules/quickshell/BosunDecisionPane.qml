@@ -299,6 +299,10 @@ BosunPane {
                             keys: ["r"],
                             text: "answer"
                         },
+                        {
+                            keys: ["Ctrl", "Enter"],
+                            text: "send"
+                        },
                         move];
                 return [move];
             }

@@ -104,7 +104,7 @@ BosunPane {
         BosunHints {
             model: [
                 {
-                    keys: ["Enter"],
+                    keys: ["Ctrl", "Enter"],
                     text: "send"
                 },
                 {

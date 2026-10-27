@@ -1,15 +1,18 @@
 import QtQuick
 
-// A line of text and a glyph that sends it, as Return does, then clears. Tab
-// and Escape leave it, for the panel to say where to.
+// Text that grows to a few lines and then scrolls, and a glyph that sends it,
+// as Ctrl+Enter does, then clears. Enter starts a line. Tab and Escape leave
+// it, for the panel to say where to.
 Rectangle {
     id: field
 
     property string placeholder
-    // Off for a field that Return alone sends, as the note Deny takes.
+    // Off for a single line that Return alone sends, as the note Deny takes,
+    // whose caller sets the height.
     property bool sendGlyph: true
     property alias text: input.text
     readonly property bool focused: input.activeFocus
+    readonly property int maxLines: 6
     // What BosunKept keeps the text under until it is sent, or "" to keep
     // none. A field that serves many keys shows each one's own.
     property string draftKey: ""
@@ -36,39 +39,73 @@ Rectangle {
         input.forceActiveFocus();
     }
 
-    height: 40
+    height: sendGlyph ? Math.min(Math.max(40, input.implicitHeight), maxLines * metrics.lineSpacing + 20) : 40
     radius: Theme.radius - 4
     color: Theme.tint(0.06)
     border.color: input.activeFocus ? Theme.blue : Theme.tint(0.12)
     border.width: 1
 
-    TextInput {
-        id: input
+    FontMetrics {
+        id: metrics
+
+        font: input.font
+    }
+
+    Flickable {
+        id: scroller
 
         anchors.left: parent.left
         anchors.leftMargin: 12
         anchors.right: field.sendGlyph ? sendButton.left : parent.right
         anchors.rightMargin: field.sendGlyph ? 8 : 12
-        anchors.verticalCenter: parent.verticalCenter
+        anchors.top: parent.top
+        anchors.bottom: parent.bottom
         clip: true
-        color: Theme.foregroundStrong
-        selectionColor: Theme.blue
-        selectByMouse: true
-        font.family: Theme.fontUI
-        font.pixelSize: 14
-        font.hintingPreference: Font.PreferFullHinting
-        renderType: Text.CurveRendering
-        Keys.onReturnPressed: field.send()
-        Keys.onEnterPressed: field.send()
-        Keys.onTabPressed: field.leave()
-        Keys.onEscapePressed: field.leave()
+        contentWidth: width
+        contentHeight: input.height
+        boundsBehavior: Flickable.StopAtBounds
+        interactive: contentHeight > height
 
-        BarText {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: input.text === ""
-            text: field.placeholder
-            color: Theme.foregroundMuted
+        TextEdit {
+            id: input
+
+            width: scroller.width
+            // Centres a single line in whatever height the caller gave.
+            topPadding: field.sendGlyph ? 10 : Math.max(0, (field.height - metrics.lineSpacing) / 2)
+            bottomPadding: topPadding
+            wrapMode: TextEdit.Wrap
+            color: Theme.foregroundStrong
+            selectionColor: Theme.blue
+            selectByMouse: true
+            font.family: Theme.fontUI
             font.pixelSize: 14
+            font.hintingPreference: Font.PreferFullHinting
+            renderType: Text.CurveRendering
+            onCursorRectangleChanged: {
+                const r = cursorRectangle;
+                if (r.y < scroller.contentY)
+                    scroller.contentY = r.y;
+                else if (r.y + r.height > scroller.contentY + scroller.height)
+                    scroller.contentY = r.y + r.height - scroller.height;
+            }
+            Keys.onPressed: event => {
+                if (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter)
+                    return;
+                if (event.modifiers & Qt.ControlModifier || !field.sendGlyph) {
+                    field.send();
+                    event.accepted = true;
+                }
+            }
+            Keys.onTabPressed: field.leave()
+            Keys.onEscapePressed: field.leave()
+
+            BarText {
+                y: input.topPadding
+                visible: input.text === ""
+                text: field.placeholder
+                color: Theme.foregroundMuted
+                font.pixelSize: 14
+            }
         }
     }
 
@@ -78,7 +115,7 @@ Rectangle {
         visible: field.sendGlyph
         anchors.right: parent.right
         anchors.rightMargin: 12
-        anchors.verticalCenter: parent.verticalCenter
+        y: (40 - implicitHeight) / 2
         text: BosunLook.send
         color: input.text !== "" && sendMouse.containsMouse ? Theme.foregroundStrong : Theme.foregroundMuted
 

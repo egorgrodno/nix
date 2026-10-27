@@ -136,7 +136,7 @@ BosunPane {
                 const hints = [];
                 if (composer.visible)
                     hints.push({
-                        keys: ["Enter"],
+                        keys: ["Ctrl", "Enter"],
                         text: "send"
                     }, {
                         keys: ["Esc"],
