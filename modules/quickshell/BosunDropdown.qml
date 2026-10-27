@@ -5,9 +5,10 @@ import QtQuick
 // A compact button showing the current value, which opens a small menu of the
 // values under it. The menu is an item of the panel, not a window of its own:
 // a popup window would leave the panel's focus grab, and clear it. Enter,
-// Space and Down open it from the keyboard; Down, Up, j and k move; Enter and
-// Space pick; Escape closes it. It closes as the value changes, as focus
-// leaves, as the button disables or hides, and with the panel.
+// Space and Down open it from the keyboard; Down, Up and the layout's down and
+// up keys move; Enter and Space pick; Escape closes it. It closes as the value
+// changes, as focus leaves, as the button disables or hides, and with the
+// panel.
 Item {
     id: dropdown
 
@@ -64,9 +65,9 @@ Item {
             return;
         }
         event.accepted = true;
-        if (key === Qt.Key_Down || event.text === "j")
+        if (key === Qt.Key_Down || event.text === Host.directions.down)
             index = Math.min(index + 1, entries.length - 1);
-        else if (key === Qt.Key_Up || event.text === "k")
+        else if (key === Qt.Key_Up || event.text === Host.directions.up)
             index = Math.max(index - 1, 0);
         else if ([Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space].includes(key))
             pick(entries[index]);
