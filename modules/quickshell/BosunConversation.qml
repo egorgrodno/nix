@@ -205,6 +205,10 @@ Item {
 
         interval: 0
         onTriggered: {
+            // A scroll up lays out the entries it reaches, which restarts
+            // this before the view stops following.
+            if (!conversation.following)
+                return;
             conversation.restoring = true;
             list.positionViewAtEnd();
             conversation.restoring = false;
