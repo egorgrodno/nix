@@ -3,7 +3,8 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 // Todoist's Markdown, wrapped: links and bare URLs, which open in the browser,
-// code, bold, italics, list items and headings; anything else as typed.
+// code, bold, italics, list items, headings and pipe tables; anything else as
+// typed.
 // Rich text, as StyledText drops a font's face, which code needs. Rich text
 // takes a link's colour from CSS, not from `linkColor`.
 BarText {
@@ -24,17 +25,71 @@ BarText {
         const link = (url, label) => keep(`<a href="${escape(url)}" style="color: ${Theme.blue}">${escape(label)}</a>`);
         const code = text => keep(`&nbsp;<span style="font-family: '${Theme.fontMono}', monospace">${escape(text)}</span>&nbsp;`);
         const bullet = keep(`\u00a0\u00a0<span style="color: ${Theme.foregroundMuted}">•</span>\u00a0`);
-        return restore(markdown.split("\n").map(line => {
-            const heading = /^#{1,6}\s+/.test(line);
-            let html = line.replace(/^#{1,6}\s+/, "").replace(/^\s*[-*+]\s+/, bullet).replace(/`([^`]+)`/g, (_, text) => code(text)).replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => link(url, label)).replace(/\bhttps?:\/\/[^\s<>]*[^\s<>.,;:!?'")\]]/g, url => link(url, url));
-            html = escape(html).replace(/\*\*(.+?)\*\*|__(.+?)__/g, (_, a, b) => `<b>${a ?? b}</b>`).replace(/(^|[^\w*])\*(?!\s)(.+?)\*(?![\w*])/g, "$1<i>$2</i>").replace(/(^|\W)_(?!\s)(.+?)_(?!\w)/g, "$1<i>$2</i>");
-            return heading ? `<b>${html}</b>` : html;
-        }).join("<br>"));
+        const inline = text => {
+            const html = text.replace(/`([^`]+)`/g, (_, text) => code(text)).replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => link(url, label)).replace(/\bhttps?:\/\/[^\s<>]*[^\s<>.,;:!?'")\]]/g, url => link(url, url));
+            return escape(html).replace(/\*\*(.+?)\*\*|__(.+?)__/g, (_, a, b) => `<b>${a ?? b}</b>`).replace(/(^|[^\w*])\*(?!\s)(.+?)\*(?![\w*])/g, "$1<i>$2</i>").replace(/(^|\W)_(?!\s)(.+?)_(?!\w)/g, "$1<i>$2</i>");
+        };
+        const lines = markdown.split("\n");
+        // Each line's HTML, or a table's, which is a block of its own and
+        // takes no break around it. Qt folds the first break after a table
+        // into its end, so an empty line there takes one of its own.
+        const out = [];
+        for (let i = 0; i < lines.length; i++) {
+            const head = tableCells(lines[i]);
+            const rule = i + 1 < lines.length ? tableCells(lines[i + 1]) : null;
+            if (head && rule?.length === head.length && rule.every(cell => /^:?-+:?$/.test(cell))) {
+                const rows = [head];
+                for (i += 2; i < lines.length && lines[i].includes("|"); i++)
+                    rows.push(tableCells(lines[i]));
+                i--;
+                out.push({
+                    block: true,
+                    html: table(rows, rule, inline)
+                });
+                continue;
+            }
+            const heading = /^#{1,6}\s+/.test(lines[i]);
+            const html = inline(lines[i].replace(/^#{1,6}\s+/, "").replace(/^\s*[-*+]\s+/, bullet));
+            out.push({
+                block: false,
+                html: heading ? `<b>${html}</b>` : html
+            });
+        }
+        return restore(out.map((part, i) => {
+            if (i === 0 || part.block)
+                return part.html;
+            return out[i - 1].block ? part.html || "<br>" : `<br>${part.html}`;
+        }).join(""));
+    }
+
+    // A table row's cells, trimmed, or null for a line without a pipe. A
+    // pipe escaped with a backslash stays in its cell.
+    function tableCells(line) {
+        if (!line.includes("|"))
+            return null;
+        const cells = line.trim().replace(/\\\|/g, "\u0002").replace(/^\|/, "").replace(/\|$/, "").split("|");
+        return cells.map(cell => cell.trim().replace(/\u0002/g, "|"));
+    }
+
+    // GitHub's pipe table: the header row on a tint, each column aligned as
+    // its rule's colons say, every other row tinted faintly, and a hairline
+    // between the cells. A row short of cells is filled out, and cells past
+    // the header's count are dropped.
+    function table(rows, rule, inline) {
+        const aligns = rule.map(cell => cell.endsWith(":") ? (cell.startsWith(":") ? "center" : "right") : "left");
+        const row = (cells, i) => {
+            const tag = i === 0 ? "th" : "td";
+            const tint = i === 0 ? Theme.tint(0.08) : i % 2 === 0 ? Theme.tint(0.03) : "transparent";
+            return `<tr style="background-color: ${tint}">${aligns.map((align, c) => `<${tag} align="${align}">${inline(cells[c] ?? "")}</${tag}>`).join("")}</tr>`;
+        };
+        return `<table cellspacing="0" cellpadding="6" border="1" style="border-collapse: collapse; border-style: solid; border-color: ${Theme.tint(0.15)}">${rows.map(row).join("")}</table>`;
     }
 
     text: styled(markdown)
     textFormat: Text.RichText
-    wrapMode: Text.Wrap
+    // A word too long for its line, or for a table's cell, breaks anywhere,
+    // so a wide table wraps within the width rather than running past it.
+    wrapMode: Text.WrapAtWordBoundaryOrAnywhere
     onLinkActivated: link => Launcher.run([Programs.xdgOpen, link])
 
     // The code spans' rounded backgrounds, one a line a span covers. Rich
@@ -104,7 +159,7 @@ BarText {
                 readOnly: true
                 text: root.text
                 textFormat: TextEdit.RichText
-                wrapMode: TextEdit.Wrap
+                wrapMode: TextEdit.WrapAtWordBoundaryOrAnywhere
                 font: root.font
                 renderType: root.renderType
             }
