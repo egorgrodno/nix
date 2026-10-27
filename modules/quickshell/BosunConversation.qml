@@ -90,6 +90,13 @@ Item {
     // and follows its end before the feed's first page comes, and a place
     // stored then would replace the one kept.
     property bool placed: false
+    // While the panel the conversation opens with still animates in, which
+    // no rows are built under: they would stall its frames. A conversation
+    // that comes later, as a pane the panel switches to, never enters.
+    property bool entering: !Bosun.panelEntered
+    // Whether the feed's first page came while `entering`, and waits for its
+    // rows.
+    property bool openedEarly: false
 
     // Turns the feed's entries into those shown, as BosunDesk.shape does for
     // the desk; null shows them as they come.
@@ -251,6 +258,15 @@ Item {
             });
     }
 
+    // The rows `steady` hands out, taken as the feed's page merges in, so
+    // that the rows built once `entering` ends do not arrive animating.
+    readonly property var rows: steady(fold((shape ? shape(feed.entries) : feed.entries).filter(e => e.kind !== "meta" && !(e.kind === "queued" && e.taken))))
+
+    onEnteringChanged: if (!entering && openedEarly) {
+        openedEarly = false;
+        restore(scrollKey !== "" ? BosunKept.scroll(scrollKey) : null);
+    }
+
     onNodeChanged: {
         flipped = {};
         placed = false;
@@ -314,7 +330,12 @@ Item {
         live: conversation.live
         onPrepending: kept = conversation.position()
         onPrepended: conversation.restore(kept)
-        onOpened: conversation.restore(conversation.scrollKey !== "" ? BosunKept.scroll(conversation.scrollKey) : null)
+        onOpened: {
+            if (conversation.entering)
+                conversation.openedEarly = true;
+            else
+                conversation.restore(conversation.scrollKey !== "" ? BosunKept.scroll(conversation.scrollKey) : null);
+        }
         onEntriesChanged: conversation.settle()
     }
 
@@ -406,6 +427,13 @@ Item {
         easing.type: Easing.OutCubic
     }
 
+    // In case the panel never reports its animation done.
+    Timer {
+        running: conversation.entering
+        interval: 1000
+        onTriggered: conversation.entering = false
+    }
+
     // Ticks the times, each second in a turn, as a running call counts them.
     Timer {
         running: conversation.visible
@@ -432,7 +460,7 @@ Item {
             id: shown
 
             objectProp: "id"
-            values: conversation.steady(conversation.fold((conversation.shape ? conversation.shape(feed.entries) : feed.entries).filter(e => e.kind !== "meta" && !(e.kind === "queued" && e.taken))))
+            values: conversation.entering ? [] : conversation.rows
         }
 
         delegate: BosunEntry {

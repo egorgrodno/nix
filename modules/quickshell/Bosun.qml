@@ -18,6 +18,9 @@ Singleton {
 
     // False until the daemon answers, as on a host that runs none.
     property bool connected: false
+    // False from when the panel opens until its open animation finishes, and
+    // true with no panel.
+    property bool panelEntered: true
     // While `bosun pause` holds every session stopped, until `bosun unpause`.
     property bool paused: false
     // "pause" or "unpause" while the panel's runs: each stops or resumes the

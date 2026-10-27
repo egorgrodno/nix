@@ -9,6 +9,10 @@ Panel {
     readonly property int areaWidth: (screen?.width ?? 1400) - 2 * Theme.outerGap
     readonly property int areaHeight: (screen?.height ?? 880) - 2 * (Theme.barHeight + Theme.outerGap)
 
+    onEnteredChanged: Bosun.panelEntered = entered
+    Component.onCompleted: Bosun.panelEntered = false
+    Component.onDestruction: Bosun.panelEntered = true
+
     boxWidth: view.expanded ? areaWidth : Math.min(1400, areaWidth)
     padding: 0
     // The surface spans the screen from the start, so expanding never resizes

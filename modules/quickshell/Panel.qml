@@ -33,6 +33,8 @@ PanelWindow {
     // content that arrives as the panel opens, as scanned networks do, grows
     // it smoothly rather than in a jump.
     property bool settled: false
+    // True once the open animation has finished.
+    property bool entered: false
     // Between the box's edge and the content.
     property int padding: 20
     // Where the keyboard goes from a text field a press lands outside, unless
@@ -174,6 +176,8 @@ PanelWindow {
                 NumberAnimation {
                     duration: 200
                     easing.type: Easing.OutExpo
+                    onRunningChanged: if (!running && panel.open)
+                        panel.entered = true
                 }
             }
 
