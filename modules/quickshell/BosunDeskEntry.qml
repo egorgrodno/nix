@@ -14,16 +14,18 @@ Item {
     // The BosunConversation it sits in.
     required property var conversation
     property bool open: false
+    readonly property real bubbleWidth: Math.min(width * 0.75, 640)
+    readonly property real cardWidth: Math.min(width, 700)
 
     signal toggled
 
     width: parent?.width ?? 0
     height: loader.height
 
+    // Unsized, as a Loader with a width stretches a card to it.
     Loader {
         id: loader
 
-        width: parent.width
         sourceComponent: {
             switch (entry.item.kind) {
             case "desk-you":
@@ -48,13 +50,14 @@ Item {
 
             readonly property bool waits: entry.item.kind === "desk-pending"
 
+            width: entry.width
             height: bubbleBox.height + (waits ? waitsText.height + 4 : 0)
 
             Rectangle {
                 id: bubbleBox
 
                 anchors.right: parent.right
-                width: Math.min(parent.width * 0.75, bubbleText.implicitWidth + 24)
+                width: Math.min(entry.bubbleWidth, bubbleText.implicitWidth + 24)
                 height: bubbleText.implicitHeight + 20
                 radius: Theme.radius - 4
                 color: said.waits ? "transparent" : Theme.alpha(Theme.blue, 0.16)
@@ -66,7 +69,7 @@ Item {
 
                     x: 12
                     y: 10
-                    width: Math.min(implicitWidth, entry.width * 0.75 - 24)
+                    width: Math.min(implicitWidth, entry.bubbleWidth - 24)
                     wrapMode: Text.Wrap
                     text: entry.item.text ?? ""
                     color: said.waits ? Theme.foregroundMuted : Theme.foregroundStrong
@@ -90,6 +93,7 @@ Item {
         id: answer
 
         Column {
+            width: entry.width
             spacing: 8
 
             BosunMarkdown {
@@ -129,7 +133,7 @@ Item {
             readonly property var result: entry.item.result ?? null
             readonly property var outcome: BosunDesk.outcome(entry.item.input?.text ?? "", entry.item.at)
 
-            width: Math.min(parent?.width ?? 0, 720)
+            width: entry.cardWidth
             height: cardBody.implicitHeight + 24
             radius: Theme.radius - 4
             color: Theme.tint(0.05)
@@ -217,6 +221,7 @@ Item {
         id: masterLine
 
         Column {
+            width: entry.width
             spacing: 6
 
             Item {
@@ -289,7 +294,7 @@ Item {
                 return `Answered: ${input.answer ?? ""}`;
             }
 
-            width: Math.min(parent?.width ?? 0, 720)
+            width: entry.cardWidth
             height: givenBody.implicitHeight + 24
             radius: Theme.radius - 4
             color: Theme.tint(0.05)
