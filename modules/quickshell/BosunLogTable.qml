@@ -359,6 +359,26 @@ Item {
         delegate: EntryRow {}
     }
 
+    // Takes the view back to the newest entry, at the top, clear of the
+    // scroll bar.
+    BosunJumpButton {
+        x: list.x + list.width - width - 20
+        y: list.y + 12
+        glyph: BosunLook.arrowUp
+        shown: !list.atYBeginning
+        onClicked: top.restart()
+    }
+
+    NumberAnimation {
+        id: top
+
+        target: list
+        property: "contentY"
+        to: list.originY
+        duration: 200
+        easing.type: Easing.OutCubic
+    }
+
     Caption {
         anchors.horizontalCenter: list.horizontalCenter
         y: list.y + 24

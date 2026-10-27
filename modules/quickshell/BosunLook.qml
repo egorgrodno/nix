@@ -32,6 +32,8 @@ Singleton {
     readonly property string dockLeft: "\u{F10AA}"
     readonly property string filter: "\u{F0236}"
     readonly property string chevronDown: "\u{F0140}"
+    readonly property string arrowDown: "\u{F0045}"
+    readonly property string arrowUp: "\u{F005D}"
     readonly property string cancel: "\u{F073A}"
     readonly property string chevronRight: "\u{F0142}"
     readonly property string message: "\u{F12F5}"

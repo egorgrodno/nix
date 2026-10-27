@@ -18,6 +18,9 @@ ScrollBar {
     policy: ScrollBar.AlwaysOn
     visible: size < 1
     hoverEnabled: true
+    // A long view would shrink the thumb past grabbing; its travel shrinks
+    // with it.
+    minimumSize: height > 0 ? Math.min(1, 36 / height) : 0
     onPositionChanged: poke()
     onHoveredChanged: poke()
     onPressedChanged: poke()
@@ -37,6 +40,11 @@ ScrollBar {
     contentItem: Item {
         opacity: bar.shown ? 1 : 0
 
+        // The thumb's own span, not the track around it.
+        HoverHandler {
+            id: overThumb
+        }
+
         Behavior on opacity {
             NumberAnimation {
                 duration: 180
@@ -53,7 +61,14 @@ ScrollBar {
             anchors.rightMargin: 2
             width: bar.hovered || bar.pressed ? 8 : 4
             radius: width / 2
-            color: Theme.tint(0.25)
+            color: overThumb.hovered || bar.pressed ? Theme.tint(0.5) : Theme.tint(0.25)
+
+            Behavior on color {
+                ColorAnimation {
+                    duration: 150
+                    easing.type: Easing.OutCubic
+                }
+            }
 
             Behavior on width {
                 NumberAnimation {

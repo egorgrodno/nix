@@ -450,6 +450,26 @@ Item {
         ScrollBar.vertical: BosunScrollBar {}
     }
 
+    // Takes the view back to the newest entry and pins it there, as an entry
+    // arriving does. It rides above the footer's status row and prompt card
+    // while they are in view, and stays clear of the scroll bar.
+    BosunJumpButton {
+        id: jump
+
+        readonly property real footerShown: Math.max(0, list.contentY + list.height - (list.originY + list.contentHeight - (list.footerItem?.height ?? 0)))
+
+        anchors.right: parent.right
+        anchors.rightMargin: 20
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 12 + footerShown
+        shown: list.contentHeight > list.height && !list.atYEnd
+        onClicked: {
+            conversation.shownBefore.glide = true;
+            conversation.following = true;
+            toEnd.restart();
+        }
+    }
+
     // Opens to its content's height with a fade, and closes the same way, so
     // the list's footer grows and shrinks rather than snapping. The list
     // follows the newest entry through it as through any growth.
