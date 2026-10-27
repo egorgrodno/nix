@@ -43,7 +43,8 @@ BosunPane {
     function keepForm() {
         if (!restored)
             return;
-        const empty = nameField.text === "" && promptField.text === "" && repo === "" && model === "" && effort === "";
+        // The repository preselected is no draft.
+        const empty = nameField.text === "" && promptField.text === "" && [repos[0] ?? "", ""].includes(repo) && model === "" && effort === "";
         BosunKept.keepDraft("spawn", empty ? null : {
             name: nameField.text,
             repo: repo,
@@ -102,7 +103,12 @@ BosunPane {
         id: repoFinder
 
         stdout: StdioCollector {
-            onStreamFinished: pane.repos = text.split("\n").filter(p => p !== "").sort()
+            onStreamFinished: {
+                pane.repos = text.split("\n").filter(p => p !== "").sort();
+                // The first, unless the draft holds one still trusted.
+                if (!pane.repos.includes(pane.repo))
+                    pane.repo = pane.repos[0] ?? "";
+            }
         }
     }
 
@@ -117,7 +123,7 @@ BosunPane {
                 return;
             nameField.text = "";
             promptField.text = "";
-            pane.repo = "";
+            pane.repo = pane.repos[0] ?? "";
             pane.model = "";
             pane.effort = "";
             pane.started();
