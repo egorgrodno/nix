@@ -98,6 +98,8 @@ Rectangle {
         contentHeight: input.height
         boundsBehavior: Flickable.StopAtBounds
         interactive: contentHeight > height
+        // No drag to scroll, as OverlayScrollBar gives the other views.
+        acceptedButtons: Qt.NoButton
 
         TextEdit {
             id: input

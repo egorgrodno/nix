@@ -46,6 +46,16 @@ ScrollBar {
         onTriggered: bar.recent = false
     }
 
+    // The mouse scrolls the view with the wheel or this bar, never by a drag,
+    // which would flick it from a gap between blocks where the user meant to
+    // select text. `interactive: false` would stop the wheel too.
+    Binding {
+        when: bar.parent?.acceptedButtons !== undefined
+        target: bar.parent
+        property: "acceptedButtons"
+        value: Qt.NoButton
+    }
+
     contentItem: Item {
         opacity: bar.shown ? 1 : 0
 
