@@ -218,7 +218,9 @@ Item {
                     tool: entry.item.name
                 })
                 label: BosunLook.toolArg(entry.item) || entry.item.name
-                mono: true
+                mono: BosunLook.activityMono({
+                    tool: entry.item.name
+                })
                 lit: tool.runs
                 aside: {
                     if (tool.runs)
