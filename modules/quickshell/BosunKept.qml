@@ -31,6 +31,10 @@ Singleton {
     property string logText: ""
     // By key, such as "deny:<id>" or "spawn", anything JSON holds.
     property var drafts: ({})
+    // The composer that had the keyboard when the panel closed, as its
+    // `draftKey` and `cursor`, until it takes the keyboard back. Not saved: a
+    // restart of the bar leaves the keyboard where the panel puts it.
+    property var typing: null
     // By key, such as "sidebar" or a selection's key, anything JSON holds.
     property var scrolls: ({})
     // The desk's activity `at` when its pane last showed. The daemon's

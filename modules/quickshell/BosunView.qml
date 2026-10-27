@@ -149,6 +149,18 @@ Item {
         keyboardHome.forceActiveFocus();
     }
 
+    // The composer with the keyboard, for BosunComposer to take it back when
+    // the panel opens again.
+    function keepField() {
+        let item = view.Window.activeFocusItem;
+        while (item && item.draftKey === undefined)
+            item = item.parent;
+        BosunKept.typing = item ? {
+            key: item.draftKey,
+            cursor: item.cursor
+        } : null;
+    }
+
     function currentPane() {
         switch (paneKind) {
         case "decision":

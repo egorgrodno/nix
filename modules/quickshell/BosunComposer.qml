@@ -15,6 +15,7 @@ Rectangle {
     property bool sendGlyph: true
     property alias text: input.text
     readonly property bool focused: input.activeFocus
+    readonly property int cursor: input.cursorPosition
     readonly property int maxLines: 6
     // What BosunKept keeps the text under until it is sent, or "" to keep
     // none. A field that serves many keys shows each one's own.
@@ -27,8 +28,11 @@ Rectangle {
         input.text = BosunKept.draft(draftKey)
     onTextChanged: if (draftKey !== "")
         BosunKept.keepDraft(draftKey, input.text)
-    Component.onCompleted: if (draftKey !== "")
-        input.text = BosunKept.draft(draftKey)
+    Component.onCompleted: {
+        if (draftKey !== "")
+            input.text = BosunKept.draft(draftKey);
+        refocus();
+    }
 
     function send() {
         const text = input.text.trim();
@@ -49,6 +53,26 @@ Rectangle {
 
     function focusIn() {
         input.forceActiveFocus();
+    }
+
+    // Takes the keyboard back, with its cursor, if it had it when the panel
+    // closed. Once the open animation has ended, and the grab with it: until
+    // then Hyprland may hand the keyboard to the window underneath.
+    function refocus() {
+        const kept = BosunKept.typing;
+        if (!Bosun.panelEntered || !visible || draftKey === "" || kept?.key !== draftKey)
+            return;
+        BosunKept.typing = null;
+        input.forceActiveFocus();
+        input.cursorPosition = kept.cursor;
+    }
+
+    Connections {
+        target: Bosun
+
+        function onPanelEnteredChanged() {
+            field.refocus();
+        }
     }
 
     height: sendGlyph ? Math.min(Math.max(40, input.implicitHeight), maxLines * metrics.lineSpacing + 20) : 40

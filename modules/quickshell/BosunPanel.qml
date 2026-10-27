@@ -11,6 +11,8 @@ Panel {
 
     onEnteredChanged: Bosun.panelEntered = entered
     Component.onCompleted: Bosun.panelEntered = false
+    onOpenChanged: if (!open)
+        view.keepField()
     Component.onDestruction: Bosun.panelEntered = true
 
     boxWidth: view.expanded ? areaWidth : Math.min(1400, areaWidth)
