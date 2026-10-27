@@ -299,6 +299,45 @@ Item {
         }
     }
 
+    // What a session does: its tool's glyph and the call in monospace, or the
+    // start of its last message. The glyph font's ink sits about 4.5 px above
+    // its baseline at this size, the call's x-height centre 4 px above its own
+    // and the message's 3.5 px, so the baselines are aligned and the glyph
+    // drops 1 px beside the message.
+    component ActivityLine: Item {
+        id: line
+
+        required property var activity
+        required property color tint
+        readonly property bool mono: BosunLook.activityMono(activity)
+        readonly property real lineBase: Math.max(lineText.baselineOffset, lineGlyph.baselineOffset - drop)
+        readonly property real drop: mono ? 0 : 1
+
+        height: 18
+
+        BarText {
+            id: lineGlyph
+
+            y: line.lineBase + line.drop - baselineOffset
+            text: line.activity ? BosunLook.activityGlyph(line.activity) : ""
+            color: line.tint
+            font.pixelSize: 12
+        }
+
+        BarText {
+            id: lineText
+
+            x: lineGlyph.width + 6
+            y: line.lineBase - baselineOffset
+            width: parent.width - x
+            elide: Text.ElideRight
+            text: line.activity ? BosunLook.activityText(line.activity) : ""
+            color: line.tint
+            font.family: line.mono ? Theme.fontMono : Theme.fontUI
+            font.pixelSize: 12
+        }
+    }
+
     // What every row shares: the selected one's fill and edge, a hover, and
     // a click that selects it.
     component RowBase: Item {
@@ -530,29 +569,13 @@ Item {
             text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
         }
 
-        Row {
+        ActivityLine {
             visible: row.activityLine !== ""
             x: deskName.x
             y: 30
             width: parent.width - x - 20
-            spacing: 6
-
-            BarText {
-                id: deskActivityGlyph
-
-                text: row.activity ? BosunLook.activityGlyph(row.activity) : ""
-                color: row.activityColor
-                font.pixelSize: 12
-            }
-
-            BarText {
-                width: parent.width - deskActivityGlyph.width - parent.spacing
-                elide: Text.ElideRight
-                text: row.activityLine
-                color: row.activityColor
-                font.family: BosunLook.activityMono(row.activity) ? Theme.fontMono : Theme.fontUI
-                font.pixelSize: 12
-            }
+            activity: row.activity
+            tint: row.activityColor
         }
     }
 
@@ -583,8 +606,11 @@ Item {
 
             // The glyph's box holds the spinner's place, so the row keeps its
             // size. Not hidden by opacity, which the spinner would inherit.
+            // Centred 4.5 px above the name's baseline, between the centres
+            // of its caps and its x-height.
             BosunSpinner {
-                anchors.centerIn: parent
+                x: (parent.width - width) / 2
+                y: nameText.y + nameText.baselineOffset - 4.5 - stateGlyph.y - height / 2
                 visible: row.stateKey === "working"
                 size: 12
             }
@@ -640,29 +666,13 @@ Item {
 
         // What the session does, under its name: its tool's glyph and the call
         // in monospace, or the start of its last message. Blue in its turn.
-        Row {
+        ActivityLine {
             visible: row.activityLine !== ""
             x: nameText.x
             y: 30
             width: parent.width - x - 20
-            spacing: 6
-
-            BarText {
-                id: activityGlyph
-
-                text: row.activity ? BosunLook.activityGlyph(row.activity) : ""
-                color: row.activityColor
-                font.pixelSize: 12
-            }
-
-            BarText {
-                width: parent.width - activityGlyph.width - parent.spacing
-                elide: Text.ElideRight
-                text: row.activityLine
-                color: row.activityColor
-                font.family: BosunLook.activityMono(row.activity) ? Theme.fontMono : Theme.fontUI
-                font.pixelSize: 12
-            }
+            activity: row.activity
+            tint: row.activityColor
         }
     }
 
