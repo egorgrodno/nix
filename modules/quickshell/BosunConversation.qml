@@ -392,30 +392,44 @@ Item {
         footer: Column {
             width: ListView.view.width
             topPadding: 12
-            spacing: 12
 
             // What the turn does, as Claude Code's status line says.
-            Row {
-                width: parent.width
-                visible: conversation.inTurn && (conversation.progress?.detail ?? "") !== ""
-                spacing: 8
+            Reveal {
+                id: status
 
-                BosunSpinner {
-                    anchors.verticalCenter: parent.verticalCenter
-                    size: 12
-                }
+                readonly property string detail: conversation.inTurn ? conversation.progress?.detail ?? "" : ""
+                // What it showed last, which stays while it closes.
+                property string last: ""
 
-                BarText {
-                    width: parent.width - 20
-                    elide: Text.ElideRight
-                    text: conversation.progress?.detail ?? ""
-                    color: Theme.blue
-                    font.pixelSize: 13
+                open: detail !== ""
+                onDetailChanged: if (detail !== "")
+                    last = detail
+
+                Row {
+                    width: parent.width
+                    // The 12 between it and the card below.
+                    bottomPadding: 12
+                    spacing: 8
+
+                    BosunSpinner {
+                        anchors.verticalCenter: parent.verticalCenter
+                        size: 12
+                    }
+
+                    BarText {
+                        width: parent.width - 20
+                        elide: Text.ElideRight
+                        text: status.last
+                        color: Theme.blue
+                        font.pixelSize: 13
+                    }
                 }
             }
 
-            NeedsCard {
-                visible: conversation.needs !== ""
+            Reveal {
+                open: conversation.needs !== ""
+
+                NeedsCard {}
             }
         }
 
@@ -436,13 +450,67 @@ Item {
         ScrollBar.vertical: BosunScrollBar {}
     }
 
+    // Opens to its content's height with a fade, and closes the same way, so
+    // the list's footer grows and shrinks rather than snapping. The list
+    // follows the newest entry through it as through any growth.
+    component Reveal: Item {
+        id: reveal
+
+        property bool open: false
+        default property alias content: body.data
+
+        width: parent?.width ?? 0
+        height: open ? body.height : 0
+        visible: height > 0
+        opacity: open ? 1 : 0
+        clip: true
+
+        Behavior on height {
+            NumberAnimation {
+                duration: 200
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Behavior on opacity {
+            NumberAnimation {
+                duration: 200
+                easing.type: Easing.OutCubic
+            }
+        }
+
+        Item {
+            id: body
+
+            width: parent.width
+            height: childrenRect.height
+        }
+    }
+
     // The session's own prompt: a question's options, which answer it as the
     // user, or the permission's decision with Deny and Approve.
     component NeedsCard: Rectangle {
         id: card
 
-        readonly property var decision: conversation.needsDecision
+        // What it showed last, which stays while its Reveal closes.
+        property var need: null
+        property var decision: null
+        readonly property var liveNeed: conversation.need
+        readonly property var liveDecision: conversation.needsDecision
         readonly property bool mine: decision?.holder === "user"
+
+        // The decision follows the need, and ends before it, so it keeps the
+        // last one the need had.
+        onLiveNeedChanged: if (liveNeed) {
+            need = liveNeed;
+            decision = liveDecision;
+        }
+        onLiveDecisionChanged: if (liveNeed)
+            decision = liveDecision
+        Component.onCompleted: {
+            need = liveNeed;
+            decision = liveDecision;
+        }
 
         width: parent?.width ?? 0
         height: cardBody.implicitHeight + 24
@@ -463,11 +531,11 @@ Item {
                 glyph: BosunLook.states.blocked.glyph
                 glyphColor: Theme.yellow
                 text: {
-                    switch (conversation.need?.kind) {
+                    switch (card.need?.kind) {
                     case "question":
                         return `${conversation.node} asks`;
                     case "permission":
-                        return `${conversation.node} asks to use ${conversation.need.tool} in its own prompt`;
+                        return `${conversation.node} asks to use ${card.need.tool} in its own prompt`;
                     }
                     return `${conversation.node} waits on its own prompt`;
                 }
@@ -477,20 +545,20 @@ Item {
                 width: parent.width
                 wrapMode: Text.Wrap
                 text: {
-                    const need = conversation.need;
+                    const need = card.need;
                     return need?.kind === "question" ? need.question : need?.kind === "permission" ? need.detail : need?.text ?? "";
                 }
-                font.family: conversation.need?.kind === "permission" ? Theme.fontMono : Theme.fontUI
-                font.pixelSize: conversation.need?.kind === "permission" ? 13 : 14
+                font.family: card.need?.kind === "permission" ? Theme.fontMono : Theme.fontUI
+                font.pixelSize: card.need?.kind === "permission" ? 13 : 14
             }
 
             Flow {
                 width: parent.width
-                visible: (conversation.need?.options ?? []).length > 0
+                visible: (card.need?.options ?? []).length > 0
                 spacing: 6
 
                 Repeater {
-                    model: conversation.need?.options ?? []
+                    model: card.need?.options ?? []
 
                     TextButton {
                         required property string modelData
