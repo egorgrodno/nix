@@ -178,8 +178,12 @@ Item {
         Qt.callLater(focusPane);
     }
 
+    // Back to the row New worker came from, or, once that row is gone, such
+    // as a decision settled meanwhile, to the first waiting or the desk.
     function closeSpawn() {
-        select(BosunKept.beforeSpawn !== "" ? BosunKept.beforeSpawn : defaultKey());
+        const before = BosunKept.beforeSpawn;
+        const there = before === "desk" || sidebar.keys.includes(before) || BosunKept.liveItem(before) !== null;
+        select(there ? before : defaultKey());
         keyboardHome.forceActiveFocus();
     }
 
