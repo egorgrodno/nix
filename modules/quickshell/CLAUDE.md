@@ -14,6 +14,30 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 
 **Panels.** A panel builds on `Panel.qml`. Its focus grab, layer and fixed-size surface each work around Hyprland, and its comments say how.
 
+**Components.** Before building a control, use one of these. If none fits, extend it rather than copy it. A `component` declared inside a file serves only that file: when a second file needs it, move it to its own file first and use it from both.
+
+| Component | For |
+|---|---|
+| `BarText` | Every piece of text: the bar's face, hinting and curve rendering, plain text |
+| `Caption` | Muted, smaller `BarText` |
+| `Figure` | A changing number in mono, in a slot as wide as `widest` so it never moves its neighbours |
+| `TextButton` | A small labelled button, lit while `lit` is set |
+| `Toggle` | A switch, blue while on |
+| `Chevron` | A ‹ or › that steps what it sits beside |
+| `Meter`, `Spark` | A 0 to 1 level, and a history scaled to its own peak |
+| `Pill`, `Segment` | A right-hand module with an optional tooltip, and a group of modules on a bar |
+| `Tooltip` | The hover tip under or over a module |
+| `OverlayScrollBar` | The scroll bar of every view that scrolls, attached as `ScrollBar.vertical` or `ScrollBar.horizontal` |
+| `BosunDropdown` | A button showing the current value that opens a menu of the others, inside the panel's window |
+| `BosunComposer` | Text input that grows to a few lines and sends on Ctrl+Enter; `sendGlyph: false` makes it a one-line field that Return sends |
+| `BosunMarkdown` | An assistant's text as Markdown, selectable a block at a time |
+| `SelectableText` | `BarText`'s look in a read-only `TextEdit` the mouse selects, for `MouseSelection` to copy |
+| `SelectableMarkdown` | Todoist-style Markdown the mouse selects, built on `SelectableText` |
+| `BosunFact` | A glyph and its words in a header |
+| `BosunSpinner` | A running state's spinner |
+| `BosunJumpButton` | A round button over a scrolling view's corner that jumps to its newest entry |
+| `BosunHints` | Keycaps, each run beside what it does |
+
 **Look.** Meters, sparks and sliders fill in blue, and colour marks state:
 
 | Colour | State |
