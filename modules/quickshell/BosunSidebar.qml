@@ -438,7 +438,7 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: 20
             anchors.baseline: kindGlyph.baseline
-            text: BosunLook.age(Bosun.askedAt(row.decisionId), sidebar.now)
+            text: BosunLook.age(Bosun.askedAt(row.decision ?? { id: row.decisionId }), sidebar.now)
         }
 
         BarText {

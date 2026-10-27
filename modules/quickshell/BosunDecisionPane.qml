@@ -109,7 +109,7 @@ BosunPane {
     facts: [
         BosunFact {
             glyph: BosunLook.clock
-            text: BosunLook.ago(Bosun.askedAt(pane.decisionId), pane.now)
+            text: BosunLook.ago(Bosun.askedAt(pane.decision), pane.now)
         },
         BosunFact {
             glyph: BosunLook.folder

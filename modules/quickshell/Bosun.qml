@@ -302,10 +302,16 @@ Singleton {
         fleet.run("unpause");
     }
 
-    // When the session asked the decision, from its log entry, or "" once
-    // the log no longer holds it.
-    function askedAt(id) {
-        return log.find(e => ["decision", "escalated"].includes(e.kind) && e.decision?.id === id)?.at ?? "";
+    // When the session asked the decision: its `asked`, else that of a log
+    // entry naming it, else when the log had it asked, else "". A daemon
+    // older than `asked` leaves only the log.
+    function askedAt(decision) {
+        if (!decision)
+            return "";
+        if (decision.asked)
+            return decision.asked;
+        const entry = log.find(e => e.decision?.id === decision?.id && (e.decision.asked || ["decision", "escalated"].includes(e.kind)));
+        return entry?.decision?.asked || entry?.at || "";
     }
 
     // `bosun attach` has the daemon resume a stopped session before `claude
