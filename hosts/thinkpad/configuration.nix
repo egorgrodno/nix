@@ -62,6 +62,16 @@
     };
   };
 
+  # The Phoenix display microcontroller (DMCUB) hung in the eDP panel's Panel
+  # Self Refresh and froze the session (egor/nix#131). 0x10 is DC_DISABLE_PSR,
+  # which covers PSR1 and PSR-SU; 0x400 is DC_DISABLE_REPLAY, since Panel Replay
+  # is a separate DMCUB path that DCN 3.1.4 enables by default.
+  boot.kernelParams = [ "amdgpu.dcdebugmask=0x410" ];
+
+  # 176 is sync (16) + remount read-only (32) + reboot (128), so a hang can end
+  # with Alt+SysRq S, U, B and keep the journal's last lines.
+  boot.kernel.sysctl."kernel.sysrq" = 176;
+
   base.hibernate = true;
 
   # Sized to RAM so any workload fits the hibernation image. systemd records the
