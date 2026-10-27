@@ -246,7 +246,8 @@ BosunPane {
                 anchors.verticalCenter: parent.verticalCenter
                 height: 34
                 text: pane.armed === "d" ? `${BosunLook.close}  Press d again to deny` : `${BosunLook.close}  Deny`
-                hoverFill: Theme.alpha(Theme.red, 0.5)
+                hoverFill: Theme.red
+                litTextColor: Theme.backgroundMain
                 lit: pane.armed === "d"
                 onClicked: pane.deny()
             }
@@ -257,7 +258,8 @@ BosunPane {
                 anchors.verticalCenter: parent.verticalCenter
                 height: 34
                 text: pane.armed === "y" ? `${BosunLook.check}  Press y again to approve` : `${BosunLook.check}  Approve`
-                hoverFill: Theme.alpha(Theme.blue, 0.5)
+                hoverFill: Theme.blue
+                litTextColor: Theme.backgroundMain
                 lit: pane.armed === "y"
                 onClicked: pane.approve()
             }

@@ -44,7 +44,6 @@ Singleton {
         const keep = html => `\u0001${kept.push(html) - 1}\u0001`;
         const link = (url, label) => keep(`<a href="${escape(url)}" style="color: ${Theme.blue}">${escape(label)}</a>`);
         const code = text => keep(`&nbsp;<span style="font-family: '${Theme.fontMono}', monospace">${escape(text)}</span>&nbsp;`);
-        const bullet = keep(`\u00a0\u00a0<span style="color: ${Theme.foregroundMuted}">•</span>\u00a0`);
         const inline = text => {
             const html = text.replace(/`([^`]+)`/g, (_, text) => code(text)).replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, label, url) => link(url, label)).replace(/\bhttps?:\/\/[^\s<>]*[^\s<>.,;:!?'")\]]/g, url => link(url, url));
             return escape(html).replace(/\*\*(.+?)\*\*|__(.+?)__/g, (_, a, b) => `<b>${a ?? b}</b>`).replace(/(^|[^\w*])\*(?!\s)(.+?)\*(?![\w*])/g, "$1<i>$2</i>").replace(/(^|\W)_(?!\s)(.+?)_(?!\w)/g, "$1<i>$2</i>");
@@ -69,8 +68,12 @@ Singleton {
                 continue;
             }
             const heading = /^#{1,6}\s+/.test(lines[i]);
-            const html = inline(lines[i].replace(/^#{1,6}\s+/, "").replace(/^\s*[-*+]\s+/, bullet));
-            out.push({
+            const item = /^\s*[-*+]\s+/.test(lines[i]);
+            const html = inline(lines[i].replace(/^#{1,6}\s+/, "").replace(/^\s*[-*+]\s+/, ""));
+            out.push(item ? {
+                block: true,
+                html: bulletRow(html)
+            } : {
                 block: false,
                 html: heading ? `<b>${html}</b>` : html
             });
@@ -80,6 +83,12 @@ Singleton {
                 return part.html;
             return out[i - 1].block ? part.html || "<br>" : `<br>${part.html}`;
         }).join(""));
+    }
+
+    // A bullet and its text as the two cells of a borderless row, so a line
+    // that wraps hangs under the text. The bullet cell's right padding is the gap.
+    function bulletRow(html) {
+        return `<table width="100%" cellspacing="0" cellpadding="0"><tr><td width="28" valign="top" style="padding-left: 6px; padding-right: 12px; color: ${Theme.foregroundMuted}">•</td><td valign="top">${html}</td></tr></table>`;
     }
 
     // A table row's cells, trimmed, or null for a line without a pipe. A

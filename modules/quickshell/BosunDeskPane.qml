@@ -155,10 +155,6 @@ BosunPane {
                         keys: ["C", "C"],
                         text: "clear"
                     });
-                hints.push({
-                    keys: [],
-                    text: "A reply that comes while the panel is closed raises a notification"
-                });
                 return hints;
             }
         }

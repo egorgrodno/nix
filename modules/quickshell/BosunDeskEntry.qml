@@ -145,21 +145,41 @@ Item {
                 spacing: 8
 
                 Item {
+                    id: head
+
+                    // The chips take the label's line while they fit beside it,
+                    // and wrap onto lines below it when they don't.
+                    readonly property bool wraps: headText.implicitWidth + 12 + chips.naturalWidth > width
+
                     width: parent.width
-                    height: Math.max(headText.implicitHeight, chips.height)
+                    height: wraps ? headText.implicitHeight + 8 + chips.height : Math.max(headText.implicitHeight, chips.height)
 
                     Caption {
                         id: headText
 
-                        anchors.verticalCenter: parent.verticalCenter
+                        y: head.wraps ? 0 : (head.height - height) / 2
                         text: `${BosunLook.master}  Instruction ${entry.item.number} to the master`
                     }
 
-                    Row {
+                    Flow {
                         id: chips
 
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
+                        // A Flow's implicitWidth is no single row's, so the row is summed here.
+                        readonly property real naturalWidth: {
+                            let sum = 0;
+                            let shown = 0;
+                            for (const child of children) {
+                                if (!child.visible || child.width === 0)
+                                    continue;
+                                sum += child.width;
+                                shown++;
+                            }
+                            return sum + Math.max(0, shown - 1) * spacing;
+                        }
+
+                        x: head.wraps ? 0 : head.width - width
+                        y: head.wraps ? headText.implicitHeight + 8 : (head.height - height) / 2
+                        width: head.wraps ? head.width : naturalWidth
                         spacing: 8
 
                         Repeater {
@@ -194,7 +214,8 @@ Item {
                         }
 
                         Caption {
-                            anchors.verticalCenter: parent.verticalCenter
+                            height: 22
+                            verticalAlignment: Text.AlignVCenter
                             text: BosunLook.ago(entry.item.at, entry.conversation.now)
                         }
                     }
@@ -405,7 +426,6 @@ Item {
         property color tone: Theme.foregroundMuted
         property var link: null
 
-        anchors.verticalCenter: parent?.verticalCenter
         width: chipText.implicitWidth + 12
         height: chipText.implicitHeight + 4
         radius: 4

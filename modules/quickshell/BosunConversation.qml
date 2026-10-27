@@ -596,14 +596,16 @@ Item {
                 TextButton {
                     visible: card.mine
                     text: `${BosunLook.close}  Deny`
-                    hoverFill: Theme.alpha(Theme.red, 0.5)
+                    hoverFill: Theme.red
+                    litTextColor: Theme.backgroundMain
                     onClicked: Bosun.deny(card.decision.id, "")
                 }
 
                 TextButton {
                     visible: card.mine
                     text: `${BosunLook.check}  Approve`
-                    hoverFill: Theme.alpha(Theme.green, 0.5)
+                    hoverFill: Theme.green
+                    litTextColor: Theme.backgroundMain
                     onClicked: Bosun.approve(card.decision.id)
                 }
 

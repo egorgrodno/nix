@@ -8,6 +8,7 @@ Rectangle {
     property color hoverFill: Theme.tint(0.12)
     property bool lit: false
     property color textColor: Theme.foregroundStrong
+    property color litTextColor: textColor
 
     signal clicked
 
@@ -27,7 +28,7 @@ Rectangle {
         id: label
 
         anchors.centerIn: parent
-        color: button.enabled ? button.textColor : Theme.foregroundMuted
+        color: !button.enabled ? Theme.foregroundMuted : button.lit || mouse.containsMouse ? button.litTextColor : button.textColor
         font.pixelSize: 14
     }
 
