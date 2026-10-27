@@ -373,6 +373,11 @@ Singleton {
             if (event.node === "desk")
                 noteDesk(true);
             break;
+        case "context":
+            sessions = sessions.map(s => s.node === event.node ? Object.assign({}, s, {
+                context: event.context
+            }) : s);
+            break;
         case "decision":
             add(event.decision);
             break;

@@ -588,7 +588,7 @@ Item {
 
             anchors.left: stateGlyph.right
             anchors.leftMargin: 8
-            anchors.right: modelText.left
+            anchors.right: contextBar.visible ? contextBar.left : modelText.left
             anchors.rightMargin: 8
             y: 8
             elide: Text.ElideRight
@@ -604,6 +604,19 @@ Item {
             anchors.rightMargin: 20
             y: 8
             text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
+        }
+
+        // How full its context window is, left of the model.
+        BosunContextBar {
+            id: contextBar
+
+            anchors.right: modelText.text ? modelText.left : parent.right
+            anchors.rightMargin: modelText.text ? 8 : 20
+            y: 13
+            width: 32
+            height: 3
+            visible: row.session?.context !== undefined
+            context: row.session?.context ?? null
         }
 
         // What the session does, under its name: its tool's glyph and the call

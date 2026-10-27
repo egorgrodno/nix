@@ -12,6 +12,7 @@ Singleton {
     readonly property string folder: "\u{F0256}"
     readonly property string branch: "\u{F062C}"
     readonly property string chip: "\u{F061A}"
+    readonly property string gauge: "\u{F029A}"
     readonly property string account: "\u{F0013}"
     readonly property string reserved: "\u{F0ECD}"
     readonly property string notice: "\u{F02FD}"
@@ -704,6 +705,37 @@ Singleton {
         if (m < 60)
             return `${m} min`;
         return m % 60 > 0 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${Math.floor(m / 60)} h`;
+    }
+
+    // "84k" or "1.5M": a token count.
+    function tokens(n) {
+        if (n >= 999500) {
+            const m = Math.round(n / 100000) / 10;
+            return `${m}M`;
+        }
+        return n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}`;
+    }
+
+    // "84k / 1M", or "" for a session with no `context` yet.
+    function contextText(context) {
+        return context ? `${tokens(context.used)} / ${tokens(context.total)}` : "";
+    }
+
+    // How full a session's window is, from 0 to 1.
+    function contextFill(context) {
+        return context && context.total > 0 ? Math.max(0, Math.min(1, context.used / context.total)) : 0;
+    }
+
+    // Blue, then yellow and red as the window fills. A threshold is the lower
+    // of a fraction and a count, since a model answers worse long before a 1M
+    // window is full: yellow from 70 % or 250k, red from 90 % or 500k. That
+    // is 140k and 180k of 200k, and 250k and 500k of 1M.
+    function contextColor(context) {
+        if (!context || !(context.total > 0))
+            return Theme.blue;
+        if (context.used >= Math.min(0.9 * context.total, 500000))
+            return Theme.red;
+        return context.used >= Math.min(0.7 * context.total, 250000) ? Theme.yellow : Theme.blue;
     }
 
     // Milliseconds until a decision's `expires`, or -1 without one.

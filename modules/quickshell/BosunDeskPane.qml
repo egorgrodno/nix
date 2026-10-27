@@ -57,6 +57,9 @@ BosunPane {
             glyph: BosunLook.chip
             text: Bosun.switching === "desk" ? "Switching…" : [pane.session?.model, pane.session?.effort].filter(part => part).join(" ") || (pane.session ? "default model" : "")
         },
+        BosunContext {
+            context: pane.session?.context ?? null
+        },
         BosunFact {
             glyph: BosunLook.eye
             text: "Reads the whole fleet"

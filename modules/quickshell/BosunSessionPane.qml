@@ -94,6 +94,9 @@ BosunPane {
             glyph: BosunLook.chip
             text: [pane.session?.model, pane.session?.effort].filter(part => part).join(" ") || (pane.session ? "default model" : "")
         },
+        BosunContext {
+            context: pane.session?.context ?? null
+        },
         BosunFact {
             glyph: BosunLook.account
             text: pane.session?.parent ? `spawned by ${pane.session.parent}` : ""
