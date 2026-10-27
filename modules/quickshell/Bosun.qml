@@ -177,22 +177,25 @@ Singleton {
     }
 
     // As the newest of one notification, which a later one replaces through
-    // its tag. A click opens the panel on it. A permission takes Deny and
-    // Approve there only when all of it, the master's note included, shows in
-    // the lines a card shows before its expander.
+    // its tag. A click opens the panel on it. The master's note comes first,
+    // in bold, since it may say the decision needs no answer. A permission
+    // takes Deny and Approve there only when all of it, the note included,
+    // shows in the lines a card shows before its expander.
     function notify(decision) {
         const d = decision;
         const kind = kindOf(d);
         const summary = kind === "permission" ? `${d.node} asks to use ${d.tool}` : d.kind === "question" ? `${d.node} asks` : `${d.node} says`;
         const text = kind === "permission" ? callOf(d).filter(b => b.kind !== "note").map(b => b.label ? `${b.label}: ${b.text}` : b.text) : [d.kind === "question" ? d.question : d.note];
-        const lines = text.concat(d.kind !== "notice" && d.note ? [`Master: ${d.note}`] : []).join("\n").split("\n");
+        const note = d.kind !== "notice" && d.note ? `Master: ${d.note}`.split("\n") : [];
+        const lines = note.concat(text.join("\n").split("\n"));
         const whole = lines.length <= 3 && lines.every(line => {
             bodyLine.text = line;
             return bodyLine.advanceWidth <= 280;
         });
         const answers = kind === "permission" && whole ? ["--action=deny=Deny", "--action=approve=Approve"] : [];
         // The bar reads a body as markup.
-        const body = lines.slice(0, 20).join("\n").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const escape = line => line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        const body = lines.slice(0, 20).map((line, i) => i < note.length ? `<b>${escape(line)}</b>` : escape(line)).join("\n");
         notifier.post(d.id, answers.concat(["--", summary, body]));
     }
 

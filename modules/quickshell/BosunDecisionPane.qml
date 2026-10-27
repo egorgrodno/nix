@@ -2,8 +2,8 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 
-// A decision whole: what reserves it and what auto mode refused, the call or
-// the question, why the master passed it on, and its answers. A permission
+// A decision whole: why the master passed it on, what reserves it and what
+// auto mode refused, the call or the question, and its answers. A permission
 // takes Deny, with a note of what to do instead, and Approve, a question a
 // reply, a notice Dismiss. Once settled it stays, faded and unanswerable,
 // until the selection moves.
@@ -141,6 +141,41 @@ BosunPane {
         text: pane.settledText
     }
 
+    // Why the master passed it on, first: it may say the decision needs no
+    // answer. A notice's note is its text.
+    Rectangle {
+        width: parent.width
+        visible: pane.decision?.kind !== "notice" && (pane.decision?.note ?? "") !== ""
+        height: noteColumn.implicitHeight + 24
+        radius: Theme.radius - 4
+        color: Theme.alpha(Theme.blue, 0.12)
+        border.width: 1
+        border.color: Theme.alpha(Theme.blue, 0.4)
+        opacity: pane.live ? 1 : 0.6
+
+        Column {
+            id: noteColumn
+
+            x: 12
+            y: 12
+            width: parent.width - 2 * x
+            spacing: 6
+
+            BosunFact {
+                glyph: BosunLook.master
+                glyphColor: Theme.blue
+                text: "Why the master passed it to you"
+            }
+
+            BarText {
+                width: parent.width
+                wrapMode: Text.Wrap
+                font.pixelSize: 16
+                text: pane.decision?.note ?? ""
+            }
+        }
+    }
+
     Banner {
         visible: (pane.decision?.reserved ?? "") !== ""
         glyph: BosunLook.reserved
@@ -172,26 +207,6 @@ BosunPane {
             model: pane.kind === "permission" ? Bosun.callOf(pane.decision) : []
 
             delegate: BosunCallBlock {}
-        }
-
-        // Why the master passed it on. A notice's note is its text.
-        Column {
-            width: parent.width
-            visible: pane.decision?.kind !== "notice" && (pane.decision?.note ?? "") !== ""
-            topPadding: 4
-            spacing: 4
-
-            BosunFact {
-                glyph: BosunLook.master
-                text: "Why the master passed it to you"
-            }
-
-            BarText {
-                width: parent.width
-                wrapMode: Text.Wrap
-                font.pixelSize: 14
-                text: pane.decision?.note ?? ""
-            }
         }
     }
 
