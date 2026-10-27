@@ -122,6 +122,13 @@ Item {
             select(`log:${entry.seq}`, entry);
     }
 
+    // What a Log entry names, which Enter opens as the log pane's hints say.
+    function openNamed(entry) {
+        const link = BosunLook.logLink(entry);
+        if (link)
+            select(link.key, link.item);
+    }
+
     function setExpanded(on) {
         BosunKept.expanded = on;
         following.restart();
@@ -239,6 +246,8 @@ Item {
         case Qt.Key_Enter:
             if (onLog)
                 logTable.openNamed();
+            else if (logEntry)
+                openNamed(logEntry);
             else
                 focusPane();
             return true;

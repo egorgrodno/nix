@@ -185,6 +185,10 @@ BosunPane {
                 {
                     keys: ["j", "k"],
                     text: "move"
+                },
+                {
+                    keys: ["Enter"],
+                    text: "open what it names"
                 }
             ]
         }
