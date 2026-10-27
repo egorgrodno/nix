@@ -24,6 +24,10 @@ Item {
 
     width: ListView.view?.width ?? 0
     height: loader.height
+    // The list builds every row, which keeps its scroll bar steady, but each
+    // curve-rendered one left in the scene costs every frame. A row more than a
+    // view away leaves the scene and keeps its place.
+    visible: !ListView.view || y + height > ListView.view.contentY - ListView.view.height && y < ListView.view.contentY + 2 * ListView.view.height
     // A fade and a rise that move no other row.
     transform: Translate {
         id: rise

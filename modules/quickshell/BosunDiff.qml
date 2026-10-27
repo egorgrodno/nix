@@ -113,7 +113,7 @@ Item {
 
         // An empty line's no-break space copies as nothing.
         function copied() {
-            return selectedText.replace(/[\u2028\u2029]/g, "\n").replace(/^\u00a0$/gm, "").replace(/\u00a0/g, " ");
+            return chosen().replace(/[\u2028\u2029]/g, "\n").replace(/^\u00a0$/gm, "").replace(/\u00a0/g, " ");
         }
 
         x: 36
@@ -122,6 +122,7 @@ Item {
         wrapMode: TextEdit.WrapAnywhere
         textFormat: TextEdit.RichText
         text: diff.html
+        origin: diff.html
         font.family: Theme.fontMono
         font.pixelSize: 13
         onTextChanged: laidOut++
