@@ -22,12 +22,21 @@ Item {
         conversation.toggle(item.id);
     }
 
+    // The row's height when last shown, or -1 before it is.
+    property real shownHeight: -1
+
     width: ListView.view?.width ?? 0
-    height: loader.height
+    // A hidden row's items see themselves as hidden, and some measure so, as a
+    // Flow summing its visible chips does. Were the row to take that height,
+    // hiding it could bring it back in reach, and `visible` would flip forever.
+    height: shownHeight < 0 ? loader.height : shownHeight
     // The list builds every row, which keeps its scroll bar steady, but each
     // curve-rendered one left in the scene costs every frame. A row more than a
     // view away leaves the scene and keeps its place.
     visible: !ListView.view || y + height > ListView.view.contentY - ListView.view.height && y < ListView.view.contentY + 2 * ListView.view.height
+    // Not at once: a height changed while `visible` is written loops it.
+    onVisibleChanged: if (visible)
+        remeasure.restart()
     // A fade and a rise that move no other row.
     transform: Translate {
         id: rise
@@ -35,6 +44,16 @@ Item {
 
     Component.onCompleted: if (conversation.arrives(item.id))
         arrival.start()
+
+    // Takes the height of a row shown again, whose content may have changed
+    // while it was hidden.
+    Timer {
+        id: remeasure
+
+        interval: 0
+        onTriggered: if (entry.visible)
+            entry.shownHeight = loader.height
+    }
 
     ParallelAnimation {
         id: arrival
@@ -62,6 +81,8 @@ Item {
         id: loader
 
         width: parent.width
+        onHeightChanged: if (entry.visible)
+            entry.shownHeight = height
         sourceComponent: {
             switch (entry.kind) {
             case "prompt":
