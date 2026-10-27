@@ -14,7 +14,7 @@ BosunPane {
     property var decision: null
     // While it still waits on the user.
     property bool live: false
-    // "a" or "d" while a first press has armed Approve or Deny.
+    // "y" or "d" while a first press has armed Approve or Deny.
     property string armed: ""
     readonly property string decisionId: decision?.id ?? ""
     readonly property string kind: decision ? Bosun.kindOf(decision) : ""
@@ -256,9 +256,9 @@ BosunPane {
 
                 anchors.verticalCenter: parent.verticalCenter
                 height: 34
-                text: pane.armed === "a" ? `${BosunLook.check}  Approve?` : `${BosunLook.check}  Approve`
+                text: pane.armed === "y" ? `${BosunLook.check}  Approve?` : `${BosunLook.check}  Approve`
                 hoverFill: Theme.alpha(Theme.blue, 0.5)
-                lit: pane.armed === "a"
+                lit: pane.armed === "y"
                 onClicked: pane.approve()
             }
         },
@@ -281,7 +281,7 @@ BosunPane {
         BosunHints {
             model: {
                 const move = {
-                    keys: ["j", "k"],
+                    keys: [Host.directions.down, Host.directions.up],
                     text: "next decision"
                 };
                 if (!pane.live)
@@ -289,7 +289,7 @@ BosunPane {
                 if (pane.kind === "permission")
                     return [
                         {
-                            keys: ["a", "a"],
+                            keys: ["y", "y"],
                             text: "approve"
                         },
                         {

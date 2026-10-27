@@ -6,7 +6,7 @@ import QtQuick
 Row {
     id: hints
 
-    // [{ keys: ["a", "a"], text: "approve" }, …]
+    // [{ keys: ["y", "y"], text: "approve" }, …]
     property var model: []
 
     spacing: 16

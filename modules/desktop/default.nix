@@ -118,21 +118,7 @@ let
   };
 
   # Hyprland's directional keys: focus, move, and the resize submap.
-  dirs =
-    if config.base.keyboard.layout == "hallmack" then
-      {
-        l = "G";
-        d = "A";
-        u = "E";
-        r = "O";
-      }
-    else
-      {
-        l = "H";
-        d = "J";
-        u = "K";
-        r = "L";
-      };
+  dirs = import ../../lib/direction-keys.nix config.base.keyboard.layout;
 
   # The keyboard and pointer, at the greeter as in the session.
   hyprInput = {

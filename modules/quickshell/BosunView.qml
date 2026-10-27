@@ -23,7 +23,7 @@ Item {
     readonly property string selected: BosunKept.selected
     readonly property var held: BosunKept.held
     readonly property bool expanded: BosunKept.expanded
-    // The key a first press armed: "a", "d" or "p".
+    // The key a first press armed: "y", "d" or "p".
     property string armed: ""
     // The worker a first click on Kill armed.
     property string killing: ""
@@ -269,16 +269,20 @@ Item {
             setExpanded(false);
             return true;
         }
-        const live = decisionLive ? Bosun.kindOf(decision) : "";
         switch (event.text) {
-        case "j":
+        case Host.directions.down:
             move(1);
             return true;
-        case "k":
+        case Host.directions.up:
             move(-1);
             return true;
-        case "a":
-            return live === "permission" && twice("a", was, () => decisionPane.approve());
+        }
+        const live = decisionLive ? Bosun.kindOf(decision) : "";
+        // Each layout's direction keys move, so an action here takes none of
+        // h j k l g a e o, in either case.
+        switch (event.text) {
+        case "y":
+            return live === "permission" && twice("y", was, () => decisionPane.approve());
         case "d":
             return live === "permission" && twice("d", was, () => decisionPane.deny());
         case "D":

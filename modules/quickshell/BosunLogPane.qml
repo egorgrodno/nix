@@ -183,7 +183,7 @@ BosunPane {
         BosunHints {
             model: [
                 {
-                    keys: ["j", "k"],
+                    keys: [Host.directions.down, Host.directions.up],
                     text: "move"
                 },
                 {

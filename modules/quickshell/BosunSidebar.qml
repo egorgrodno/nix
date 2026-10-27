@@ -5,7 +5,7 @@ import QtQuick.Controls.Basic
 import Quickshell
 
 // Waiting on you, Desk, Fleet and the latest three Log entries, as one list
-// that j and k move through. Each row is a key: "decision:<id>", "desk",
+// that the movement keys move through. Each row is a key: "decision:<id>", "desk",
 // "session:<node>" or "log:<seq>". A row reads its session or decision from
 // Bosun by that key, so a row kept across an update shows the update.
 Item {
@@ -88,7 +88,7 @@ Item {
             });
         return rows;
     }
-    // What j and k step through, in order.
+    // What the movement keys step through, in order.
     readonly property var keys: rows.filter(r => !["head", "none"].includes(r.type)).map(r => r.key)
 
     signal chosen(string key)

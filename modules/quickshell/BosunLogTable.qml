@@ -6,7 +6,7 @@ import Quickshell
 
 // The expanded panel's Log: every entry the daemon keeps, newest first, as a
 // table of when, who and what, with the link to what each names. Filtered by
-// kind, by session and by text. j and k move through the rows and Enter opens
+// kind, by session and by text. the movement keys move through the rows and Enter opens
 // what the selected one names.
 Item {
     id: table
@@ -49,7 +49,7 @@ Item {
         return [...names].sort();
     }
 
-    // A row picked, by click or by j and k.
+    // A row picked, by click or by the movement keys.
     signal chosen(var entry)
     // A link followed: the key to select and what to hold for it.
     signal opened(string key, var item)
@@ -386,7 +386,7 @@ Item {
                 text: "back to the normal size"
             },
             {
-                keys: ["j", "k"],
+                keys: [Host.directions.down, Host.directions.up],
                 text: "move"
             },
             {
