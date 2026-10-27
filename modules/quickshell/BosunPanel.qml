@@ -9,7 +9,13 @@ Panel {
     readonly property int areaWidth: (screen?.width ?? 1400) - 2 * Theme.outerGap
     readonly property int areaHeight: (screen?.height ?? 880) - 2 * (Theme.barHeight + Theme.outerGap)
 
-    onEnteredChanged: Bosun.panelEntered = entered
+    // A composer takes the keyboard back as `panelEntered` changes, so a
+    // record none claims then goes, never to take it from the user later.
+    onEnteredChanged: {
+        Bosun.panelEntered = entered;
+        if (entered)
+            BosunKept.typing = null;
+    }
     Component.onCompleted: Bosun.panelEntered = false
     onOpenChanged: if (!open)
         view.keepField()

@@ -28,11 +28,8 @@ Rectangle {
         input.text = BosunKept.draft(draftKey)
     onTextChanged: if (draftKey !== "")
         BosunKept.keepDraft(draftKey, input.text)
-    Component.onCompleted: {
-        if (draftKey !== "")
-            input.text = BosunKept.draft(draftKey);
-        refocus();
-    }
+    Component.onCompleted: if (draftKey !== "")
+        input.text = BosunKept.draft(draftKey)
 
     function send() {
         const text = input.text.trim();
