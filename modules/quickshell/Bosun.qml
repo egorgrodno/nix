@@ -71,9 +71,9 @@ Singleton {
             switching = "";
     }
 
-    // "turn", "blocked" in its own prompt, as a session waiting on a decision
-    // is too, "idle", "paused" in its turn, which unpausing resumes,
-    // "stopped", or "" once gone.
+    // "turn", "blocked" in its own prompt or on an open decision, "idle",
+    // "paused" in its turn, which unpausing resumes, "stopped", or "" once
+    // gone.
     function activityOf(session) {
         if (session.status === "exited")
             return "";
@@ -81,6 +81,8 @@ Singleton {
             return "paused";
         if (session.killed || session.status === "stopped")
             return "stopped";
+        if (decisions.some(d => d.node === session.node))
+            return "blocked";
         switch (session.status) {
         case "waiting":
             return "blocked";

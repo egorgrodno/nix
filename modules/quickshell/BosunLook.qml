@@ -76,7 +76,8 @@ Singleton {
     readonly property var stateOrder: ["working", "blocked", "paused", "limited", "idle", "stopped", "killed"]
 
     // A key of `states`. Claude Code's "waiting" is a session blocked in its
-    // own prompt, as one waiting on a decision is too.
+    // own prompt. One an open decision names is blocked too, whoever holds
+    // it, though Claude Code calls it busy.
     function stateOf(session) {
         if (session.killed)
             return "killed";
@@ -84,6 +85,8 @@ Singleton {
             return "paused";
         if (session.limitedUntil)
             return "limited";
+        if (Bosun.decisions.some(d => d.node === session.node))
+            return "blocked";
         switch (session.status) {
         case "stopped":
         case "exited":
