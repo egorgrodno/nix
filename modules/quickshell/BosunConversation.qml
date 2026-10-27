@@ -74,6 +74,28 @@ Item {
     // it.
     signal opened(string key, var item)
 
+    // Folds each run of thinking into the text or tool call after it, as
+    // `thinking`. A run before anything else keeps its rows, as at the end
+    // of a turn in progress.
+    function fold(entries) {
+        const out = [];
+        let run = [];
+        for (const e of entries) {
+            if (e.kind === "thinking") {
+                run.push(e);
+                continue;
+            }
+            if (run.length > 0 && ["text", "tool", "desk-text"].includes(e.kind))
+                out.push(Object.assign({}, e, {
+                    thinking: run.map(t => (t.text ?? "").trim()).filter(t => t !== "").join("\n\n")
+                }));
+            else
+                out.push(...run, e);
+            run = [];
+        }
+        return out.concat(run);
+    }
+
     function isOpen(id, byDefault) {
         return flipped[id] === true ? !byDefault : byDefault;
     }
@@ -187,7 +209,7 @@ Item {
             id: shown
 
             objectProp: "id"
-            values: (conversation.shape ? conversation.shape(feed.entries) : feed.entries).filter(e => e.kind !== "meta" && !(e.kind === "queued" && e.taken))
+            values: conversation.fold((conversation.shape ? conversation.shape(feed.entries) : feed.entries).filter(e => e.kind !== "meta" && !(e.kind === "queued" && e.taken)))
         }
 
         delegate: BosunEntry {

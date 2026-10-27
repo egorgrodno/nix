@@ -92,11 +92,11 @@ Item {
         Column {
             spacing: 8
 
-            Markdown {
-                width: parent.width
+            BosunMarkdown {
                 markdown: entry.item.text ?? ""
-                color: Theme.foregroundStrong
-                font.pixelSize: 14
+                thinking: entry.item.thinking ?? ""
+                thinkingOpen: entry.conversation.isOpen(`${entry.item.id}/thinking`, false)
+                onThinkingToggled: entry.conversation.toggle(`${entry.item.id}/thinking`)
             }
 
             Flow {

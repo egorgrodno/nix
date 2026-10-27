@@ -16,9 +16,15 @@ Item {
     readonly property var item: modelData
     readonly property string kind: BosunLook.entryKinds.includes(item.kind) ? item.kind : (item.kind ?? "").startsWith("desk-") ? "desk" : "raw"
     readonly property bool open: conversation.isOpen(item.id, kind === "tool" && (item.result?.diff ?? []).length > 0)
+    // Whether the thinking BosunConversation folded into a text shows.
+    readonly property bool thinkingOpen: conversation.isOpen(`${item.id}/thinking`, false)
 
     function toggle() {
         conversation.toggle(item.id);
+    }
+
+    function toggleThinking() {
+        conversation.toggle(`${item.id}/thinking`);
     }
 
     width: ListView.view?.width ?? 0
@@ -100,10 +106,11 @@ Item {
     Component {
         id: textBlock
 
-        Markdown {
+        BosunMarkdown {
             markdown: entry.item.text ?? ""
-            color: Theme.foregroundStrong
-            font.pixelSize: 14
+            thinking: entry.item.thinking ?? ""
+            thinkingOpen: entry.thinkingOpen
+            onThinkingToggled: entry.toggleThinking()
         }
     }
 
@@ -176,6 +183,7 @@ Item {
                 asideColor: tool.runs ? Theme.blue : tool.result?.error ? Theme.red : Theme.foregroundMuted
                 added: tool.hasDiff ? tool.counts.added : -1
                 removed: tool.hasDiff ? tool.counts.removed : -1
+                thought: (entry.item.thinking ?? "") !== ""
             }
 
             Column {
@@ -183,6 +191,16 @@ Item {
                 width: parent.width - x
                 visible: entry.open
                 spacing: 8
+
+                // The thinking BosunConversation folded into the call.
+                BarText {
+                    width: parent.width
+                    visible: (entry.item.thinking ?? "") !== ""
+                    wrapMode: Text.Wrap
+                    text: entry.item.thinking ?? ""
+                    color: Theme.foregroundMuted
+                    font.pixelSize: 14
+                }
 
                 BosunDiff {
                     visible: tool.hasDiff
@@ -248,6 +266,8 @@ Item {
         // A diff's counts, or -1 for none.
         property int added: -1
         property int removed: -1
+        // Whether opening it shows thinking too.
+        property bool thought: false
 
         width: parent?.width ?? 0
         height: 22
@@ -301,6 +321,13 @@ Item {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             spacing: 6
+
+            BarText {
+                visible: line.thought
+                text: BosunLook.thinking
+                color: Theme.foregroundMuted
+                font.pixelSize: 13
+            }
 
             BarText {
                 visible: line.added >= 0
