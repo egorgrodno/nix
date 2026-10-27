@@ -3,18 +3,12 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 // An assistant's text as Markdown, each fenced code block on a tint in
-// monospace. With `thinking`, a glyph at its top right opens the thinking
-// that came before it, above the text.
+// monospace.
 Item {
     id: root
 
     required property string markdown
-    // The thinking folded into the text, or "".
-    property string thinking
-    property bool thinkingOpen: false
     property color color: Theme.foregroundStrong
-
-    signal thinkingToggled
 
     // The text's prose and code blocks, as { code, text }. A fence that never
     // closes runs to the end, as while a message is cut short.
@@ -58,16 +52,6 @@ Item {
         width: parent.width
         spacing: 8
 
-        BarText {
-            x: 24
-            width: parent.width - x
-            visible: root.thinkingOpen && root.thinking !== ""
-            wrapMode: Text.Wrap
-            text: root.thinking
-            color: Theme.foregroundMuted
-            font.pixelSize: 14
-        }
-
         Repeater {
             model: root.blocks(root.markdown)
 
@@ -75,10 +59,8 @@ Item {
                 id: block
 
                 required property var modelData
-                required property int index
 
-                // The glyph sits beside the first block.
-                width: body.width - (index === 0 && root.thinking !== "" ? 28 : 0)
+                width: body.width
                 sourceComponent: modelData.code ? codeBlock : prose
 
                 Component {
@@ -114,33 +96,6 @@ Item {
                     }
                 }
             }
-        }
-    }
-
-    BarText {
-        id: thinkingGlyph
-
-        anchors.right: parent.right
-        y: root.thinkingOpen ? 0 : 2
-        visible: root.thinking !== ""
-        text: BosunLook.thinking
-        color: thinkingHover.hovered || root.thinkingOpen ? Theme.foregroundStrong : Theme.foregroundMuted
-        font.pixelSize: 14
-
-        HoverHandler {
-            id: thinkingHover
-
-            cursorShape: Qt.PointingHandCursor
-        }
-
-        TapHandler {
-            onTapped: root.thinkingToggled()
-        }
-
-        Tooltip {
-            target: thinkingGlyph
-            text: root.thinkingOpen ? "Hide the thinking" : "Show the thinking"
-            hovered: thinkingHover.hovered
         }
     }
 }

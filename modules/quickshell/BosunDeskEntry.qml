@@ -99,9 +99,6 @@ Item {
 
             BosunMarkdown {
                 markdown: entry.item.text ?? ""
-                thinking: entry.item.thinking ?? ""
-                thinkingOpen: entry.conversation.isOpen(`${entry.item.id}/thinking`, false)
-                onThinkingToggled: entry.conversation.toggle(`${entry.item.id}/thinking`)
             }
 
             Flow {

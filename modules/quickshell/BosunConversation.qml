@@ -79,26 +79,26 @@ Item {
     // it.
     signal opened(string key, var item)
 
-    // Folds each run of thinking into the text or tool call after it, as
-    // `thinking`. A run before anything else keeps its rows, as at the end
-    // of a turn in progress.
+    // Leaves thinking out but for one row while the session thinks: in its
+    // turn, with thinking its latest entry before any prompt queued for the
+    // turn. The progress line's state and detail never say thinking. One id
+    // for every such row lets `steady` keep it through a run of thinking.
     function fold(entries) {
+        let latest = null;
+        for (const e of entries)
+            if (!["queued", "desk-pending"].includes(e.kind))
+                latest = e;
+        const thinks = inTurn && latest?.kind === "thinking";
         const out = [];
-        let run = [];
-        for (const e of entries) {
-            if (e.kind === "thinking") {
-                run.push(e);
-                continue;
-            }
-            if (run.length > 0 && ["text", "tool", "desk-text"].includes(e.kind))
-                out.push(Object.assign({}, e, {
-                    thinking: run.map(t => (t.text ?? "").trim()).filter(t => t !== "").join("\n\n")
-                }));
-            else
-                out.push(...run, e);
-            run = [];
-        }
-        return out.concat(run);
+        for (const e of entries)
+            if (e.kind !== "thinking")
+                out.push(e);
+            else if (thinks && e === latest)
+                out.push({
+                    id: "thinking-now",
+                    kind: "thinking"
+                });
+        return out;
     }
 
     // Hands back the row shown before for each entry whose fields are all the
