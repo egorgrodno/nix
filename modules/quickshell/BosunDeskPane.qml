@@ -69,14 +69,6 @@ BosunPane {
         },
         BosunContext {
             context: pane.session?.context ?? null
-        },
-        BosunFact {
-            glyph: BosunLook.eye
-            text: "Reads the whole fleet"
-        },
-        BosunFact {
-            glyph: BosunLook.master
-            text: "Changes go to the master as instructions"
         }
     ]
 
