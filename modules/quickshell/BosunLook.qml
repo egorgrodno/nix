@@ -303,10 +303,10 @@ Singleton {
 
     // The kinds of log entry the panel shows; any other is one bosun cannot
     // show yet.
-    readonly property var logKinds: ["decision", "escalated", "settled", "tell", "message", "spawned", "resumed", "merged", "killed", "paused", "unpaused", "model", "turn_end", "exit", "say", "interrupt", "prompt"]
+    readonly property var logKinds: ["decision", "escalated", "settled", "allowed", "tell", "message", "spawned", "resumed", "merged", "killed", "paused", "unpaused", "model", "turn_end", "exit", "say", "interrupt", "prompt"]
 
     function knows(entry) {
-        return logKinds.includes(entry.kind) && (!["decision", "escalated", "settled"].includes(entry.kind) || entry.decision);
+        return logKinds.includes(entry.kind) && (!["decision", "escalated", "settled", "allowed"].includes(entry.kind) || entry.decision);
     }
 
     // How a settled entry's decision went: "allowed", "denied", "answered",
@@ -360,6 +360,8 @@ Singleton {
                     return `${who} answered ${d.node}`;
                 return `${who} ${outcome} ${decisionName(d)}`;
             }
+        case "allowed":
+            return `${who} allowed ${decisionName(d)} again, as decision ${d.id} did`;
         case "tell":
             return `${who} told ${entry.node}`;
         case "message":
@@ -402,6 +404,8 @@ Singleton {
         switch (entry.kind) {
         case "decision":
         case "escalated":
+            return Bosun.summaryOf(d);
+        case "allowed":
             return Bosun.summaryOf(d);
         case "settled":
             return outcomeOf(entry) === "answered" ? entry.text ?? "" : Bosun.summaryOf(d);
@@ -490,6 +494,8 @@ Singleton {
             if (entry.by === "session")
                 return `Denied ${line(actOf(d, true))} in its own prompt`;
             return `Denied ${d.node} ${line(actOf(d, true))}${entry.text ? `: “${line(entry.text)}”` : ""}`;
+        case "allowed":
+            return d.kind === "permission" ? `Allowed ${d.node} to ${line(actOf(d))} again, as decision ${d.id} did` : `Allowed ${d.node}'s call again, as decision ${d.id} did`;
         case "tell":
         case "message":
             return line(entry.text);
@@ -518,7 +524,7 @@ Singleton {
     function logGroup(entry) {
         if (!knows(entry))
             return "";
-        if (["decision", "escalated", "settled"].includes(entry.kind))
+        if (["decision", "escalated", "settled", "allowed"].includes(entry.kind))
             return "decisions";
         return ["tell", "message"].includes(entry.kind) ? "messages" : "sessions";
     }
@@ -584,6 +590,8 @@ Singleton {
                 return "\u{F015A}";
             }
             return "\u{F05E1}";
+        case "allowed":
+            return "\u{F05E1}";
         case "tell":
             return entry.by === "desk" ? desk : entry.by === "master" ? master : "\u{F12F5}";
         case "say":
@@ -627,6 +635,8 @@ Singleton {
                 return Theme.red;
             }
             break;
+        case "allowed":
+            return Theme.green;
         case "prompt":
             return entry.behavior === "deny" ? Theme.red : Theme.green;
         case "spawned":

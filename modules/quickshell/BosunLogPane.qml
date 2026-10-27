@@ -20,6 +20,7 @@ BosunPane {
         case "decision":
             return decision.kind === "permission" ? "" : Bosun.summaryOf(decision);
         case "escalated":
+        case "allowed":
             return "";
         case "settled":
             return entry.text ?? "";
