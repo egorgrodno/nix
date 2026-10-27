@@ -25,6 +25,14 @@ SelectableText {
             const c = plain[p];
             if (pads.has(p))
                 continue;
+            // A pipe table's cell holds a one-cell table for its tint, so each
+            // cell opens with two starts and closes with two ends: the inner
+            // start and the inner end, which a start or the table's end follows,
+            // are skipped.
+            if (c === "\ufdd0" && plain[p - 1] === "\ufdd0")
+                continue;
+            if (c === "\ufdd1" && (plain[p + 1] === "\ufdd0" || plain[p + 1] === "\ufdd1"))
+                continue;
             if (c === "\ufdd0") {
                 const y = positionToRectangle(p + 1).y;
                 out += rowY !== null && y === rowY ? "\t" : out === "" || out.endsWith("\n") ? "" : "\n";

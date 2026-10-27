@@ -104,13 +104,23 @@ Singleton {
     // its rule's colons say, every other row tinted faintly, and a hairline
     // between the cells. A row short of cells is filled out, and cells past
     // the header's count are dropped.
+    //
+    // Qt paints a cell's background-color or bgcolor behind its text only, so
+    // a tint on the cell or its row sits inset from the borders. A table's own
+    // background fills the whole table, so each cell holds a one-cell table at
+    // full width, which carries the tint and the padding. The outer table
+    // collapses its 1 px border and its cells have no padding of their own.
+    // The border is opaque, as a translucent one is drawn twice where two
+    // cells meet. A cell that wraps makes its row taller than the other
+    // cells' tables, which Qt cannot stretch, so their tint stops short.
     function table(rows, rule, inline) {
         const aligns = rule.map(cell => cell.endsWith(":") ? (cell.startsWith(":") ? "center" : "right") : "left");
         const row = (cells, i) => {
             const tag = i === 0 ? "th" : "td";
-            const tint = i === 0 ? Theme.tint(0.08) : i % 2 === 0 ? Theme.tint(0.03) : "transparent";
-            return `<tr style="background-color: ${tint}">${aligns.map((align, c) => `<${tag} align="${align}">${inline(cells[c] ?? "")}</${tag}>`).join("")}</tr>`;
+            const tint = i === 0 ? Theme.tint(0.08) : i % 2 === 0 ? Theme.tint(0.03) : null;
+            const fill = tint ? ` style="background-color: ${tint}"` : "";
+            return `<tr>${aligns.map((align, c) => `<td><table width="100%" cellspacing="0" cellpadding="6"${fill}><tr><${tag} align="${align}">${inline(cells[c] ?? "")}</${tag}></tr></table></td>`).join("")}</tr>`;
         };
-        return `<table cellspacing="0" cellpadding="6" border="1" style="border-collapse: collapse; border-style: solid; border-color: ${Theme.tint(0.15)}">${rows.map(row).join("")}</table>`;
+        return `<table cellspacing="0" cellpadding="0" border="1" style="border-collapse: collapse; border-style: solid; border-color: ${Theme.foregroundFaint}">${rows.map(row).join("")}</table>`;
     }
 }
