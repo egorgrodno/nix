@@ -22,6 +22,9 @@ Item {
     // Lit ahead of the values while `current` is empty: "default" for a
     // session on Claude Code's default, which the panel cannot resolve.
     property string fallback
+    // What `fallback` reads as, when it can say more than the word: the model
+    // or effort that default comes to.
+    property string fallbackLabel
     readonly property string lit: current || fallback
     readonly property var entries: current === "" && fallback !== "" ? [fallback].concat(values) : values
     property bool open: false
@@ -34,6 +37,8 @@ Item {
     signal picked(string value)
 
     function label(value) {
+        if (value === fallback && fallbackLabel)
+            return fallbackLabel;
         return value === "" ? "default" : value;
     }
 

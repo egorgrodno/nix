@@ -53,6 +53,7 @@ BosunPane {
             values: Bosun.models
             current: pane.session?.model ?? ""
             fallback: "default"
+            fallbackLabel: pane.session?.runs?.modelName ? `Default (${pane.session.runs.modelName})` : "Default"
             onPicked: value => Bosun.model(pane.node, value, "")
         },
         BosunDropdown {
@@ -64,6 +65,7 @@ BosunPane {
             values: Bosun.efforts
             current: pane.session?.effort ?? ""
             fallback: "default"
+            fallbackLabel: pane.session?.runs?.effort ? `Default (${pane.session.runs.effort})` : "Default"
             onPicked: value => Bosun.model(pane.node, "", value)
         },
         TextButton {

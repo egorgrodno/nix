@@ -378,6 +378,11 @@ Singleton {
                 context: event.context
             }) : s);
             break;
+        case "runs":
+            sessions = sessions.map(s => s.node === event.node ? Object.assign({}, s, {
+                runs: event.runs
+            }) : s);
+            break;
         case "decision":
             add(event.decision);
             break;
