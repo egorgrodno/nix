@@ -49,7 +49,7 @@ BosunPane {
             if (!text.endsWith("”"))
                 text += ".";
         }
-        return `${text} It stays here until you move to something else.`;
+        return text;
     }
 
     // Back to the sidebar, from a field.
