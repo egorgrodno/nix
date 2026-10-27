@@ -40,6 +40,7 @@ Singleton {
     readonly property string compacted: "\u{F084D}"
     readonly property string command: "\u{F0FDF}"
     readonly property string queued: "\u{F011D}"
+    readonly property string cleared: "\u{F00E2}"
     readonly property string eye: "\u{F06D0}"
 
     readonly property var states: ({
@@ -636,8 +637,9 @@ Singleton {
     }
 
     // The kinds of conversation entry the panel shows. Any other is one bosun
-    // cannot show yet, but for `meta`, the bookkeeping it hides.
-    readonly property var entryKinds: ["prompt", "queued", "task", "text", "thinking", "tool", "compact", "command"]
+    // cannot show yet, but for `meta`, the bookkeeping it hides. `cleared` is
+    // BosunFeed's own, where a new conversation begins.
+    readonly property var entryKinds: ["prompt", "queued", "task", "text", "thinking", "tool", "compact", "command", "cleared"]
 
     // Who a prompt came from: the user, bosun, Claude Code, the session's
     // parent, or another session's message.

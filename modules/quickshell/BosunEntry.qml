@@ -5,7 +5,8 @@ import QtQuick
 // One entry of a session's conversation, as BosunFeed holds it: a prompt, a
 // message or a background task's end on a card, the assistant's text, and a
 // line for a tool call, thinking, a compaction or a command that opens at a
-// click. An edit opens on its diff. BosunDeskEntry shows the kinds BosunDesk adds. Any kind the panel
+// click, and a line where a new conversation begins. An edit opens on its
+// diff. BosunDeskEntry shows the kinds BosunDesk adds. Any kind the panel
 // does not know shows as one bosun cannot show yet.
 Item {
     id: entry
@@ -51,6 +52,8 @@ Item {
                 return foldEntry;
             case "desk":
                 return deskEntry;
+            case "cleared":
+                return clearedLine;
             }
             return rawEntry;
         }
@@ -281,6 +284,18 @@ Item {
                         })
                 }
             }
+        }
+    }
+
+    // Where a new conversation begins, the old one's entries above it.
+    Component {
+        id: clearedLine
+
+        Line {
+            glyph: BosunLook.cleared
+            label: "Conversation cleared"
+            opens: false
+            aside: BosunLook.timeOf(entry.item)
         }
     }
 
