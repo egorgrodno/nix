@@ -291,7 +291,6 @@ Item {
             if (!Bosun.connected)
                 return false;
             select("desk");
-            Qt.callLater(focusPane);
             return true;
         case "n":
             openSpawn();
