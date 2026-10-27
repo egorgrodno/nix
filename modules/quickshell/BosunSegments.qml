@@ -8,6 +8,10 @@ Rectangle {
 
     property var values: []
     property string current
+    // Lit ahead of the values while `current` is empty: "default" for a
+    // session on Claude Code's default, which the panel cannot resolve.
+    property string fallback
+    readonly property string lit: current || fallback
 
     signal picked(string value)
 
@@ -24,13 +28,13 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
 
         Repeater {
-            model: segments.values
+            model: segments.current === "" && segments.fallback !== "" ? [segments.fallback].concat(segments.values) : segments.values
 
             Rectangle {
                 id: segment
 
                 required property string modelData
-                readonly property bool lit: modelData === segments.current
+                readonly property bool lit: modelData === segments.lit
 
                 width: label.implicitWidth + 20
                 height: 24

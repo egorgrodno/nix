@@ -43,6 +43,7 @@ BosunPane {
             enabled: Bosun.switching !== pane.node
             values: Bosun.models
             current: pane.session?.model ?? ""
+            fallback: "default"
             onPicked: value => Bosun.model(pane.node, value, "")
         },
         BosunSegments {
@@ -50,6 +51,7 @@ BosunPane {
             enabled: Bosun.switching !== pane.node
             values: Bosun.efforts
             current: pane.session?.effort ?? ""
+            fallback: "default"
             onPicked: value => Bosun.model(pane.node, "", value)
         },
         TextButton {
