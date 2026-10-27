@@ -118,6 +118,7 @@ BosunPane {
 
             width: parent.width
             visible: pane.tells || pane.sayable
+            suggestion: conversationView.feed.suggestion
             placeholder: {
                 if (pane.tells)
                     return "Tell the master";
@@ -141,6 +142,11 @@ BosunPane {
                     }, {
                         keys: ["Esc"],
                         text: "back to the list"
+                    });
+                if (composer.suggesting)
+                    hints.push({
+                        keys: ["Tab"],
+                        text: "accept the suggested reply"
                     });
                 if (composer.visible && !pane.tells)
                     hints.push({

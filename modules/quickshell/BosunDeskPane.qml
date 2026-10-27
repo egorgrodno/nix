@@ -96,26 +96,35 @@ BosunPane {
 
             width: parent.width
             visible: Bosun.connected
+            suggestion: conversationView.feed.suggestion
             placeholder: "Ask about the run, or tell the fleet what to do"
             draftKey: "tell"
             onSent: text => Bosun.tell(text)
             onLeave: pane.leave()
         },
         BosunHints {
-            model: [
-                {
-                    keys: ["Ctrl", "Enter"],
-                    text: "send"
-                },
-                {
-                    keys: ["Esc"],
-                    text: "back to the list"
-                },
-                {
+            model: {
+                const hints = [
+                    {
+                        keys: ["Ctrl", "Enter"],
+                        text: "send"
+                    },
+                    {
+                        keys: ["Esc"],
+                        text: "back to the list"
+                    }
+                ];
+                if (composer.suggesting)
+                    hints.push({
+                        keys: ["Tab"],
+                        text: "accept the suggested reply"
+                    });
+                hints.push({
                     keys: [],
                     text: "A reply that comes while the panel is closed raises a notification"
-                }
-            ]
+                });
+                return hints;
+            }
         }
     ]
 }

@@ -22,6 +22,8 @@ Item {
     // The turn in progress: `tempo`, `state`, `detail` and `needs`, all empty
     // once the session's process ends; null before the first.
     property var progress: null
+    // The reply Claude Code suggests to the turn that just ended, or "".
+    property string suggestion: ""
     // Whether entries older than the current conversation's first exist.
     property bool more: false
     readonly property bool loadingOlder: older.running
@@ -58,6 +60,7 @@ Item {
         entries = [];
         places = {};
         progress = null;
+        suggestion = "";
         more = false;
         session = "";
         divider = "";
@@ -198,6 +201,9 @@ Item {
         case "progress":
             progress = message;
             break;
+        case "suggestion":
+            suggestion = message.text ?? "";
+            break;
         }
     }
 
@@ -206,6 +212,8 @@ Item {
         retry.stop();
         older.running = false;
         resetTo = "";
+        // The new `follow` sends the suggestion again if one is still held.
+        suggestion = "";
         if (follow.running) {
             stopping = true;
             follow.running = false;

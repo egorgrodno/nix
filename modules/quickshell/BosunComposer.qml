@@ -2,11 +2,14 @@ import QtQuick
 
 // Text that grows to a few lines and then scrolls, and a glyph that sends it,
 // as Ctrl+Enter does, then clears. Enter starts a line. Tab and Escape leave
-// it, for the panel to say where to.
+// it, for the panel to say where to. A suggested reply stands in for the
+// placeholder while the field is empty, and Tab fills the field with it.
 Rectangle {
     id: field
 
     property string placeholder
+    property string suggestion: ""
+    readonly property bool suggesting: suggestion !== "" && input.text === ""
     // Off for a single line that Return alone sends, as the note Deny takes,
     // whose caller sets the height.
     property bool sendGlyph: true
@@ -33,6 +36,15 @@ Rectangle {
             return;
         sent(text);
         input.text = "";
+    }
+
+    // Fills an empty field with the suggestion showing, else leaves.
+    function tab() {
+        if (suggesting) {
+            input.text = suggestion;
+            input.cursorPosition = input.length;
+        } else
+            leave();
     }
 
     function focusIn() {
@@ -96,14 +108,17 @@ Rectangle {
                     event.accepted = true;
                 }
             }
-            Keys.onTabPressed: field.leave()
+            Keys.onTabPressed: field.tab()
             Keys.onEscapePressed: field.leave()
 
             BarText {
                 y: input.topPadding
                 visible: input.text === ""
-                text: field.placeholder
+                text: field.suggesting ? field.suggestion : field.placeholder
                 color: Theme.foregroundMuted
+                opacity: field.suggesting ? 0.6 : 1
+                width: input.width
+                wrapMode: Text.Wrap
                 font.pixelSize: 14
             }
         }
