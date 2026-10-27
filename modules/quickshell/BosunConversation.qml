@@ -234,6 +234,11 @@ Item {
         clip: true
         spacing: 12
         boundsBehavior: Flickable.StopAtBounds
+        // Builds every loaded row, as the feed holds a few pages at most:
+        // a ListView guesses the height of the rows it has not built from
+        // those it has, and rows differ so much that the guess, and with it
+        // the scroll bar, swings as the view moves.
+        cacheBuffer: 1000000
         model: ScriptModel {
             id: shown
 
