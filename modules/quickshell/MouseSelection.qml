@@ -10,7 +10,7 @@ Singleton {
 
     function take(item) {
         if (owner && owner !== item)
-            owner.deselect();
+            owner.clearSelection();
         owner = item;
     }
 
