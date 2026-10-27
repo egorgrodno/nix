@@ -78,10 +78,14 @@ Item {
     // Turns the feed's entries into those shown, as BosunDesk.shape does for
     // the desk; null shows them as they come.
     property var shape: null
-    // The rows `steady` handed out last, by id; set without a change signal,
-    // as the binding that reads it writes it.
+    // The rows `steady` handed out last, by id, the ids of those that arrived
+    // since and wait for their rows to animate in, and whether the view
+    // glides to its end for them; set without a change signal, as the binding
+    // that reads it writes it.
     readonly property var shownBefore: ({
-            rows: {}
+            rows: {},
+            arriving: {},
+            glide: false
         })
 
     // A decision's row is selected, as the sidebar does.
@@ -134,19 +138,39 @@ Item {
 
     // Hands back the row shown before for each entry whose fields are all the
     // same, since fold and shape build theirs anew on every update and the
-    // model refreshes a delegate whose row is not the same object.
+    // model refreshes a delegate whose row is not the same object. A row new
+    // to the view arrives, animating in, but for those a reset's page, an
+    // older page or `bosun watch` coming back brings.
     function steady(entries) {
         const before = shownBefore.rows;
+        const arrives = !feed.quiet && feed.session !== "" && Bosun.connected;
         const rows = {};
         const out = entries.map(e => {
             const was = before[e.id];
             const keys = Object.keys(e);
             const row = was && Object.keys(was).length === keys.length && keys.every(k => was[k] === e[k]) ? was : e;
             rows[e.id] = row;
+            if (!was && arrives) {
+                shownBefore.arriving[e.id] = true;
+                shownBefore.glide = following;
+            }
             return row;
         });
+        if (!arrives)
+            shownBefore.glide = false;
+        for (const id in shownBefore.arriving)
+            if (!rows[id])
+                delete shownBefore.arriving[id];
         shownBefore.rows = rows;
         return out;
+    }
+
+    // Whether the row for `id` animates in, once: only its first delegate
+    // does.
+    function arrives(id) {
+        const was = shownBefore.arriving[id] === true;
+        delete shownBefore.arriving[id];
+        return was;
     }
 
     function isOpen(id, byDefault) {
@@ -186,6 +210,7 @@ Item {
 
     // Once the view has laid out what changed.
     function restore(at) {
+        glide.stop();
         restoring = true;
         restorer.at = at;
         restorer.restart();
@@ -290,9 +315,35 @@ Item {
             if (!conversation.following)
                 return;
             conversation.restoring = true;
+            const from = list.contentY;
             list.positionViewAtEnd();
-            conversation.restoring = false;
+            const to = list.contentY;
+            // A row that arrives glides in from below, as does any growth
+            // while the glide runs.
+            if ((conversation.shownBefore.glide || glide.running) && to > from) {
+                list.contentY = from;
+                glide.from = from;
+                glide.to = to;
+                glide.restart();
+                conversation.restoring = true;
+            } else {
+                glide.stop();
+                conversation.restoring = false;
+            }
+            conversation.shownBefore.glide = false;
         }
+    }
+
+    // Keeps `restoring` while it runs, so the view still follows.
+    NumberAnimation {
+        id: glide
+
+        target: list
+        property: "contentY"
+        duration: 200
+        easing.type: Easing.OutCubic
+        onRunningChanged: if (!running)
+            conversation.restoring = false
     }
 
     // Ticks the times, each second in a turn, as a running call counts them.
@@ -377,6 +428,8 @@ Item {
             conversation.following = atYEnd;
             conversation.keep();
         }
+        // A scroll takes the view from the glide.
+        onMovementStarted: glide.stop()
         onAtYBeginningChanged: if (atYBeginning && !conversation.following)
             feed.loadOlder()
 

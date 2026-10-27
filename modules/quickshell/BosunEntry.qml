@@ -24,6 +24,35 @@ Item {
 
     width: ListView.view?.width ?? 0
     height: loader.height
+    // A fade and a rise that move no other row.
+    transform: Translate {
+        id: rise
+    }
+
+    Component.onCompleted: if (conversation.arrives(item.id))
+        arrival.start()
+
+    ParallelAnimation {
+        id: arrival
+
+        NumberAnimation {
+            target: entry
+            property: "opacity"
+            from: 0
+            to: 1
+            duration: 200
+            easing.type: Easing.OutCubic
+        }
+
+        NumberAnimation {
+            target: rise
+            property: "y"
+            from: 12
+            to: 0
+            duration: 200
+            easing.type: Easing.OutCubic
+        }
+    }
 
     Loader {
         id: loader

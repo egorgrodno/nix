@@ -49,6 +49,9 @@ Item {
     property bool stopping: false
     // Whether the running `follow` has sent anything.
     property bool heard: false
+    // While a page merges in, for a view to show the entries it brings
+    // without motion: they arrived before, or are older.
+    property bool quiet: false
 
     // Around putting older entries at the start, for a view to keep its place.
     signal prepending
@@ -193,7 +196,9 @@ Item {
             break;
         case "entries":
             if (resetTo !== "") {
+                quiet = true;
                 receivePage(message);
+                quiet = false;
                 resetTo = "";
             } else
                 merge((message.entries ?? []).map(e => keyed(e, session)), false);
@@ -277,7 +282,9 @@ Item {
                 if (result.error || result.session !== feed.session)
                     return;
                 feed.prepending();
+                feed.quiet = true;
                 feed.merge((result.entries ?? []).map(e => feed.keyed(e, feed.session)), true);
+                feed.quiet = false;
                 feed.more = result.more === true;
                 feed.prepended();
             }
