@@ -519,7 +519,7 @@ Item {
         onAtYBeginningChanged: if (atYBeginning && !conversation.following)
             feed.loadOlder()
 
-        ScrollBar.vertical: OverlayScrollBar {
+        ScrollBar.vertical: BosunScrollBar {
             id: scrollBar
         }
     }

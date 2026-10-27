@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls.Basic
 
 // Sections of tasks under their titles, at least `minHeight` tall and scrolling
 // past `maxHeight`, with one task's quick menu open at a time. A section
@@ -76,8 +75,6 @@ Flickable {
     clip: true
     boundsBehavior: Flickable.StopAtBounds
     interactive: contentHeight > height
-
-    ScrollBar.vertical: OverlayScrollBar {}
 
     Column {
         id: column

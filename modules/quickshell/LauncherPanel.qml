@@ -70,14 +70,6 @@ Panel {
             list.currentIndex = target;
     }
 
-    // A selection that scrolls the list shows its scroll bar.
-    function navigate(target, direction) {
-        const from = list.contentY;
-        select(target, direction);
-        if (list.contentY !== from)
-            list.ScrollBar.vertical.poke();
-    }
-
     function cycle(step) {
         const modes = Launcher.modes;
         mode = modes[(modes.indexOf(current) + step + modes.length) % modes.length].id;
@@ -192,16 +184,16 @@ Panel {
                 const shift = (event.modifiers & Qt.ShiftModifier) !== 0;
                 switch (event.key) {
                 case Qt.Key_Down:
-                    panel.navigate(list.currentIndex + 1, 1);
+                    panel.select(list.currentIndex + 1, 1);
                     break;
                 case Qt.Key_Up:
-                    panel.navigate(list.currentIndex - 1, -1);
+                    panel.select(list.currentIndex - 1, -1);
                     break;
                 case Qt.Key_PageDown:
-                    panel.navigate(list.currentIndex + panel.visibleRows, 1);
+                    panel.select(list.currentIndex + panel.visibleRows, 1);
                     break;
                 case Qt.Key_PageUp:
-                    panel.navigate(list.currentIndex - panel.visibleRows, -1);
+                    panel.select(list.currentIndex - panel.visibleRows, -1);
                     break;
                 case Qt.Key_Return:
                 case Qt.Key_Enter:
@@ -263,8 +255,6 @@ Panel {
                 anchors.fill: parent
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
-
-                ScrollBar.vertical: OverlayScrollBar {}
                 model: panel.rows
                 // New rows start at the first, which expanding, collapsing and
                 // forgetting then move from.

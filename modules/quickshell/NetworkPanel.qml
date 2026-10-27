@@ -381,8 +381,6 @@ Panel {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
 
-            ScrollBar.vertical: OverlayScrollBar {}
-
             Column {
                 id: list
 

@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Controls.Basic
 import Quickshell
 import Quickshell.Wayland
 
@@ -249,8 +248,6 @@ Panel {
         clip: true
         interactive: contentHeight > height
         boundsBehavior: Flickable.StopAtBounds
-
-        ScrollBar.vertical: OverlayScrollBar {}
 
         Column {
             id: body
