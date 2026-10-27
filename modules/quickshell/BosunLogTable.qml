@@ -354,15 +354,7 @@ Item {
             objectProp: "seq"
         }
 
-        ScrollBar.vertical: ScrollBar {
-            policy: list.contentHeight > list.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
-
-            contentItem: Rectangle {
-                implicitWidth: 4
-                radius: 2
-                color: Theme.tint(0.25)
-            }
-        }
+        ScrollBar.vertical: BosunScrollBar {}
 
         delegate: EntryRow {}
     }
@@ -423,6 +415,8 @@ Item {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             model: [""].concat(table.sessions)
+
+            ScrollBar.vertical: BosunScrollBar {}
 
             delegate: Rectangle {
                 id: choice

@@ -303,15 +303,7 @@ Item {
         onAtYBeginningChanged: if (atYBeginning && !conversation.following)
             feed.loadOlder()
 
-        ScrollBar.vertical: ScrollBar {
-            policy: list.contentHeight > list.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
-
-            contentItem: Rectangle {
-                implicitWidth: 4
-                radius: 2
-                color: Theme.tint(0.25)
-            }
-        }
+        ScrollBar.vertical: BosunScrollBar {}
     }
 
     // The session's own prompt: a question's options, which answer it as the

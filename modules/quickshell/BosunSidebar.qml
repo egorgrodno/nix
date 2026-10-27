@@ -163,15 +163,7 @@ Item {
             objectProp: "key"
         }
 
-        ScrollBar.vertical: ScrollBar {
-            policy: list.contentHeight > list.height ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
-
-            contentItem: Rectangle {
-                implicitWidth: 4
-                radius: 2
-                color: Theme.tint(0.25)
-            }
-        }
+        ScrollBar.vertical: BosunScrollBar {}
 
         delegate: Loader {
             id: slot

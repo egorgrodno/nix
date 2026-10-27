@@ -100,20 +100,12 @@ Item {
         onContentYChanged: if (!pane.restoring && pane.scrollKey !== "")
             BosunKept.keepScroll(pane.scrollKey, contentY)
 
-        ScrollBar.vertical: ScrollBar {
-            policy: scroller.interactive ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
-
-            contentItem: Rectangle {
-                implicitWidth: 4
-                radius: 2
-                color: Theme.tint(0.25)
-            }
-        }
+        ScrollBar.vertical: BosunScrollBar {}
 
         Column {
             id: bodyColumn
 
-            width: scroller.width - (scroller.interactive ? 14 : 0)
+            width: scroller.width - 14
             spacing: 16
         }
     }
