@@ -21,7 +21,10 @@ ScrollBar {
     // A long view would shrink the thumb past grabbing; its travel shrinks
     // with it.
     minimumSize: height > 0 ? Math.min(1, 36 / height) : 0
-    onPositionChanged: poke()
+    // Content growth and the view's own moves change the position too, and
+    // must not show the bar; only the user's scroll does.
+    onPositionChanged: if (pressed || (parent?.moving ?? false))
+        poke()
     onHoveredChanged: poke()
     onPressedChanged: poke()
 

@@ -22,7 +22,15 @@ Item {
     // Whether the session is in its turn as `bosun watch` has it, for when
     // the daemon sends no progress.
     property bool busy: false
-    readonly property bool inTurn: (progress?.tempo ?? "") !== "" ? progress.tempo !== "idle" : busy
+    // A turn that ends on a question in its text is tempo "blocked" with no
+    // `needs`: the session waits on the user, not in its turn. One blocked on
+    // a dialog, whose `needs` names it, is still mid-turn.
+    readonly property bool inTurn: {
+        const tempo = progress?.tempo ?? "";
+        if (tempo === "")
+            return busy;
+        return tempo !== "idle" && (tempo !== "blocked" || needs !== "");
+    }
     // A message sent from the panel whose turn shows nothing yet: the id of
     // the feed's last entry when it went, its args as `Bosun.finished` gives
     // them, and whether the session has been in a turn since.
@@ -221,6 +229,15 @@ Item {
             BosunKept.keepScroll(scrollKey, position());
     }
 
+    // Stores the pinned state, which `keep` skips while the view glides to the
+    // end on its own.
+    function pin() {
+        if (scrollKey !== "" && !feed.opening)
+            BosunKept.keepScroll(scrollKey, {
+                follow: true
+            });
+    }
+
     onNodeChanged: {
         flipped = {};
         following = true;
@@ -329,6 +346,7 @@ Item {
             } else {
                 glide.stop();
                 conversation.restoring = false;
+                conversation.pin();
             }
             conversation.shownBefore.glide = false;
         }
@@ -342,8 +360,11 @@ Item {
         property: "contentY"
         duration: 200
         easing.type: Easing.OutCubic
-        onRunningChanged: if (!running)
-            conversation.restoring = false
+        onRunningChanged: if (!running) {
+            conversation.restoring = false;
+            if (conversation.following)
+                conversation.pin();
+        }
     }
 
     // Ticks the times, each second in a turn, as a running call counts them.
@@ -475,6 +496,7 @@ Item {
         onClicked: {
             conversation.shownBefore.glide = true;
             conversation.following = true;
+            conversation.pin();
             toEnd.restart();
         }
     }

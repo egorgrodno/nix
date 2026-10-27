@@ -62,13 +62,16 @@ Column {
                 font.pixelSize: 13
             }
 
-            BarText {
+            // The marks sit in their own column, so a copy holds the lines
+            // alone.
+            SelectableText {
                 id: lineText
 
                 x: 36
                 y: 1
                 width: parent.width - x - 8
-                wrapMode: Text.WrapAnywhere
+                wrapMode: TextEdit.WrapAnywhere
+                selectionBase: Qt.tint(Theme.backgroundRaised, row.color)
                 text: row.modelData.text
                 color: row.modelData.mark === "gap" ? Theme.foregroundMuted : Theme.foregroundStrong
                 font.family: Theme.fontMono
