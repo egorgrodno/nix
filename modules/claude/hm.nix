@@ -1,4 +1,9 @@
-{ lib, pkgs, ... }:
+{
+  keyboardLayout,
+  lib,
+  pkgs,
+  ...
+}:
 
 {
   home.packages = [
@@ -16,6 +21,9 @@
 
     pkgs.bosun
   ];
+
+  # `bosun tui` moves by this layout's direction keys.
+  home.sessionVariables.BOSUN_LAYOUT = keyboardLayout;
 
   systemd.user.services.bosun = {
     Unit = {
