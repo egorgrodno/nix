@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import Quickshell
 import Quickshell.Widgets
 
@@ -28,7 +29,10 @@ Panel {
         index = Math.max(0, Math.min(Wallpapers.count - 1, index));
         if (Wallpapers.count === 0 || index === strip.currentIndex)
             return;
+        const from = strip.contentX;
         strip.currentIndex = index;
+        if (strip.contentX !== from)
+            strip.ScrollBar.horizontal.poke();
         Wallpapers.show(Wallpapers.path(index), at(index));
     }
 
@@ -91,6 +95,8 @@ Panel {
                 spacing: panel.gap
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
+
+                ScrollBar.horizontal: OverlayScrollBar {}
                 keyNavigationEnabled: false
                 currentIndex: -1
                 model: Wallpapers.present ? Wallpapers.files : null
@@ -200,6 +206,7 @@ Panel {
                     const end = strip.originX + strip.contentWidth - strip.width;
                     scroll.to = Math.max(strip.originX, Math.min(end, from - notches * (panel.tileWidth + panel.gap)));
                     scroll.restart();
+                    strip.ScrollBar.horizontal.poke();
                 }
 
                 NumberAnimation {

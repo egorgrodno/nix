@@ -167,7 +167,7 @@ Item {
             objectProp: "key"
         }
 
-        ScrollBar.vertical: BosunScrollBar {}
+        ScrollBar.vertical: OverlayScrollBar {}
 
         delegate: Loader {
             id: slot

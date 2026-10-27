@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Controls.Basic
 import Quickshell
 
 // Under the bell: do-not-disturb, then every notification as the popups' cards
@@ -95,6 +96,8 @@ Panel {
         clip: true
         spacing: 12
         boundsBehavior: Flickable.StopAtBounds
+
+        ScrollBar.vertical: OverlayScrollBar {}
         // Keys rather than the groups themselves: ScriptModel keeps the old
         // value of an item it moves, as a group with a new entry moves.
         model: ScriptModel {
