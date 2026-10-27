@@ -57,11 +57,14 @@ Item {
         return out;
     }
     // The y of each line within the text, and the text's end after them.
+    // `starts` follows the rows before the text does, so a start can lie past
+    // the text's end, which Qt warns of, until `laidOut` brings the text.
     readonly property var tops: {
         lines.width;
         lines.contentHeight;
-        lines.length;
-        const ys = starts.map(p => lines.positionToRectangle(p).y);
+        lines.laidOut;
+        const end = lines.length;
+        const ys = starts.map(p => p <= end ? lines.positionToRectangle(p).y : 0);
         ys.push(lines.contentHeight);
         return ys;
     }
@@ -104,6 +107,15 @@ Item {
     SelectableText {
         id: lines
 
+        // Counts the text's changes, which rich text's `text` cannot stand
+        // for: it reads back as the whole document in HTML.
+        property int laidOut: 0
+
+        // An empty line's no-break space copies as nothing.
+        function copied() {
+            return selectedText.replace(/[\u2028\u2029]/g, "\n").replace(/^\u00a0$/gm, "").replace(/\u00a0/g, " ");
+        }
+
         x: 36
         y: 1
         width: diff.width - x - 8
@@ -112,5 +124,6 @@ Item {
         text: diff.html
         font.family: Theme.fontMono
         font.pixelSize: 13
+        onTextChanged: laidOut++
     }
 }
