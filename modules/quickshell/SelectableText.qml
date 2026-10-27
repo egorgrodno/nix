@@ -81,6 +81,23 @@ TextEdit {
         choose(twin.item.selectionStart, twin.item.selectionEnd);
     }
 
+    // Selects the line under (x, y) up to its break, which leaves a wrapped
+    // paragraph whole. Rich text's plain text breaks lines with U+2028 and
+    // blocks with U+2029, and marks a table cell's start with U+FDD0 and a
+    // table's end with U+FDD1.
+    function pickLine(x, y) {
+        press(x, y);
+        const plain = getText(0, length);
+        const breaks = "\n\u2028\u2029\ufdd0\ufdd1";
+        let from = anchor;
+        while (from > 0 && !breaks.includes(plain[from - 1]))
+            from--;
+        let to = anchor;
+        while (to < plain.length && !breaks.includes(plain[to]))
+            to++;
+        choose(from, to);
+    }
+
     // Where the press that started the selection fell.
     property int anchor: 0
     // `pads`, kept from the first press until the text changes.
@@ -110,6 +127,12 @@ TextEdit {
 
         // The link under the pointer, or "".
         property string link: ""
+        // When and where the last double click fell: MouseArea has no triple
+        // click, so a press soon after and close by is one.
+        property real doubled: 0
+        property point doubledAt
+        // Whether this press picked a line, which a drag would undo.
+        property bool lined: false
 
         z: 1
         anchors.fill: parent
@@ -118,19 +141,30 @@ TextEdit {
         // otherwise, and the selection stops growing.
         preventStealing: true
         cursorShape: link !== "" ? Qt.PointingHandCursor : Qt.IBeamCursor
-        onPressed: event => root.press(event.x, event.y)
+        onPressed: event => {
+            lined = Date.now() - doubled < Qt.styleHints.mouseDoubleClickInterval && Math.abs(event.x - doubledAt.x) + Math.abs(event.y - doubledAt.y) < Qt.styleHints.startDragDistance;
+            if (lined) {
+                doubled = 0;
+                root.pickLine(event.x, event.y);
+            } else
+                root.press(event.x, event.y);
+        }
         onPositionChanged: event => {
-            if (pressed)
-                root.drag(event.x, event.y);
-            else
+            if (!pressed)
                 link = root.linkAt(event.x, event.y);
+            else if (!lined)
+                root.drag(event.x, event.y);
         }
         onClicked: event => {
             const target = root.linkAt(event.x, event.y);
             if (target !== "" && root.chosen() === "")
                 root.linkActivated(target);
         }
-        onDoubleClicked: event => root.pickWord(event.x, event.y)
+        onDoubleClicked: event => {
+            doubled = Date.now();
+            doubledAt = Qt.point(event.x, event.y);
+            root.pickWord(event.x, event.y);
+        }
     }
 
     Loader {
