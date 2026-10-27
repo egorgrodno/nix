@@ -3,12 +3,13 @@ pragma ComponentBehavior: Bound
 import QtQuick
 
 // Markdown the mouse selects: Markdown's text in a SelectableText, which
-// places the code spans' boxes itself.
+// places the code spans' boxes and the table rows' tints itself.
 SelectableText {
     id: root
 
     required property string markdown
     readonly property var codes: MarkdownHtml.codes(markdown)
+    readonly property var parsed: MarkdownHtml.parse(markdown)
 
     // The selection as it reads: a code span without its padding, and a
     // table's cells apart by a tab within a row and by a line between rows.
@@ -25,14 +26,6 @@ SelectableText {
             const c = plain[p];
             if (pads.has(p))
                 continue;
-            // A pipe table's cell holds a one-cell table for its tint, so each
-            // cell opens with two starts and closes with two ends: the inner
-            // start and the inner end, which a start or the table's end follows,
-            // are skipped.
-            if (c === "\ufdd0" && plain[p - 1] === "\ufdd0")
-                continue;
-            if (c === "\ufdd1" && (plain[p + 1] === "\ufdd0" || plain[p + 1] === "\ufdd1"))
-                continue;
             if (c === "\ufdd0") {
                 const y = positionToRectangle(p + 1).y;
                 out += rowY !== null && y === rowY ? "\t" : out === "" || out.endsWith("\n") ? "" : "\n";
@@ -46,10 +39,20 @@ SelectableText {
         return out.replace(/[\u2028\u2029]/g, "\n").replace(/\u00a0/g, " ");
     }
 
-    text: MarkdownHtml.html(markdown)
+    text: parsed.html
     textFormat: TextEdit.RichText
     wrapMode: TextEdit.WrapAtWordBoundaryOrAnywhere
     onLinkActivated: link => Launcher.run([Programs.xdgOpen, link])
+
+    Loader {
+        z: -1
+        active: root.parsed.tables.some(table => table.tints.some(tint => tint))
+
+        sourceComponent: TableBands {
+            layout: root
+            tables: root.parsed.tables
+        }
+    }
 
     Loader {
         z: -1

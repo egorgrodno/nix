@@ -37,7 +37,11 @@ Singleton {
     // A span already made a tag hides behind a placeholder from the rules
     // after it. A code span pads with a no-break space a side, in the body's
     // font: Qt collapses any other space with the one beside the span.
-    function html(markdown) {
+    //
+    // `html` is the rich text; `tables` lists every table in it in order, the
+    // bullets' included, as { cols, tints, html }: a tint for each row, or
+    // null, which TableBands draws.
+    function parse(markdown) {
         const escape = s => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
         const kept = [];
         const restore = html => html.replace(/\u0001(\d+)\u0001/g, (_, i) => restore(kept[i]));
@@ -64,9 +68,12 @@ Singleton {
                 for (i += 2; i < lines.length && lines[i].includes("|"); i++)
                     rows.push(tableCells(lines[i]));
                 i--;
+                levels.length = 0;
+                const grid = table(rows, rule, inline);
                 out.push({
                     block: true,
-                    html: table(rows, rule, inline)
+                    html: grid.html,
+                    table: grid.table
                 });
                 continue;
             }
@@ -90,7 +97,10 @@ Singleton {
                 const marker = ordered ? item[2] : ["•", "◦", "▪"][(levels.length - 1) % 3];
                 out.push({
                     block: true,
-                    html: bulletRow(inline(item[3]), marker, level.left, level.width)
+                    html: bulletRow(inline(item[3]), marker, level.left, level.width),
+                    table: {
+                        tints: [null]
+                    }
                 });
                 continue;
             }
@@ -101,11 +111,18 @@ Singleton {
                 html: heading ? `<b>${html}</b>` : html
             });
         }
-        return restore(out.map((part, i) => {
-            if (i === 0 || part.block)
-                return part.html;
-            return out[i - 1].block ? part.html || "<br>" : `<br>${part.html}`;
-        }).join(""));
+        return {
+            html: restore(out.map((part, i) => {
+                if (i === 0 || part.block)
+                    return part.html;
+                return out[i - 1].block ? part.html || "<br>" : `<br>${part.html}`;
+            }).join("")),
+            tables: out.filter(part => part.table).map(part => ({
+                        cols: part.table.cols,
+                        tints: part.table.tints,
+                        html: restore(part.html)
+                    }))
+        };
     }
 
     // A bullet and its text as the two cells of a borderless row, so a line
@@ -126,26 +143,27 @@ Singleton {
     }
 
     // GitHub's pipe table: the header row on a tint, each column aligned as
-    // its rule's colons say, every other row tinted faintly, and a hairline
-    // between the cells. A row short of cells is filled out, and cells past
-    // the header's count are dropped.
+    // its rule's colons say, every other row tinted faintly, and a 1 px
+    // border between the cells and around them. A row short of cells is
+    // filled out, and cells past the header's count are dropped.
     //
-    // Qt paints a cell's background-color or bgcolor behind its text only, so
-    // a tint on the cell or its row sits inset from the borders. A table's own
-    // background fills the whole table, so each cell holds a one-cell table at
-    // full width, which carries the tint and the padding. The outer table
-    // collapses its 1 px border and its cells have no padding of their own.
-    // The border is opaque, as a translucent one is drawn twice where two
-    // cells meet. A cell that wraps makes its row taller than the other
-    // cells' tables, which Qt cannot stretch, so their tint stops short.
+    // Qt paints a cell's background behind its text only, so a tint set in
+    // the HTML would sit inset from the borders and stop short in a row a
+    // wrapped cell makes tall. The cells stay transparent; `table` carries
+    // each row's tint for TableBands to draw behind the text. The border is
+    // opaque, as a translucent one is drawn twice where two cells meet.
     function table(rows, rule, inline) {
         const aligns = rule.map(cell => cell.endsWith(":") ? (cell.startsWith(":") ? "center" : "right") : "left");
         const row = (cells, i) => {
             const tag = i === 0 ? "th" : "td";
-            const tint = i === 0 ? Theme.tint(0.08) : i % 2 === 0 ? Theme.tint(0.03) : null;
-            const fill = tint ? ` style="background-color: ${tint}"` : "";
-            return `<tr>${aligns.map((align, c) => `<td><table width="100%" cellspacing="0" cellpadding="6"${fill}><tr><${tag} align="${align}">${inline(cells[c] ?? "")}</${tag}></tr></table></td>`).join("")}</tr>`;
+            return `<tr>${aligns.map((align, c) => `<${tag} align="${align}">${inline(cells[c] ?? "")}</${tag}>`).join("")}</tr>`;
         };
-        return `<table cellspacing="0" cellpadding="0" border="1" style="border-collapse: collapse; border-style: solid; border-color: ${Theme.foregroundFaint}">${rows.map(row).join("")}</table>`;
+        return {
+            html: `<table cellspacing="0" cellpadding="6" border="1" style="border-collapse: collapse; border-style: solid; border-color: ${Theme.foregroundFaint}">${rows.map(row).join("")}</table>`,
+            table: {
+                cols: aligns.length,
+                tints: rows.map((_, i) => i === 0 ? Theme.tint(0.08) : i % 2 === 0 ? Theme.tint(0.03) : null)
+            }
+        };
     }
 }

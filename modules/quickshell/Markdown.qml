@@ -10,8 +10,10 @@ BarText {
 
     required property string markdown
     readonly property var codes: MarkdownHtml.codes(markdown)
+    readonly property var parsed: MarkdownHtml.parse(markdown)
+    readonly property bool tinted: parsed.tables.some(table => table.tints.some(tint => tint))
 
-    text: MarkdownHtml.html(markdown)
+    text: parsed.html
     textFormat: Text.RichText
     // A word too long for its line, or for a table's cell, breaks anywhere,
     // so a wide table wraps within the width rather than running past it.
@@ -19,12 +21,12 @@ BarText {
     onLinkActivated: link => Launcher.run([Programs.xdgOpen, link])
 
     // Text gives no character's position, so a hidden TextEdit lays out the
-    // same text at the same width for the code spans' boxes. A TextEdit would
-    // take clicks from what lies under the text, such as a task card's edit,
-    // so it only measures.
+    // same text at the same width for the code spans' boxes and the table
+    // rows' tints. A TextEdit would take clicks from what lies under the
+    // text, such as a task card's edit, so it only measures.
     Loader {
         z: -1
-        active: root.codes.length > 0
+        active: root.codes.length > 0 || root.tinted
 
         sourceComponent: Item {
             TextEdit {
@@ -41,9 +43,22 @@ BarText {
                 renderType: root.renderType
             }
 
-            CodeBoxes {
-                layout: twin
-                codes: root.codes
+            Loader {
+                active: root.tinted
+
+                sourceComponent: TableBands {
+                    layout: twin
+                    tables: root.parsed.tables
+                }
+            }
+
+            Loader {
+                active: root.codes.length > 0
+
+                sourceComponent: CodeBoxes {
+                    layout: twin
+                    codes: root.codes
+                }
             }
         }
     }
