@@ -351,7 +351,7 @@ Item {
         readonly property var live: Bosun.mine.find(d => d.id === decisionId) ?? null
         readonly property var decision: live ?? (sidebar.held?.id === decisionId ? sidebar.held : null)
 
-        height: 54
+        height: 57
         opacity: live ? 1 : 0.6
 
         BarText {
@@ -442,7 +442,7 @@ Item {
 
             anchors.right: parent.right
             anchors.rightMargin: 20
-            y: 30
+            y: 33
             width: 64
             horizontalAlignment: Text.AlignRight
             visible: remaining >= 0
@@ -452,7 +452,7 @@ Item {
 
         BarText {
             x: nodeText.x
-            y: 30
+            y: 33
             width: parent.width - x - 20 - (leftText.visible ? leftText.width + 8 : 0)
             elide: Text.ElideRight
             text: row.decision ? Bosun.summaryOf(row.decision).split("\n")[0] : ""
@@ -506,24 +506,28 @@ Item {
             color: Theme.blue
         }
 
-        Caption {
-            id: deskModel
+        // How full its context window is, in the column at the right that
+        // every row's bar shares, centred on the name line.
+        BosunContextBar {
+            id: deskBar
 
             anchors.right: parent.right
             anchors.rightMargin: 20
-            anchors.verticalCenter: deskGlyph.verticalCenter
-            text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
-        }
-
-        // How full its context window is, left of the model.
-        BosunContextBar {
-            anchors.right: deskModel.text ? deskModel.left : parent.right
-            anchors.rightMargin: deskModel.text ? 8 : 20
             anchors.verticalCenter: deskGlyph.verticalCenter
             width: 32
             height: 3
             visible: row.session?.context !== undefined
             context: row.session?.context ?? null
+        }
+
+        // Ends 8 px left of the bar's column, with or without a bar.
+        Caption {
+            id: deskModel
+
+            anchors.right: deskBar.left
+            anchors.rightMargin: 8
+            anchors.verticalCenter: deskGlyph.verticalCenter
+            text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
         }
 
         Row {
@@ -601,7 +605,7 @@ Item {
 
             anchors.left: stateGlyph.right
             anchors.leftMargin: 8
-            anchors.right: contextBar.visible ? contextBar.left : modelText.left
+            anchors.right: modelText.left
             anchors.rightMargin: 8
             y: 8
             elide: Text.ElideRight
@@ -610,26 +614,28 @@ Item {
             font.pixelSize: 14
         }
 
-        Caption {
-            id: modelText
-
-            anchors.right: parent.right
-            anchors.rightMargin: 20
-            y: 8
-            text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
-        }
-
-        // How full its context window is, left of the model.
+        // How full its context window is, in the column at the right that
+        // every row's bar shares whatever its indent, centred on the name line.
         BosunContextBar {
             id: contextBar
 
-            anchors.right: modelText.text ? modelText.left : parent.right
-            anchors.rightMargin: modelText.text ? 8 : 20
-            y: 13
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            anchors.verticalCenter: stateGlyph.verticalCenter
             width: 32
             height: 3
             visible: row.session?.context !== undefined
             context: row.session?.context ?? null
+        }
+
+        // Ends 8 px left of the bar's column, with or without a bar.
+        Caption {
+            id: modelText
+
+            anchors.right: contextBar.left
+            anchors.rightMargin: 8
+            anchors.verticalCenter: stateGlyph.verticalCenter
+            text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
         }
 
         // What the session does, under its name: its tool's glyph and the call
