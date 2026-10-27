@@ -524,7 +524,7 @@ Item {
                 elide: Text.ElideRight
                 text: row.activityLine
                 color: row.activityColor
-                font.family: row.activity?.tool ? Theme.fontMono : Theme.fontUI
+                font.family: BosunLook.activityMono(row.activity) ? Theme.fontMono : Theme.fontUI
                 font.pixelSize: 12
             }
         }
@@ -611,7 +611,7 @@ Item {
                 elide: Text.ElideRight
                 text: row.activityLine
                 color: row.activityColor
-                font.family: row.activity?.tool ? Theme.fontMono : Theme.fontUI
+                font.family: BosunLook.activityMono(row.activity) ? Theme.fontMono : Theme.fontUI
                 font.pixelSize: 12
             }
         }

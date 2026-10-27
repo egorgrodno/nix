@@ -144,6 +144,8 @@ Singleton {
     // The glyph for a session's activity line: its tool's, or a message's when
     // no call came after the last message.
     function activityGlyph(activity) {
+        if (activity.tool?.startsWith("mcp__"))
+            return mcpGlyph(activity.tool);
         switch (activity.tool) {
         case undefined:
         case "":
@@ -167,7 +169,121 @@ Singleton {
 
     // What follows the glyph: the call's argument, or the message's start.
     function activityText(activity) {
+        if (activity.tool?.startsWith("mcp__"))
+            return mcpWords(activity.tool, activity.arg ?? "");
         return activity.tool ? activity.arg ?? activity.tool : activity.text ?? "";
+    }
+
+    // Whether the activity line shows a call in monospace: a tool's argument,
+    // but not the words an MCP call reads as.
+    function activityMono(activity) {
+        return !!activity?.tool && !activity.tool.startsWith("mcp__");
+    }
+
+    // An MCP tool's name as { server, tool }: "mcp__bosun__decide" is bosun's
+    // decide.
+    function mcpParts(name) {
+        const parts = name.split("__");
+        return {
+            server: parts[1] ?? "",
+            tool: parts.slice(2).join("__")
+        };
+    }
+
+    function mcpGlyph(name) {
+        const call = mcpParts(name);
+        if (call.server !== "bosun")
+            return "\u{F1425}";
+        return {
+            next_event: "\u{F02FB}",
+            status: eye,
+            transcript: "\u{F09ED}",
+            decide: "\u{F05D1}",
+            reply: "\u{F045A}",
+            answer: "\u{F045A}",
+            escalate: "\u{F0B54}",
+            spawn: "\u{F0419}",
+            resume: "\u{F040D}",
+            merge: "\u{F062D}",
+            ask: "\u{F0625}",
+            tell_master: master,
+            tell_desk: desk,
+            notify: "\u{F009C}"
+        }[call.tool] ?? "\u{F1064}";
+    }
+
+    // What an MCP call does, from the summary of its input that the daemon
+    // puts in an activity's `arg`: "Deciding 147: allow", "Spawning app-flaky",
+    // or another server's tool and its argument, as "craft docs
+    // create_document: Notes".
+    function mcpWords(name, arg) {
+        const call = mcpParts(name);
+        const after = text => text ? `: ${text}` : "";
+        if (call.server !== "bosun")
+            return `${call.server.replace(/_/g, " ")} ${call.tool}${after(arg)}`;
+        const words = arg.split(" ");
+        switch (call.tool) {
+        case "next_event":
+            return "Waiting for events";
+        case "status":
+            return "Reading the fleet";
+        case "transcript":
+            return `Reading ${arg}'s transcript`;
+        case "decide":
+            return `Deciding ${words[0]}${after(words.slice(1).join(" "))}`;
+        case "reply":
+            return `Answering ${arg}`;
+        case "answer":
+            return `Answering ${arg} on the user's word`;
+        case "escalate":
+            return `Passing ${arg} to the user`;
+        case "spawn":
+            return `Spawning ${arg}`;
+        case "resume":
+            return `Resuming ${arg}`;
+        case "merge":
+            return `Merging ${arg}`;
+        case "ask":
+            return `Asking${after(arg)}`;
+        case "tell_master":
+            return `Telling the master${after(arg)}`;
+        case "tell_desk":
+            return `Telling the desk${after(arg)}`;
+        case "notify":
+            return `Telling the user${after(arg)}`;
+        }
+        return `bosun ${call.tool}${after(arg)}`;
+    }
+
+    // The `arg` the daemon gives an MCP call's activity, read from the call's
+    // input as bosun's activity.go does, for a conversation's tool rows.
+    function mcpArg(name, input) {
+        const call = mcpParts(name);
+        const line = value => typeof value === "string" ? value.replace(/\s+/g, " ").trim() : "";
+        const fields = input ?? {};
+        if (call.server !== "bosun")
+            return line(Object.values(fields).find(value => typeof value === "string" && value.trim() !== ""));
+        switch (call.tool) {
+        case "decide":
+            return `${fields.id ?? ""} ${fields.allow === true ? "allow" : "deny"}`;
+        case "spawn":
+        case "resume":
+        case "merge":
+        case "transcript":
+            return line(fields.name);
+        case "reply":
+        case "escalate":
+        case "answer":
+            return line(fields.id);
+        case "tell_desk":
+        case "tell_master":
+            return line(fields.text);
+        case "notify":
+            return line(fields.message);
+        case "ask":
+            return line(fields.question);
+        }
+        return "";
     }
 
     function tilde(path) {
@@ -549,8 +665,10 @@ Singleton {
         return entry.from === parent ? account : message;
     }
 
-    // What a tool call acts on, on one line.
+    // What a tool call acts on, on one line, or what an MCP call does.
     function toolArg(entry) {
+        if (entry.name?.startsWith("mcp__"))
+            return mcpWords(entry.name, mcpArg(entry.name, entry.input));
         const input = entry.input ?? {};
         for (const key of ["command", "file_path", "notebook_path", "pattern", "url", "query", "description", "prompt", "skill"])
             if (typeof input[key] === "string")
