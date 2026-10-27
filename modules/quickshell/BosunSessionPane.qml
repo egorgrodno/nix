@@ -36,10 +36,18 @@ BosunPane {
         return true;
     }
 
+    // Opens the model menu, for the panel's `m`; false while there is none.
+    function openModel() {
+        return modelMenu.show();
+    }
+
     title: node
     actions: [
         BosunDropdown {
+            id: modelMenu
+
             name: "Model"
+            after: effortMenu
             visible: pane.switchable
             enabled: Bosun.switching !== pane.node
             values: Bosun.models
@@ -48,6 +56,8 @@ BosunPane {
             onPicked: value => Bosun.model(pane.node, value, "")
         },
         BosunDropdown {
+            id: effortMenu
+
             name: "Effort"
             visible: pane.switchable
             enabled: Bosun.switching !== pane.node
@@ -157,6 +167,11 @@ BosunPane {
                     hints.push({
                         keys: ["/"],
                         text: "commands such as /compact"
+                    });
+                if (pane.switchable)
+                    hints.push({
+                        keys: ["m"],
+                        text: "model and effort"
                     });
                 return hints.concat([
                     {

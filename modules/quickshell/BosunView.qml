@@ -303,6 +303,8 @@ Item {
             if (!Bosun.connected || Bosun.fleetOp !== "")
                 return false;
             return twice("p", was, () => Bosun.paused ? Bosun.unpause() : Bosun.pause());
+        case "m":
+            return currentPane()?.openModel?.() ?? false;
         case "f":
             setExpanded(!expanded);
             return true;

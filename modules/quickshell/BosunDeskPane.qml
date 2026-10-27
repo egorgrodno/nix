@@ -21,10 +21,18 @@ BosunPane {
         return true;
     }
 
+    // Opens the model menu, for the panel's `m`; false while there is none.
+    function openModel() {
+        return modelMenu.show();
+    }
+
     title: "Front desk"
     actions: [
         BosunDropdown {
+            id: modelMenu
+
             name: "Model"
+            after: effortMenu
             visible: Bosun.connected && pane.session !== null
             enabled: Bosun.switching !== "desk"
             values: Bosun.models
@@ -33,6 +41,8 @@ BosunPane {
             onPicked: value => Bosun.model("desk", value, "")
         },
         BosunDropdown {
+            id: effortMenu
+
             name: "Effort"
             visible: Bosun.connected && pane.session !== null
             enabled: Bosun.switching !== "desk"
@@ -123,6 +133,11 @@ BosunPane {
                     hints.push({
                         keys: ["Tab"],
                         text: "accept the suggested reply"
+                    });
+                if (Bosun.connected && pane.session !== null)
+                    hints.push({
+                        keys: ["m"],
+                        text: "model and effort"
                     });
                 hints.push({
                     keys: [],

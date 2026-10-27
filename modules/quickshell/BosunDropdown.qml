@@ -5,10 +5,12 @@ import QtQuick
 // A compact button showing the current value, which opens a small menu of the
 // values under it. The menu is an item of the panel, not a window of its own:
 // a popup window would leave the panel's focus grab, and clear it. Enter,
-// Space and Down open it from the keyboard; Down, Up and the layout's down and
-// up keys move; Enter and Space pick; Escape closes it. It closes as the value
-// changes, as focus leaves, as the button disables or hides, and with the
-// panel.
+// Space and Down open it from the keyboard, as does `show` for a pane's own
+// key; Down, Up and the layout's down and up keys move; Enter and Space pick;
+// Tab opens the `after` dropdown's menu instead; Escape closes it. Escape and a
+// pick return the keyboard to where it was before `show`. It closes as the
+// value changes, as focus leaves, as the button disables or hides, and with
+// the panel.
 Item {
     id: dropdown
 
@@ -23,6 +25,10 @@ Item {
     readonly property var entries: current === "" && fallback !== "" ? [fallback].concat(values) : values
     property bool open: false
     property int index: 0
+    // The dropdown whose menu Tab opens in place of this one's.
+    property var after: null
+    // Where the keyboard was before the menu took it.
+    property Item home: null
 
     signal picked(string value)
 
@@ -30,14 +36,26 @@ Item {
         return value === "" ? "default" : value;
     }
 
-    function show() {
+    // False while the button cannot be used. `from` is where Escape returns
+    // the keyboard, else the item that has it now.
+    function show(from) {
+        if (!enabled || !visible)
+            return false;
+        home = from ?? Window.activeFocusItem;
         index = Math.max(0, entries.indexOf(lit));
         open = true;
         forceActiveFocus();
+        return true;
+    }
+
+    function close() {
+        open = false;
+        if (home?.visible)
+            home.forceActiveFocus();
     }
 
     function pick(value) {
-        open = false;
+        close();
         if (value !== lit)
             picked(value);
     }
@@ -72,8 +90,10 @@ Item {
         else if ([Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space].includes(key))
             pick(entries[index]);
         else if (key === Qt.Key_Escape)
-            open = false;
-        else {
+            close();
+        else if (key === Qt.Key_Tab && after?.show(home) === true) {
+            // The next menu has the keyboard, which closed this one.
+        } else {
             // Tab moves on, and closes the menu as focus leaves.
             event.accepted = false;
         }
