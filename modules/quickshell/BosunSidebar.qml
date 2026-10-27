@@ -4,10 +4,12 @@ import QtQuick
 import QtQuick.Controls.Basic
 import Quickshell
 
-// Waiting on you, Desk, Fleet and the latest three Log entries, as one list
-// that the movement keys move through. Each row is a key: "decision:<id>", "desk",
-// "session:<node>" or "log:<seq>". A row reads its session or decision from
-// Bosun by that key, so a row kept across an update shows the update.
+// Waiting on you, Desk and Fleet in a list that scrolls, above the latest six
+// Log entries, pinned to the bottom at a height that holds all six. The
+// movement keys move through the list and then the Log. Each row is a key:
+// "decision:<id>", "desk", "session:<node>" or "log:<seq>". A row reads its
+// session or decision from Bosun by that key, so a row kept across an update
+// shows the update.
 Item {
     id: sidebar
 
@@ -77,19 +79,18 @@ Item {
                 type: "session",
                 node: s.node
             });
-        const latest = Bosun.log.slice(-3).reverse();
-        if (latest.length > 0)
-            rows.push(head("Log"));
-        for (const e of latest)
-            rows.push({
-                key: `log:${e.seq}`,
-                type: "log",
-                entry: e
-            });
         return rows;
     }
+    readonly property int logSlots: 6
+    readonly property int logRowHeight: 28
+    // The newest first, below the list.
+    readonly property var logRows: Bosun.connected ? Bosun.log.slice(-logSlots).reverse().map(e => ({
+                    key: `log:${e.seq}`,
+                    type: "log",
+                    entry: e
+                })) : []
     // What the movement keys step through, in order.
-    readonly property var keys: rows.filter(r => !["head", "none"].includes(r.type)).map(r => r.key)
+    readonly property var keys: [...rows, ...logRows].filter(r => !["head", "none"].includes(r.type)).map(r => r.key)
 
     signal chosen(string key)
     // The Log header's expand glyph, which expands the panel onto the Log.
@@ -151,9 +152,12 @@ Item {
     ListView {
         id: list
 
-        anchors.fill: parent
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.top: parent.top
+        anchors.bottom: logArea.visible ? logArea.top : parent.bottom
         anchors.topMargin: 8
-        anchors.bottomMargin: 8
+        anchors.bottomMargin: logArea.visible ? 0 : 8
         clip: true
         boundsBehavior: Flickable.StopAtBounds
         onContentYChanged: if (sidebar.scrollRestored)
@@ -181,8 +185,6 @@ Item {
                     return deskRow;
                 case "session":
                     return sessionRow;
-                case "log":
-                    return logRow;
                 }
                 return none;
             }
@@ -222,15 +224,6 @@ Item {
             }
 
             Component {
-                id: logRow
-
-                LogRow {
-                    rowKey: slot.modelData.key
-                    entry: slot.modelData.entry
-                }
-            }
-
-            Component {
                 id: none
 
                 Caption {
@@ -239,6 +232,42 @@ Item {
                     text: "The bosun daemon is not running"
                 }
             }
+        }
+    }
+
+    Column {
+        id: logArea
+
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: parent.bottom
+        anchors.bottomMargin: 8
+        visible: Bosun.connected
+
+        Header {
+            width: parent.width
+            name: "Log"
+        }
+
+        Repeater {
+            model: ScriptModel {
+                values: sidebar.logRows
+                objectProp: "key"
+            }
+
+            LogRow {
+                required property var modelData
+
+                width: logArea.width
+                rowKey: modelData.key
+                entry: modelData.entry
+            }
+        }
+
+        // The slots no entry fills, so the Log keeps its height.
+        Item {
+            width: parent.width
+            height: Math.max(0, sidebar.logSlots - sidebar.logRows.length) * sidebar.logRowHeight
         }
     }
 
@@ -682,7 +711,7 @@ Item {
 
         required property var entry
 
-        height: 28
+        height: sidebar.logRowHeight
 
         BarText {
             id: logGlyph
