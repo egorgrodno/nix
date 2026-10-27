@@ -14,7 +14,7 @@ BosunPane {
     property var decision: null
     // While it still waits on the user.
     property bool live: false
-    // "y" or "d" while a first press has armed Approve or Deny.
+    // "y" or "d" while a first key press has armed Approve or Deny.
     property string armed: ""
     readonly property string decisionId: decision?.id ?? ""
     readonly property string kind: decision ? Bosun.kindOf(decision) : ""
@@ -245,7 +245,7 @@ BosunPane {
 
                 anchors.verticalCenter: parent.verticalCenter
                 height: 34
-                text: pane.armed === "d" ? `${BosunLook.close}  Deny?` : `${BosunLook.close}  Deny`
+                text: pane.armed === "d" ? `${BosunLook.close}  Press d again to deny` : `${BosunLook.close}  Deny`
                 hoverFill: Theme.alpha(Theme.red, 0.5)
                 lit: pane.armed === "d"
                 onClicked: pane.deny()
@@ -256,7 +256,7 @@ BosunPane {
 
                 anchors.verticalCenter: parent.verticalCenter
                 height: 34
-                text: pane.armed === "y" ? `${BosunLook.check}  Approve?` : `${BosunLook.check}  Approve`
+                text: pane.armed === "y" ? `${BosunLook.check}  Press y again to approve` : `${BosunLook.check}  Approve`
                 hoverFill: Theme.alpha(Theme.blue, 0.5)
                 lit: pane.armed === "y"
                 onClicked: pane.approve()

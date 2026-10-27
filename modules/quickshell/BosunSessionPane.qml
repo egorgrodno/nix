@@ -75,7 +75,7 @@ BosunPane {
         },
         TextButton {
             visible: pane.killable
-            text: pane.killArmed ? `${BosunLook.states.killed.glyph}  Kill ${pane.node}?` : `${BosunLook.states.killed.glyph}  Kill`
+            text: pane.killArmed ? `${BosunLook.states.killed.glyph}  Click again to kill` : `${BosunLook.states.killed.glyph}  Kill`
             hoverFill: Theme.alpha(Theme.red, 0.5)
             lit: pane.killArmed
             onClicked: pane.killClicked()

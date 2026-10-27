@@ -10,6 +10,8 @@ Item {
 
     // While a first press of Pause all, or of p, has armed it.
     property bool pauseArmed: false
+    // Whether the key armed it, rather than a click.
+    property bool pauseByKey: false
     // While the New worker form is open.
     property bool spawning: false
     // While the panel fills the work area.
@@ -85,7 +87,7 @@ Item {
         TextButton {
             visible: Bosun.connected && (!Bosun.paused || Bosun.fleetOp === "pause")
             enabled: Bosun.fleetOp === ""
-            text: Bosun.fleetOp === "pause" ? `${BosunLook.pause}  Pausing…` : bar.pauseArmed ? `${BosunLook.pause}  Pause every session?` : `${BosunLook.pause}  Pause all`
+            text: Bosun.fleetOp === "pause" ? `${BosunLook.pause}  Pausing…` : bar.pauseArmed ? `${BosunLook.pause}  ${bar.pauseByKey ? "Press p again to pause" : "Click again to pause"}` : `${BosunLook.pause}  Pause all`
             hoverFill: Theme.alpha(Theme.yellow, 0.5)
             lit: bar.pauseArmed
             onClicked: bar.pauseClicked()
@@ -94,7 +96,7 @@ Item {
         TextButton {
             visible: Bosun.connected && Bosun.paused && Bosun.fleetOp !== "pause"
             enabled: Bosun.fleetOp === ""
-            text: Bosun.fleetOp === "unpause" ? `${BosunLook.play}  Resuming…` : `${BosunLook.play}  Resume`
+            text: Bosun.fleetOp === "unpause" ? `${BosunLook.play}  Resuming…` : bar.pauseArmed ? `${BosunLook.play}  Press p again to resume` : `${BosunLook.play}  Resume`
             hoverFill: Theme.alpha(Theme.yellow, 0.5)
             lit: bar.pauseArmed
             onClicked: bar.resumeClicked()

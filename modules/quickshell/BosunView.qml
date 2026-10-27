@@ -9,9 +9,10 @@ import Quickshell
 // sections, which can show the sidebar beside it again. There the Log becomes
 // a table with the selected entry whole beside it, and any other pane keeps to
 // a column narrow enough to read. Keys act only while no text field has
-// focus, which starts in the sidebar. Approving, denying and pausing take a
-// second press of the same key within three seconds: the first arms and
-// lights the button, and any other key or a move disarms it.
+// focus, which starts in the sidebar. Approving, denying and pausing by key
+// take a second press of the same key within three seconds, and so do Pause
+// and Kill by click: the first arms and lights the button, and any other key
+// or a move disarms it. Approve and Deny act on a single click.
 Item {
     id: view
 
@@ -25,6 +26,8 @@ Item {
     readonly property bool expanded: BosunKept.expanded
     // The key a first press armed: "y", "d" or "p".
     property string armed: ""
+    // How it was armed: "key" or "click".
+    property string armedBy: "key"
     // The worker a first click on Kill armed.
     property string killing: ""
     // The decision the user's last answer from the panel settled.
@@ -187,8 +190,9 @@ Item {
         keyboardHome.forceActiveFocus();
     }
 
-    function arm(key) {
+    function arm(key, by) {
         armed = key;
+        armedBy = by;
         disarm.restart();
     }
 
@@ -198,13 +202,13 @@ Item {
         if (was === key)
             act();
         else
-            arm(key);
+            arm(key, "key");
         return true;
     }
 
     function pause() {
         if (armed !== "p") {
-            arm("p");
+            arm("p", "click");
             return;
         }
         armed = "";
@@ -236,6 +240,7 @@ Item {
             return false;
         const was = armed;
         armed = "";
+        killing = "";
         if (event.modifiers & (Qt.ControlModifier | Qt.AltModifier | Qt.MetaModifier))
             return false;
         const onLog = logShown && (logTable.activeFocus || rail.activeFocus);
@@ -383,6 +388,7 @@ Item {
 
             width: parent.width
             pauseArmed: view.armed === "p"
+            pauseByKey: view.armedBy === "key"
             spawning: view.selected === "spawn"
             expanded: view.expanded
             onPauseClicked: view.pause()
