@@ -139,7 +139,7 @@ BosunPane {
             scrollKey: conversationView.node !== "" ? `session:${conversationView.node}` : ""
             parentNode: pane.session?.parent ?? ""
             live: !pane.gone
-            busy: ["busy", "waiting"].includes(pane.session?.status)
+            status: pane.session?.status ?? ""
             onDecisionOpened: id => pane.decisionOpened(id)
         }
     ]

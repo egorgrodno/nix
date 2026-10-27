@@ -19,17 +19,19 @@ Item {
     property bool live: true
     readonly property alias feed: feed
     readonly property var progress: feed.progress
-    // Whether the session is in its turn as `bosun watch` has it, for when
-    // the daemon sends no progress.
-    property bool busy: false
-    // A turn that ends on a question in its text is tempo "blocked" with no
-    // `needs`: the session waits on the user, not in its turn. One blocked on
-    // a dialog, whose `needs` names it, is still mid-turn.
+    // The session's status as `bosun watch` has it, "waiting" in a dialog of
+    // its turn and "idle" once its turn ends.
+    property string status: ""
+    // Whether that has it in its turn, for when the daemon sends no progress.
+    readonly property bool busy: ["busy", "waiting"].includes(status)
+    // Claude Code's tempo reads "blocked" both on a dialog mid-turn and after
+    // a turn that ends on a question, with the question in `needs` either
+    // way. The daemon's status, which its Stop hook ends, tells them apart.
     readonly property bool inTurn: {
         const tempo = progress?.tempo ?? "";
         if (tempo === "")
             return busy;
-        return tempo !== "idle" && (tempo !== "blocked" || needs !== "");
+        return tempo !== "idle" && (tempo !== "blocked" || busy);
     }
     // A message sent from the panel whose turn shows nothing yet: the id of
     // the feed's last entry when it went, its args as `Bosun.finished` gives
@@ -43,7 +45,9 @@ Item {
         return inTurn && ["prompt", "queued", "task"].includes(last?.kind);
     }
     // The prompt the session shows: "approve Bash: …" or "answer: q (A · B)".
-    readonly property string needs: progress?.needs ?? ""
+    // Claude Code leaves it set into the next turn, so it counts only while
+    // the session is blocked.
+    readonly property string needs: progress?.tempo === "blocked" ? progress.needs ?? "" : ""
     // The daemon's reading of `needs`, else the panel's own.
     readonly property var need: {
         if (needs === "")
@@ -82,6 +86,10 @@ Item {
     // While the view moves on its own, which neither keeps its place nor
     // stops it following.
     property bool restoring: false
+    // Whether the view has taken the place kept for it. The list lays out
+    // and follows its end before the feed's first page comes, and a place
+    // stored then would replace the one kept.
+    property bool placed: false
 
     // Turns the feed's entries into those shown, as BosunDesk.shape does for
     // the desk; null shows them as they come.
@@ -224,15 +232,20 @@ Item {
         restorer.restart();
     }
 
+    // A hidden pane empties its list, which keeps nothing.
+    function keeps() {
+        return scrollKey !== "" && placed && visible && !feed.opening;
+    }
+
     function keep() {
-        if (scrollKey !== "" && !restoring && !feed.opening)
+        if (keeps() && !restoring)
             BosunKept.keepScroll(scrollKey, position());
     }
 
     // Stores the pinned state, which `keep` skips while the view glides to the
     // end on its own.
     function pin() {
-        if (scrollKey !== "" && !feed.opening)
+        if (keeps())
             BosunKept.keepScroll(scrollKey, {
                 follow: true
             });
@@ -240,6 +253,7 @@ Item {
 
     onNodeChanged: {
         flipped = {};
+        placed = false;
         following = true;
         sent = null;
     }
@@ -319,6 +333,7 @@ Item {
                 list.contentY += at.offset ?? 0;
             }
             conversation.restoring = false;
+            conversation.placed = true;
         }
     }
 

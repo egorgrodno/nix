@@ -96,7 +96,7 @@ BosunPane {
             node: pane.visible ? "desk" : ""
             scrollKey: conversationView.node !== "" ? "session:desk" : ""
             shape: entries => BosunDesk.shape(entries)
-            busy: ["busy", "waiting"].includes(pane.session?.status)
+            status: pane.session?.status ?? ""
             onDecisionOpened: id => pane.opened(`decision:${id}`, null)
             onOpened: (key, item) => pane.opened(key, item)
 
