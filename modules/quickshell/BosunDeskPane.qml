@@ -23,7 +23,8 @@ BosunPane {
 
     title: "Front desk"
     actions: [
-        BosunSegments {
+        BosunDropdown {
+            name: "Model"
             visible: Bosun.connected && pane.session !== null
             enabled: Bosun.switching !== "desk"
             values: Bosun.models
@@ -31,7 +32,8 @@ BosunPane {
             fallback: "default"
             onPicked: value => Bosun.model("desk", value, "")
         },
-        BosunSegments {
+        BosunDropdown {
+            name: "Effort"
             visible: Bosun.connected && pane.session !== null
             enabled: Bosun.switching !== "desk"
             values: Bosun.efforts

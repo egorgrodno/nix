@@ -56,6 +56,8 @@ Item {
     Row {
         id: actionRow
 
+        // Over the body, for a dropdown's menu.
+        z: 1
         anchors.right: asideText.visible ? asideText.left : parent.right
         anchors.rightMargin: asideText.visible ? 16 : 28
         anchors.verticalCenter: titleText.verticalCenter

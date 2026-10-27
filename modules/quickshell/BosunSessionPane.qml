@@ -38,7 +38,8 @@ BosunPane {
 
     title: node
     actions: [
-        BosunSegments {
+        BosunDropdown {
+            name: "Model"
             visible: pane.switchable
             enabled: Bosun.switching !== pane.node
             values: Bosun.models
@@ -46,7 +47,8 @@ BosunPane {
             fallback: "default"
             onPicked: value => Bosun.model(pane.node, value, "")
         },
-        BosunSegments {
+        BosunDropdown {
+            name: "Effort"
             visible: pane.switchable
             enabled: Bosun.switching !== pane.node
             values: Bosun.efforts
