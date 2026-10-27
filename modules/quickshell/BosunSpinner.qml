@@ -1,10 +1,12 @@
 import QtQuick
 import QtQuick.Shapes
 
-// A running state's spinner: an arc of a circle that turns about the circle's
-// centre. The arc is drawn, not a glyph, as a glyph's box is neither square
-// nor centred on its mark. The square item turns about its own centre, and
-// the turn stops while the spinner is hidden or its window is not showing.
+// A running state's spinner: a short arc that travels round a faint circle.
+// The arc is drawn, not a glyph, as a glyph's box is neither square nor
+// centred on its mark. A long arc would read as a shape spinning about its own
+// middle, since its mass sits near the circle's centre. The dial stays square,
+// centred in whatever box it is given and on whole pixels, and the turn stops
+// while the spinner is hidden or its window is not showing.
 Item {
     id: root
 
@@ -21,13 +23,29 @@ Item {
 
         width: root.size
         height: root.size
-        anchors.centerIn: parent
+        x: (root.width - width) / 2
+        y: (root.height - height) / 2
         transformOrigin: Item.Center
         antialiasing: true
 
         Shape {
             anchors.fill: parent
             preferredRendererType: Shape.CurveRenderer
+
+            ShapePath {
+                strokeColor: Qt.alpha(root.color, 0.25)
+                strokeWidth: root.stroke
+                fillColor: "transparent"
+
+                PathAngleArc {
+                    centerX: root.size / 2
+                    centerY: root.size / 2
+                    radiusX: (root.size - root.stroke) / 2
+                    radiusY: radiusX
+                    startAngle: 0
+                    sweepAngle: 360
+                }
+            }
 
             ShapePath {
                 strokeColor: root.color
@@ -41,18 +59,24 @@ Item {
                     radiusX: (root.size - root.stroke) / 2
                     radiusY: radiusX
                     startAngle: 0
-                    sweepAngle: 270
+                    sweepAngle: 90
                 }
             }
         }
 
         // The angle comes from the clock, so a spinner its view rebuilds
-        // carries on where the last one was rather than jumping back.
+        // carries on where the last one was rather than jumping back. The
+        // snap runs here too, as a binding would not see an ancestor move.
         FrameAnimation {
             id: turn
 
             running: root.visible && root.opacity > 0 && (root.Window.window?.visible ?? false)
-            onTriggered: dial.rotation = Date.now() % 900 / 900 * 360
+            onTriggered: {
+                const at = root.mapToItem(null, (root.width - root.size) / 2, (root.height - root.size) / 2);
+                dial.x = (root.width - root.size) / 2 + Math.round(at.x) - at.x;
+                dial.y = (root.height - root.size) / 2 + Math.round(at.y) - at.y;
+                dial.rotation = Date.now() % 900 / 900 * 360;
+            }
         }
     }
 }
