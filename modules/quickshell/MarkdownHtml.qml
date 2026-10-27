@@ -77,7 +77,7 @@ Singleton {
                 });
                 continue;
             }
-            const heading = /^#{1,6}\s+/.test(lines[i]);
+            const heading = /^ {0,3}#{1,6}\s+/.test(lines[i]);
             const item = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/.exec(lines[i]);
             if (item) {
                 // Each deeper indent opens a level; a shallower one closes
@@ -105,7 +105,7 @@ Singleton {
                 continue;
             }
             levels.length = 0;
-            const html = inline(lines[i].replace(/^#{1,6}\s+/, ""));
+            const html = inline(lines[i].replace(/^ {0,3}#{1,6}\s+/, ""));
             out.push({
                 block: false,
                 html: heading ? `<b>${html}</b>` : html

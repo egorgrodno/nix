@@ -146,12 +146,9 @@ Item {
                     }
                 }
 
-                SelectableText {
-                    width: parent.width
-                    wrapMode: TextEdit.Wrap
-                    text: entry.item.text ?? ""
+                BosunMarkdown {
+                    markdown: entry.item.text ?? ""
                     color: card.queued ? Theme.foregroundMuted : Theme.foregroundStrong
-                    font.pixelSize: 14
                 }
             }
         }
