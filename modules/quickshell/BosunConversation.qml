@@ -411,12 +411,15 @@ Item {
                     bottomPadding: 12
                     spacing: 8
 
+                    // On the text, as the row's centre takes in its padding.
                     BosunSpinner {
-                        anchors.verticalCenter: parent.verticalCenter
+                        anchors.verticalCenter: label.verticalCenter
                         size: 12
                     }
 
                     BarText {
+                        id: label
+
                         width: parent.width - 20
                         elide: Text.ElideRight
                         text: status.last
@@ -435,11 +438,15 @@ Item {
 
         onContentHeightChanged: if (conversation.following)
             toEnd.restart()
-        // The scroll bar moves the view without a movement.
+        // Only the user's scroll lets go of the end or takes the view back
+        // to it: the list moves the view itself as rows and the footer grow,
+        // short of the end until `toEnd` runs. The scroll bar moves it
+        // without a movement.
         onContentYChanged: {
             if (conversation.restoring || feed.opening)
                 return;
-            conversation.following = atYEnd;
+            if (moving || scrollBar.pressed)
+                conversation.following = atYEnd;
             conversation.keep();
         }
         // A scroll takes the view from the glide.
@@ -447,7 +454,9 @@ Item {
         onAtYBeginningChanged: if (atYBeginning && !conversation.following)
             feed.loadOlder()
 
-        ScrollBar.vertical: BosunScrollBar {}
+        ScrollBar.vertical: BosunScrollBar {
+            id: scrollBar
+        }
     }
 
     // Takes the view back to the newest entry and pins it there, as an entry
@@ -462,7 +471,7 @@ Item {
         anchors.rightMargin: 20
         anchors.bottom: parent.bottom
         anchors.bottomMargin: 12 + footerShown
-        shown: list.contentHeight > list.height && !list.atYEnd
+        shown: !conversation.following && list.contentHeight > list.height && !list.atYEnd
         onClicked: {
             conversation.shownBefore.glide = true;
             conversation.following = true;
