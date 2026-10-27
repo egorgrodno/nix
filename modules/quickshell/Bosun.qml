@@ -22,7 +22,9 @@ Singleton {
     property bool paused: false
     // "pause" or "unpause" while the panel's runs: each stops or resumes the
     // sessions one by one.
-    readonly property string fleetOp: fleet.running ? fleet.op : ""
+    // "compact desk", "clear master" and the like while that command runs.
+    readonly property string contextOp: contextRun.running ? contextRun.op : ""
+    readonly property string fleetOp:fleet.running ? fleet.op : ""
     // Each as `bosun status --json` gives it.
     property var sessions: []
     readonly property var master: sessions.find(s => s.node === "master") ?? null
@@ -31,7 +33,9 @@ Singleton {
     property var decisions: []
     readonly property var mine: decisions.filter(d => d.holder === "user")
     readonly property var masters: decisions.filter(d => d.holder === "master")
-    readonly property bool working: sessions.some(s => s.status === "busy" || s.status === "waiting")
+    // A worker under the master, which the daemon's clear of the master refuses.
+    readonly property bool hasWorkers: sessions.some(s => s.node !== "master" && s.node !== "desk")
+    readonly property bool working:sessions.some(s => s.status === "busy" || s.status === "waiting")
     // What each worker does, as `activityOf` names it, in turn first: those
     // gone from Claude Code's listing left out.
     readonly property var activities: {
@@ -282,6 +286,19 @@ Singleton {
         send(["kill", node]);
     }
 
+    // The master's or the desk's context, summarised and kept. The daemon
+    // answers once the compaction ends, up to five minutes on, so it runs
+    // beside `cli` and holds no answer back.
+    function compact(node) {
+        contextRun.start("compact", node);
+    }
+
+    // A new conversation for the master or the desk, which the daemon
+    // refuses for the master while any worker exists.
+    function clear(node) {
+        contextRun.start("clear", node);
+    }
+
     // As the user: a stopped session resumes with it, a running one reads it
     // between tool calls, and a text starting with / runs as a command.
     function say(node, text) {
@@ -466,6 +483,25 @@ Singleton {
                 return;
             op = name;
             command = [Programs.bosun, name];
+            running = true;
+        }
+
+        stderr: StdioCollector {
+            onStreamFinished: root.error = text.trim().replace(/^bosun: /, "")
+        }
+    }
+
+    // A compact or clear in flight, one at a time.
+    Process {
+        id: contextRun
+
+        property string op: ""
+
+        function start(verb, node) {
+            if (running)
+                return;
+            op = `${verb} ${node}`;
+            command = [Programs.bosun, verb, node];
             running = true;
         }
 

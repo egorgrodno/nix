@@ -9,10 +9,11 @@ import Quickshell
 // sections, which can show the sidebar beside it again. There the Log becomes
 // a table with the selected entry whole beside it, and any other pane keeps to
 // a column narrow enough to read. Keys act only while no text field has
-// focus, which starts in the sidebar. Approving, denying and pausing by key
-// take a second press of the same key within three seconds, and so do Pause
-// and Kill by click: the first arms and lights the button, and any other key
-// or a move disarms it. Approve and Deny act on a single click.
+// focus, which starts in the sidebar. Approving, denying, pausing and clearing
+// a conversation by key take a second press of the same key within three
+// seconds, and so do Pause, Kill and Clear by click: the first arms and lights
+// the button, and any other key or a move disarms it. Approve and Deny act on
+// a single click.
 Item {
     id: view
 
@@ -24,7 +25,7 @@ Item {
     readonly property string selected: BosunKept.selected
     readonly property var held: BosunKept.held
     readonly property bool expanded: BosunKept.expanded
-    // The key a first press armed: "y", "d" or "p".
+    // The key a first press armed: "y", "d", "p" or "C".
     property string armed: ""
     // How it was armed: "key" or "click".
     property string armedBy: "key"
@@ -215,6 +216,34 @@ Item {
         Bosun.pause();
     }
 
+    // The session whose context the pane beside shows Compact and Clear for:
+    // the desk, or the master where there is no desk.
+    readonly property string contextNode: {
+        if (paneKind === "desk")
+            return "desk";
+        return paneKind === "session" && session?.node === "master" ? "master" : "";
+    }
+    readonly property bool clearable: Bosun.connected && Bosun.contextOp === "" && contextNode !== "" &&!(contextNode === "master" && Bosun.hasWorkers)
+
+    function compact() {
+        Bosun.compact(contextNode);
+    }
+
+    function clearNow() {
+        armed = "";
+        Bosun.clear(contextNode);
+    }
+
+    // A click arms Clear, and a second one clears.
+    function clear() {
+        if (!clearable)
+            return;
+        if (armed !== "C")
+            arm("C", "click");
+        else
+            clearNow();
+    }
+
     function kill(node) {
         if (killing !== node) {
             killing = node;
@@ -310,6 +339,13 @@ Item {
             return twice("p", was, () => Bosun.paused ? Bosun.unpause() : Bosun.pause());
         case "m":
             return currentPane()?.openModel?.() ?? false;
+        case "c":
+            if (!Bosun.connected || contextNode === "")
+                return false;
+            compact();
+            return true;
+        case "C":
+            return clearable && twice("C", was, clearNow);
         case "f":
             setExpanded(!expanded);
             return true;
@@ -587,6 +623,10 @@ Item {
 
                     anchors.fill: parent
                     visible: view.paneKind === "desk"
+                    clearArmed: view.armed === "C"
+                    clearByKey: view.armedBy === "key"
+                    onCompactClicked: view.compact()
+                    onClearClicked: view.clear()
                     onLeave: view.keyboardHome.forceActiveFocus()
                     onOpened: (key, item) => view.select(key, item)
                 }
@@ -599,6 +639,10 @@ Item {
                     session: view.session
                     killArmed: view.killing !== "" && view.killing === (view.session?.node ?? "")
                     onKillClicked: view.kill(view.session.node)
+                    clearArmed: view.armed === "C"
+                    clearByKey: view.armedBy === "key"
+                    onCompactClicked: view.compact()
+                    onClearClicked: view.clear()
                     onLeave: view.keyboardHome.forceActiveFocus()
                     onDecisionOpened: id => view.select(`decision:${id}`)
                 }

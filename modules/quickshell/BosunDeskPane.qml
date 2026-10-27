@@ -11,6 +11,12 @@ BosunPane {
     readonly property var session: Bosun.desk
     readonly property bool attachable: (session?.id ?? "") !== "" && session?.status !== "exited"
 
+    // While a first press or click has armed Clear, and which armed it.
+    property bool clearArmed: false
+    property bool clearByKey: false
+
+    signal compactClicked
+    signal clearClicked
     signal leave
     signal opened(string key, var item)
 
@@ -71,6 +77,14 @@ BosunPane {
         },
         BosunContext {
             context: pane.session?.context ?? null
+        },
+        BosunContextActions {
+            node: "desk"
+            visible: Bosun.connected && pane.session !== null
+            clearArmed: pane.clearArmed
+            clearByKey: pane.clearByKey
+            onCompactClicked: pane.compactClicked()
+            onClearClicked: pane.clearClicked()
         }
     ]
 
@@ -132,6 +146,14 @@ BosunPane {
                     hints.push({
                         keys: ["m"],
                         text: "model and effort"
+                    });
+                if (Bosun.connected && pane.session !== null)
+                    hints.push({
+                        keys: ["c"],
+                        text: "compact"
+                    }, {
+                        keys: ["C", "C"],
+                        text: "clear"
                     });
                 hints.push({
                     keys: [],

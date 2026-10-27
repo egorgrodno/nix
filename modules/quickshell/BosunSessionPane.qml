@@ -25,7 +25,14 @@ BosunPane {
     readonly property string stateKey: session ? BosunLook.stateOf(session) : "stopped"
     readonly property alias conversation: conversationView
 
+    // While a first press or click has armed Clear, and which armed it.
+    property bool clearArmed: false
+    property bool clearByKey: false
+    readonly property bool contextual: node === "master" && !gone && Bosun.connected
+
     signal killClicked
+    signal compactClicked
+    signal clearClicked
     signal leave
     signal decisionOpened(string id)
 
@@ -109,6 +116,14 @@ BosunPane {
         BosunContext {
             context: pane.session?.context ?? null
         },
+        BosunContextActions {
+            node: "master"
+            visible: pane.contextual
+            clearArmed: pane.clearArmed
+            clearByKey: pane.clearByKey
+            onCompactClicked: pane.compactClicked()
+            onClearClicked: pane.clearClicked()
+        },
         BosunFact {
             glyph: BosunLook.account
             text: pane.session?.parent ? `spawned by ${pane.session.parent}` : ""
@@ -175,6 +190,17 @@ BosunPane {
                         keys: ["m"],
                         text: "model and effort"
                     });
+                if (pane.contextual) {
+                    hints.push({
+                        keys: ["c"],
+                        text: "compact"
+                    });
+                    if (!Bosun.hasWorkers)
+                        hints.push({
+                            keys: ["C", "C"],
+                            text: "clear"
+                        });
+                }
                 return hints.concat([
                     {
                         keys: [Host.directions.down, Host.directions.up],
