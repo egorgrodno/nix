@@ -70,7 +70,7 @@ Singleton {
     // `desk-master` for the master's answer, `desk-text` for the desk's own,
     // `desk-instruction` for a tell_master call, `desk-answered` for an answer
     // given on the user's word, and `desk-pending` for a tell the desk has not
-    // taken yet.
+    // taken yet. The desk's lookups of its own tools are left out.
     function shape(entries) {
         const out = [];
         let instructions = 0;
@@ -128,6 +128,8 @@ Singleton {
                 }));
                 continue;
             case "tool":
+                if (entry.name === "ToolSearch")
+                    continue;
                 if (entry.name === "mcp__bosun__tell_master") {
                     out.push(Object.assign({}, entry, {
                         kind: "desk-instruction",
