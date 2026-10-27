@@ -6,7 +6,7 @@ import QtQuick
 // auto mode refused, the call or the question, and its answers. A permission
 // takes Deny, with a note of what to do instead, and Approve, a question a
 // reply, a notice Dismiss. Once settled it stays, faded and unanswerable,
-// until the selection moves.
+// until the selection moves, and no longer says what reserved it.
 BosunPane {
     id: pane
 
@@ -177,7 +177,7 @@ BosunPane {
     }
 
     Banner {
-        visible: (pane.decision?.reserved ?? "") !== ""
+        visible: pane.live && (pane.decision?.reserved ?? "") !== ""
         glyph: BosunLook.reserved
         tint: Theme.yellow
         text: `Reserved: ${pane.decision?.reserved ?? ""}.${pane.decision?.userOnly ? " Only your own answer here settles it." : ""}`
