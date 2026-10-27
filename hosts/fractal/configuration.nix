@@ -75,6 +75,7 @@ in
   };
 
   base.hibernate = true;
+  base.keyboard.layout = "hallmack";
 
   # Sized to RAM so any workload fits the hibernation image. systemd records the
   # file's location in the HibernateLocation EFI variable and the systemd initrd

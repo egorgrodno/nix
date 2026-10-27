@@ -21,7 +21,7 @@
     isDesktop = true;
     # The layout is the author's preference, not a property of the stack, so a
     # host or a second account can pick qwerty without reaching for mkForce.
-    keyboard.layout = lib.mkDefault "hallmack";
+    keyboard.layout = lib.mkDefault "qwerty";
   };
 
   # Enable only; the screens are hardware, so each host sets its own
