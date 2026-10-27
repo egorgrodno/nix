@@ -1,8 +1,9 @@
 import QtQuick
 import QtQuick.Controls.Basic
 
-// The scroll bar of every bosun view that scrolls. It floats over the view's
-// right edge and never narrows the content. Hidden at rest, it fades in while
+// The scroll bar of every view that scrolls, attached as ScrollBar.vertical or
+// ScrollBar.horizontal. It floats over the view's edge (right, or bottom when
+// horizontal) and never narrows the content. Hidden at rest, it fades in while
 // the view scrolls or the pointer is over its track, widens under the pointer
 // or a drag, and lingers a second after either ends.
 ScrollBar {
@@ -14,15 +15,20 @@ ScrollBar {
 
     // The track is wider than the thumb so the thumb is easy to hit.
     implicitWidth: 14
+    implicitHeight: 14
     padding: 0
     policy: ScrollBar.AlwaysOn
     visible: size < 1
     hoverEnabled: true
     // A long view would shrink the thumb past grabbing; its travel shrinks
     // with it.
-    minimumSize: height > 0 ? Math.min(1, 36 / height) : 0
-    // Content growth and the view's own moves change the position too, and
-    // must not show the bar; only the user's scroll does.
+    minimumSize: {
+        const length = vertical ? height : width;
+        return length > 0 ? Math.min(1, 36 / length) : 0;
+    }
+    // Content growth and a view positioning itself change the position too,
+    // and must not show the bar; only the user's scroll does. A view that
+    // scrolls without the Flickable's own wheel or drag calls poke().
     onPositionChanged: if (pressed || (parent?.moving ?? false))
         poke()
     onHoveredChanged: poke()
@@ -58,12 +64,13 @@ ScrollBar {
         Rectangle {
             id: thumb
 
-            anchors.top: parent.top
-            anchors.bottom: parent.bottom
-            anchors.right: parent.right
-            anchors.rightMargin: 2
-            width: bar.hovered || bar.pressed ? 8 : 4
-            radius: width / 2
+            property real thickness: bar.hovered || bar.pressed ? 8 : 4
+
+            x: bar.vertical ? parent.width - width - 2 : 0
+            y: bar.vertical ? 0 : parent.height - height - 2
+            width: bar.vertical ? thickness : parent.width
+            height: bar.vertical ? parent.height : thickness
+            radius: thickness / 2
             color: overThumb.hovered || bar.pressed ? Theme.tint(0.5) : Theme.tint(0.25)
 
             Behavior on color {
@@ -73,7 +80,7 @@ ScrollBar {
                 }
             }
 
-            Behavior on width {
+            Behavior on thickness {
                 NumberAnimation {
                     duration: 150
                     easing.type: Easing.OutCubic

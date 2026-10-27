@@ -100,7 +100,7 @@ Item {
         onContentYChanged: if (!pane.restoring && pane.scrollKey !== "")
             BosunKept.keepScroll(pane.scrollKey, contentY)
 
-        ScrollBar.vertical: BosunScrollBar {}
+        ScrollBar.vertical: OverlayScrollBar {}
 
         Column {
             id: bodyColumn

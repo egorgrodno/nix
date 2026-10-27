@@ -354,7 +354,7 @@ Item {
             objectProp: "seq"
         }
 
-        ScrollBar.vertical: BosunScrollBar {}
+        ScrollBar.vertical: OverlayScrollBar {}
 
         delegate: EntryRow {}
     }
@@ -436,7 +436,7 @@ Item {
             boundsBehavior: Flickable.StopAtBounds
             model: [""].concat(table.sessions)
 
-            ScrollBar.vertical: BosunScrollBar {}
+            ScrollBar.vertical: OverlayScrollBar {}
 
             delegate: Rectangle {
                 id: choice
