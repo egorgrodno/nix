@@ -639,8 +639,9 @@ Singleton {
 
     // The kinds of conversation entry the panel shows. Any other is one bosun
     // cannot show yet, but for `meta`, the bookkeeping it hides. `cleared` is
-    // BosunFeed's own, where a new conversation begins.
-    readonly property var entryKinds: ["prompt", "queued", "task", "text", "thinking", "tool", "compact", "command", "cleared"]
+    // BosunFeed's own, where a new conversation begins, and `working`
+    // BosunConversation's, the live row of a turn that shows nothing yet.
+    readonly property var entryKinds: ["prompt", "queued", "task", "text", "thinking", "working", "tool", "compact", "command", "cleared"]
 
     // Who a prompt came from: the user, bosun, Claude Code, the session's
     // parent, or another session's message.

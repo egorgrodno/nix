@@ -23,6 +23,17 @@ Item {
     // the daemon sends no progress.
     property bool busy: false
     readonly property bool inTurn: (progress?.tempo ?? "") !== "" ? progress.tempo !== "idle" : busy
+    // A message sent from the panel whose turn shows nothing yet: the id of
+    // the feed's last entry when it went, its args as `Bosun.finished` gives
+    // them, and whether the session has been in a turn since.
+    property var sent: null
+    // Shows the Working row: a message sent, or a turn with only its prompt.
+    readonly property bool waiting: {
+        if (sent !== null)
+            return true;
+        const last = feed.entries[feed.entries.length - 1];
+        return inTurn && ["prompt", "queued", "task"].includes(last?.kind);
+    }
     // The prompt the session shows: "approve Bash: …" or "answer: q (A · B)".
     readonly property string needs: progress?.needs ?? ""
     // The daemon's reading of `needs`, else the panel's own.
@@ -83,12 +94,15 @@ Item {
     // turn, with thinking its latest entry before any prompt queued for the
     // turn. The progress line's state and detail never say thinking. One id
     // for every such row lets `steady` keep it through a run of thinking.
+    // While `waiting`, a Working row ends them, unless a row or the progress
+    // line already shows the turn running.
     function fold(entries) {
         let latest = null;
         for (const e of entries)
             if (!["queued", "desk-pending"].includes(e.kind))
                 latest = e;
         const thinks = inTurn && latest?.kind === "thinking";
+        const runs = inTurn && (thinks || latest?.kind === "tool" && !latest.result || (progress?.detail ?? "") !== "");
         const out = [];
         for (const e of entries)
             if (e.kind !== "thinking")
@@ -98,7 +112,24 @@ Item {
                     id: "thinking-now",
                     kind: "thinking"
                 });
+        if (waiting && !runs)
+            out.push({
+                id: "working-now",
+                kind: "working",
+                started: sent === null || sent.started
+            });
         return out;
+    }
+
+    // Ends `sent` once an entry of the session's own lands after it.
+    function settle() {
+        if (sent === null)
+            return;
+        const at = feed.places[sent.last];
+        if (sent.last !== "" && at === undefined)
+            return;
+        if (feed.entries.slice(sent.last === "" ? 0 : at + 1).some(e => !["prompt", "queued", "task", "meta", "cleared"].includes(e.kind)))
+            sent = null;
     }
 
     // Hands back the row shown before for each entry whose fields are all the
@@ -168,6 +199,51 @@ Item {
     onNodeChanged: {
         flipped = {};
         following = true;
+        sent = null;
+    }
+    // A turn that ends before any entry of its own lands, as one that fails
+    // at once does.
+    onInTurnChanged: {
+        if (sent === null)
+            return;
+        if (inTurn)
+            sent = Object.assign({}, sent, {
+                started: true
+            });
+        else if (sent.started)
+            sent = null;
+    }
+    onBusyChanged: if (busy && sent !== null && !sent.started)
+        sent = Object.assign({}, sent, {
+            started: true
+        })
+
+    Connections {
+        target: Bosun
+
+        function onSending(node, args) {
+            if (node !== conversation.node || !conversation.live)
+                return;
+            conversation.sent = {
+                last: feed.entries[feed.entries.length - 1]?.id ?? "",
+                args: JSON.stringify(args),
+                started: conversation.inTurn
+            };
+        }
+
+        // `Bosun.error` shows why.
+        function onFinished(args, ok) {
+            if (!ok && JSON.stringify(args) === conversation.sent?.args)
+                conversation.sent = null;
+        }
+    }
+
+    // A send the session never starts a turn for, as on a daemon that lost
+    // it.
+    Timer {
+        running: conversation.sent !== null && !conversation.sent.started
+        interval: 30000
+        onTriggered: conversation.sent = null
     }
 
     BosunFeed {
@@ -180,6 +256,7 @@ Item {
         onPrepending: kept = conversation.position()
         onPrepended: conversation.restore(kept)
         onOpened: conversation.restore(conversation.scrollKey !== "" ? BosunKept.scroll(conversation.scrollKey) : null)
+        onEntriesChanged: conversation.settle()
     }
 
     // Timers rather than Qt.callLater, which can outlive a pane destroyed in

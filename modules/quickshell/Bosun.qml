@@ -69,6 +69,8 @@ Singleton {
     signal openRequested
     // A command sent through `send` has exited, with status 0 if `ok`.
     signal finished(var args, bool ok)
+    // A say or tell to `node` is queued, with the args `finished` reports.
+    signal sending(string node, var args)
 
     onFinished: args => {
         if (args[0] === "model")
@@ -273,7 +275,9 @@ Singleton {
 
     // The daemon routes it to the desk, or to the master when there is none.
     function tell(text) {
-        send(["tell", text]);
+        const args = ["tell", text];
+        sending(desk ? "desk" : "master", args);
+        send(args);
     }
 
     // A worker under the master, on the daemon's worker model and effort when
@@ -302,7 +306,9 @@ Singleton {
     // As the user: a stopped session resumes with it, a running one reads it
     // between tool calls, and a text starting with / runs as a command.
     function say(node, text) {
-        send(["say", node, text]);
+        const args = ["say", node, text];
+        sending(node, args);
+        send(args);
     }
 
     // Ends the session's turn, which reaches its parent as a turn end.

@@ -5,9 +5,9 @@ import QtQuick
 // One entry of a session's conversation, as BosunFeed holds it: a prompt, a
 // message or a background task's end on a card, the assistant's text, a line
 // for a tool call, a compaction or a command that opens at a click, the live
-// Thinking line, and a line where a new conversation begins. An edit opens on
-// its diff. BosunDeskEntry shows the kinds BosunDesk adds. Any kind the panel
-// does not know shows as one bosun cannot show yet.
+// Thinking or Working line, and a line where a new conversation begins. An
+// edit opens on its diff. BosunDeskEntry shows the kinds BosunDesk adds. Any
+// kind the panel does not know shows as one bosun cannot show yet.
 Item {
     id: entry
 
@@ -41,6 +41,7 @@ Item {
             case "tool":
                 return toolEntry;
             case "thinking":
+            case "working":
             case "compact":
             case "command":
                 return foldEntry;
@@ -162,7 +163,8 @@ Item {
     }
 
     // A line that opens on what it holds, a compaction's summary or a
-    // command's output, or the live Thinking line BosunConversation adds.
+    // command's output, or a live Thinking or Working line BosunConversation
+    // adds.
     Component {
         id: foldEntry
 
@@ -172,10 +174,18 @@ Item {
             spacing: 6
 
             Line {
-                glyph: entry.kind === "thinking" ? BosunLook.thinking : entry.kind === "compact" ? BosunLook.compacted : BosunLook.command
-                label: entry.kind === "thinking" ? "Thinking" : entry.kind === "compact" ? "Compacted" : [entry.item.name, entry.item.args].filter(part => part).join(" ")
+                glyph: ({
+                        thinking: BosunLook.thinking,
+                        working: entry.item.started ? BosunLook.running : BosunLook.send,
+                        compact: BosunLook.compacted
+                    })[entry.kind] ?? BosunLook.command
+                label: ({
+                        thinking: "Thinking",
+                        working: entry.item.started ? "Working" : "Sending",
+                        compact: "Compacted"
+                    })[entry.kind] ?? [entry.item.name, entry.item.args].filter(part => part).join(" ")
                 mono: entry.kind === "command"
-                lit: entry.kind === "thinking"
+                lit: ["thinking", "working"].includes(entry.kind)
                 opens: parent.body !== ""
             }
 
