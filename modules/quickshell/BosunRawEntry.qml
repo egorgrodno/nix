@@ -46,40 +46,16 @@ Item {
         width: parent.width - 24
         spacing: 4
 
-        Item {
-            width: parent.width
-            height: title.implicitHeight
-
-            Row {
-                id: title
-
-                spacing: 8
-
-                BarText {
-                    text: `${BosunLook.alert}  bosun can't show this entry yet`
-                    color: Theme.yellow
-                    font.pixelSize: 13
-                }
-
-                BarText {
-                    text: raw.type
-                    color: Theme.yellow
-                    font.family: Theme.fontMono
-                    font.pixelSize: 13
-                }
-            }
-
-            Caption {
-                anchors.right: parent.right
-                text: `Raw  ${raw.open ? BosunLook.chevronDown : BosunLook.chevronRight}`
-
-                MouseArea {
-                    anchors.fill: parent
-                    anchors.margins: -4
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: raw.toggled()
-                }
-            }
+        BosunLine {
+            glyph: BosunLook.alert
+            glyphColor: Theme.yellow
+            label: "bosun can't show this entry yet"
+            labelColor: Theme.yellow
+            aside: raw.type
+            asideColor: Theme.yellow
+            asideMono: true
+            open: raw.open
+            onToggled: raw.toggled()
         }
 
         BarText {

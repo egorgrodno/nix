@@ -34,6 +34,7 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `BosunMarkdown` | An assistant's text as Markdown, selectable a block at a time |
 | `SelectableText` | `BarText`'s look in a read-only `TextEdit` the mouse selects, for `MouseSelection` to copy |
 | `SelectableMarkdown` | Todoist-style Markdown the mouse selects, built on `SelectableText` |
+| `BosunLine` | A line that opens at a click: chevron, glyph, label and an aside, with `open` and `toggled` for the caller to wire |
 | `BosunFact` | A glyph and its words in a header |
 | `BosunSpinner` | A running state's spinner |
 | `BosunJumpButton` | A round button over a scrolling view's corner that jumps to its newest entry |

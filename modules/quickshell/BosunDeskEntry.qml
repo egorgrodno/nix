@@ -248,44 +248,13 @@ Item {
             width: entry.width
             spacing: 6
 
-            Item {
-                width: parent.width
-                height: 22
-
-                BarText {
-                    id: masterLead
-
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: `${entry.open ? BosunLook.chevronDown : BosunLook.chevronRight}  ${BosunLook.master}`
-                    color: Theme.foregroundMuted
-                    font.pixelSize: 14
-                }
-
-                BarText {
-                    anchors.left: masterLead.right
-                    anchors.leftMargin: 8
-                    anchors.right: masterAgo.left
-                    anchors.rightMargin: 16
-                    anchors.verticalCenter: parent.verticalCenter
-                    elide: Text.ElideRight
-                    text: `The master answered: ${(entry.item.text ?? "").split("\n")[0]}`
-                    color: Theme.foregroundMuted
-                    font.pixelSize: 14
-                }
-
-                Caption {
-                    id: masterAgo
-
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: BosunLook.ago(entry.item.at, entry.conversation.now)
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: entry.toggled()
-                }
+            BosunLine {
+                glyph: BosunLook.master
+                label: `The master answered: ${(entry.item.text ?? "").split("\n")[0]}`
+                labelColor: Theme.foregroundMuted
+                aside: BosunLook.ago(entry.item.at, entry.conversation.now)
+                open: entry.open
+                onToggled: entry.toggled()
             }
 
             SelectableText {
