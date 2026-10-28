@@ -80,6 +80,54 @@ ShellRoot {
             return "ok";
         }
 
+        // Opens the New worker form in the full panel, as the `n` key does.
+        function spawn(): string {
+            const view = Bosun.panel?.shown;
+            if (!view?.openSpawn)
+                return "error: no full panel is open";
+            view.openSpawn();
+            return "ok";
+        }
+
+        // The New worker form's repositories, and its task field's box in
+        // the screen's pixels, as JSON.
+        function spawnForm(): string {
+            let form = null;
+            const walk = item => {
+                if (form || !item)
+                    return;
+                if (item.findRepos !== undefined && item.visible)
+                    form = item;
+                for (const c of item.children ?? [])
+                    walk(c);
+                if (item.contentItem && item.contentItem !== item)
+                    walk(item.contentItem);
+            };
+            walk(Bosun.panel?.shown);
+            if (!form)
+                return "error: no New worker form shows";
+            let task = null;
+            const fields = item => {
+                if (item.maxLines !== undefined && (!task || item.height > task.height))
+                    task = item;
+                for (const c of item.children ?? [])
+                    fields(c);
+            };
+            fields(form);
+            // The surface starts at its margins, as geometry() counts.
+            const at = task.mapToItem(null, 0, 0);
+            const panel = Bosun.panel;
+            return JSON.stringify({
+                repos: form.repos,
+                task: {
+                    x: Math.round((panel.screen?.x ?? 0) + panel.margins.left + at.x),
+                    y: Math.round((panel.screen?.y ?? 0) + panel.margins.top + at.y),
+                    width: Math.round(task.width),
+                    height: Math.round(task.height)
+                }
+            });
+        }
+
         // Shows or clears the pause banner and the error strip.
         function banners(on: bool): string {
             Bosun.paused = on;

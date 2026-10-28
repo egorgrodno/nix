@@ -106,6 +106,11 @@ Rectangle {
         font: input.font
     }
 
+    // A press in the margins around the text, which Panel.qml blurs.
+    TapHandler {
+        onTapped: field.focusIn()
+    }
+
     BarText {
         id: lead
 
@@ -139,6 +144,9 @@ Rectangle {
 
             // A line that does not wrap scrolls sideways instead.
             width: field.oneLine ? Math.max(scroller.width, implicitWidth + 2) : scroller.width
+            // Panel.qml takes the keyboard from a field a press lands outside,
+            // so the field's whole height is the TextEdit's.
+            height: Math.max(implicitHeight, scroller.height)
             topPadding: field.oneLine ? Math.max(0, (field.height - metrics.lineSpacing) / 2) : 10
             bottomPadding: topPadding
             wrapMode: field.oneLine ? TextEdit.NoWrap : TextEdit.Wrap
