@@ -111,45 +111,19 @@ Item {
     Component {
         id: promptCard
 
-        Rectangle {
+        BosunCard {
             id: card
 
             readonly property bool queued: entry.kind === "queued"
 
-            height: cardBody.implicitHeight + 24
-            radius: Theme.radius - 4
-            color: queued ? "transparent" : Theme.tint(0.05)
-            border.width: queued ? 1 : 0
-            border.color: Theme.tint(0.12)
+            caption: queued ? `${BosunLook.queued}  Queued for the turn` : `${BosunLook.promptGlyph(entry.item, entry.conversation.parentNode)}  ${BosunLook.promptTitle(entry.item, entry.conversation.parentNode)}`
+            age: BosunLook.ago(entry.item.at, entry.conversation.now)
+            outlined: queued
+            spacing: 4
 
-            Column {
-                id: cardBody
-
-                x: 12
-                y: 12
-                width: parent.width - 24
-                spacing: 4
-
-                Item {
-                    width: parent.width
-                    height: whoText.implicitHeight
-
-                    Caption {
-                        id: whoText
-
-                        text: card.queued ? `${BosunLook.queued}  Queued for the turn` : `${BosunLook.promptGlyph(entry.item, entry.conversation.parentNode)}  ${BosunLook.promptTitle(entry.item, entry.conversation.parentNode)}`
-                    }
-
-                    Caption {
-                        anchors.right: parent.right
-                        text: BosunLook.ago(entry.item.at, entry.conversation.now)
-                    }
-                }
-
-                BosunMarkdown {
-                    markdown: entry.item.text ?? ""
-                    color: card.queued ? Theme.foregroundMuted : Theme.foregroundStrong
-                }
+            BosunMarkdown {
+                markdown: entry.item.text ?? ""
+                color: card.queued ? Theme.foregroundMuted : Theme.foregroundStrong
             }
         }
     }
@@ -159,7 +133,7 @@ Item {
     Component {
         id: taskCard
 
-        Rectangle {
+        BosunCard {
             id: task
 
             readonly property string details: {
@@ -168,39 +142,28 @@ Item {
                 return lines.length > 0 ? lines.join("\n") : it.text ?? "";
             }
 
-            height: taskBody.implicitHeight + 16
-            radius: Theme.radius - 4
-            color: Theme.tint(0.05)
+            insetY: 8
 
-            Column {
-                id: taskBody
+            Line {
+                glyph: ({
+                        completed: BosunLook.check,
+                        failed: BosunLook.close,
+                        stopped: BosunLook.interrupt
+                    })[entry.item.status] ?? BosunLook.robot
+                label: entry.item.summary || `Background task ${entry.item.status || "ended"}`
+                opens: task.details !== ""
+                aside: BosunLook.ago(entry.item.at, entry.conversation.now)
+            }
 
-                x: 12
-                y: 8
-                width: parent.width - 24
-                spacing: 6
-
-                Line {
-                    glyph: ({
-                            completed: BosunLook.check,
-                            failed: BosunLook.close,
-                            stopped: BosunLook.interrupt
-                        })[entry.item.status] ?? BosunLook.robot
-                    label: entry.item.summary || `Background task ${entry.item.status || "ended"}`
-                    opens: task.details !== ""
-                    aside: BosunLook.ago(entry.item.at, entry.conversation.now)
-                }
-
-                SelectableText {
-                    x: 24
-                    width: parent.width - x
-                    visible: entry.open && task.details !== ""
-                    wrapMode: TextEdit.WrapAnywhere
-                    text: task.details
-                    color: Theme.foregroundMuted
-                    font.family: Theme.fontMono
-                    font.pixelSize: 13
-                }
+            SelectableText {
+                x: 24
+                width: parent.width - x
+                visible: entry.open && task.details !== ""
+                wrapMode: TextEdit.WrapAnywhere
+                text: task.details
+                color: Theme.foregroundMuted
+                font.family: Theme.fontMono
+                font.pixelSize: 13
             }
         }
     }

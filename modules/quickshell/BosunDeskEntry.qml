@@ -125,118 +125,107 @@ Item {
     Component {
         id: instruction
 
-        Rectangle {
+        BosunCard {
             id: card
 
             readonly property var result: entry.item.result ?? null
             readonly property var outcome: BosunDesk.outcome(entry.item.input?.text ?? "", entry.item.at)
 
             width: entry.cardWidth
-            height: cardBody.implicitHeight + 24
-            radius: Theme.radius - 4
-            color: Theme.tint(0.05)
+            spacing: 8
 
-            Column {
-                id: cardBody
+            Item {
+                id: head
 
-                x: 12
-                y: 12
-                width: parent.width - 24
-                spacing: 8
+                // The chips take the label's line while they fit beside it,
+                // and wrap onto lines below it when they don't.
+                readonly property bool wraps: headText.implicitWidth + 12 + chips.naturalWidth > width
 
-                Item {
-                    id: head
+                width: parent.width
+                height: wraps ? headText.implicitHeight + 8 + chips.height : Math.max(headText.implicitHeight, chips.height)
 
-                    // The chips take the label's line while they fit beside it,
-                    // and wrap onto lines below it when they don't.
-                    readonly property bool wraps: headText.implicitWidth + 12 + chips.naturalWidth > width
+                Caption {
+                    id: headText
 
-                    width: parent.width
-                    height: wraps ? headText.implicitHeight + 8 + chips.height : Math.max(headText.implicitHeight, chips.height)
+                    y: head.wraps ? 0 : (head.height - height) / 2
+                    text: `${BosunLook.master}  Instruction ${card.outcome?.number || entry.item.number} to the master`
+                }
 
-                    Caption {
-                        id: headText
+                Flow {
+                    id: chips
 
-                        y: head.wraps ? 0 : (head.height - height) / 2
-                        text: `${BosunLook.master}  Instruction ${card.outcome?.number || entry.item.number} to the master`
+                    // A Flow's implicitWidth is no single row's, so the row is summed here.
+                    readonly property real naturalWidth: {
+                        let sum = 0;
+                        let shown = 0;
+                        for (const child of children) {
+                            if (!child.visible || child.width === 0)
+                                continue;
+                            sum += child.width;
+                            shown++;
+                        }
+                        return sum + Math.max(0, shown - 1) * spacing;
                     }
 
-                    Flow {
-                        id: chips
+                    x: head.wraps ? 0 : head.width - width
+                    y: head.wraps ? headText.implicitHeight + 8 : (head.height - height) / 2
+                    width: head.wraps ? head.width : naturalWidth
+                    spacing: 8
 
-                        // A Flow's implicitWidth is no single row's, so the row is summed here.
-                        readonly property real naturalWidth: {
-                            let sum = 0;
-                            let shown = 0;
-                            for (const child of children) {
-                                if (!child.visible || child.width === 0)
-                                    continue;
-                                sum += child.width;
-                                shown++;
-                            }
-                            return sum + Math.max(0, shown - 1) * spacing;
-                        }
-
-                        x: head.wraps ? 0 : head.width - width
-                        y: head.wraps ? headText.implicitHeight + 8 : (head.height - height) / 2
-                        width: head.wraps ? head.width : naturalWidth
-                        spacing: 8
-
-                        Repeater {
-                            // A ScriptModel adds the chip for an act that
-                            // lands, where an array would rebuild them all.
-                            model: ScriptModel {
-                                objectProp: "seq"
-                                values: card.outcome?.acts ?? []
-                            }
-
-                            Chip {
-                                required property var modelData
-
-                                text: `${BosunLook.check}  ${modelData.kind} ${modelData.node}`
-                                tone: modelData.kind === "merged" ? Theme.magenta : Theme.green
-                                link: BosunLook.sessionLink(modelData.node)
-                            }
+                    Repeater {
+                        // A ScriptModel adds the chip for an act that
+                        // lands, where an array would rebuild them all.
+                        model: ScriptModel {
+                            objectProp: "seq"
+                            values: card.outcome?.acts ?? []
                         }
 
                         Chip {
-                            visible: text !== ""
-                            text: {
-                                if (card.result?.error)
-                                    return `${BosunLook.close}  not passed on`;
-                                if ((card.outcome?.acts ?? []).length > 0)
-                                    return "";
-                                if ((card.outcome?.answers ?? []).length > 0)
-                                    return `${BosunLook.check}  answered`;
-                                return card.result ? "with the master" : "";
-                            }
-                            tone: card.result?.error ? Theme.red : (card.outcome?.answers ?? []).length > 0 ? Theme.green : Theme.foregroundMuted
-                        }
+                            required property var modelData
 
-                        Caption {
-                            height: 22
-                            verticalAlignment: Text.AlignVCenter
-                            text: BosunLook.ago(entry.item.at, entry.conversation.now)
+                            text: `${BosunLook.check}  ${modelData.kind} ${modelData.node}`
+                            tone: modelData.kind === "merged" ? Theme.magenta : Theme.green
+                            link: BosunLook.sessionLink(modelData.node)
                         }
                     }
-                }
 
-                SelectableText {
-                    width: parent.width
-                    wrapMode: TextEdit.Wrap
-                    text: entry.item.input?.text ?? ""
-                    color: Theme.foregroundStrong
-                    font.pixelSize: 14
-                }
+                    Chip {
+                        visible: text !== ""
+                        text: {
+                            if (card.result?.error)
+                                return `${BosunLook.close}  not passed on`;
+                            if ((card.outcome?.acts ?? []).length > 0)
+                                return "";
+                            if ((card.outcome?.answers ?? []).length > 0)
+                                return `${BosunLook.check}  answered`;
+                            return card.result ? "with the master" : "";
+                        }
+                        tone: card.result?.error ? Theme.red : (card.outcome?.answers ?? []).length > 0 ? Theme.green : Theme.foregroundMuted
+                    }
 
-                SelectableText {
-                    width: parent.width
-                    visible: card.result?.error === true
-                    wrapMode: TextEdit.Wrap
-                    text: card.result?.text ?? ""
-                    color: Theme.red
-                    font.pixelSize: 13
+                    Caption {
+                        height: 22
+                        verticalAlignment: Text.AlignVCenter
+                        text: BosunLook.ago(entry.item.at, entry.conversation.now)
+                    }
                 }
+            }
+
+            SelectableText {
+                width: parent.width
+                wrapMode: TextEdit.Wrap
+                text: entry.item.input?.text ?? ""
+                color: Theme.foregroundStrong
+                font.pixelSize: 14
+            }
+
+            SelectableText {
+                width: parent.width
+                visible: card.result?.error === true
+                wrapMode: TextEdit.Wrap
+                text: card.result?.text ?? ""
+                color: Theme.red
+                font.pixelSize: 13
             }
         }
     }
@@ -274,7 +263,7 @@ Item {
     Component {
         id: answered
 
-        Rectangle {
+        BosunCard {
             id: given
 
             readonly property var input: entry.item.input ?? {}
@@ -288,78 +277,52 @@ Item {
             }
 
             width: entry.cardWidth
-            height: givenBody.implicitHeight + 24
-            radius: Theme.radius - 4
-            color: Theme.tint(0.05)
+            caption: `${BosunLook.check}  Answered decision ${input.id} on your word`
+            captionColor: Theme.green
+            age: BosunLook.ago(entry.item.at, entry.conversation.now)
 
-            Column {
-                id: givenBody
+            Row {
+                width: parent.width
+                visible: given.decision !== null
+                spacing: 8
 
-                x: 12
-                y: 12
-                width: parent.width - 24
-                spacing: 6
-
-                Item {
-                    width: parent.width
-                    height: givenHead.implicitHeight
-
-                    Caption {
-                        id: givenHead
-
-                        text: `${BosunLook.check}  Answered decision ${given.input.id} on your word`
-                        color: Theme.green
-                    }
-
-                    Caption {
-                        anchors.right: parent.right
-                        text: BosunLook.ago(entry.item.at, entry.conversation.now)
-                    }
-                }
-
-                Row {
-                    width: parent.width
-                    visible: given.decision !== null
-                    spacing: 8
-
-                    BarText {
-                        text: given.decision ? BosunLook.decisionGlyph(given.decision) : ""
-                        color: Theme.foregroundMuted
-                        font.pixelSize: 14
-                    }
-
-                    BarText {
-                        text: given.decision?.node ?? ""
-                        font.pixelSize: 14
-                    }
-
-                    BarText {
-                        width: parent.width - x
-                        elide: Text.ElideRight
-                        text: given.decision ? Bosun.summaryOf(given.decision).split("\n")[0] : ""
-                        color: Theme.foregroundMuted
-                        font.family: given.decision?.kind === "permission" ? Theme.fontMono : Theme.fontUI
-                        font.pixelSize: 13
-                    }
-                }
-
-                SelectableText {
-                    width: parent.width
-                    wrapMode: TextEdit.Wrap
-                    text: given.what
+                BarText {
+                    text: given.decision ? BosunLook.decisionGlyph(given.decision) : ""
+                    color: Theme.foregroundMuted
                     font.pixelSize: 14
                 }
 
-                BosunYouSaid {
-                    width: parent.width
-                    words: given.input.words
+                BarText {
+                    text: given.decision?.node ?? ""
+                    font.pixelSize: 14
                 }
 
-                BosunLink {
-                    visible: given.decision !== null
-                    text: `Open decision ${given.input.id}  ${BosunLook.chevronRight}`
-                    onClicked: entry.conversation.opened(`decision:${given.input.id}`, given.decision)
+                BarText {
+                    width: parent.width - x
+                    elide: Text.ElideRight
+                    text: given.decision ? Bosun.summaryOf(given.decision).split("\n")[0] : ""
+                    color: Theme.foregroundMuted
+                    font.family: given.decision?.kind === "permission" ? Theme.fontMono : Theme.fontUI
+                    font.pixelSize: 13
                 }
+            }
+
+            SelectableText {
+                width: parent.width
+                wrapMode: TextEdit.Wrap
+                text: given.what
+                font.pixelSize: 14
+            }
+
+            BosunYouSaid {
+                width: parent.width
+                words: given.input.words
+            }
+
+            BosunLink {
+                visible: given.decision !== null
+                text: `Open decision ${given.input.id}  ${BosunLook.chevronRight}`
+                onClicked: entry.conversation.opened(`decision:${given.input.id}`, given.decision)
             }
         }
     }

@@ -41,6 +41,7 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `BosunCodeBox` | Selectable text in a box on a tint: a tool's input and result and a message's fenced code, which break at a space where they can and anywhere else |
 | `BosunWhyNote` | Why the master passed a decision on to the user, on a blue card |
 | `BosunYouSaid` | The user's words a decision was answered on, as “You said: …” |
+| `BosunCard` | A conversation's card: a tinted box with an optional header of a caption and the age, `outlined` for a message not yet taken, what it holds declared inside it |
 | `BosunFact` | A glyph and its words in a header |
 | `BosunSpinner` | A running state's spinner |
 | `BosunJumpButton` | A round button over a scrolling view's corner that jumps to its newest entry |
