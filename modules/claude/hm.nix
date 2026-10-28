@@ -1,4 +1,6 @@
 {
+  bosunSleepLock,
+  bosunSleepLockQuiet,
   keyboardLayout,
   lib,
   pkgs,
@@ -38,9 +40,14 @@
       After = [ "graphical-session.target" ];
     };
     Service = {
-      ExecStart = "${lib.getExe pkgs.bosun} daemon -max-depth 10 -max-children 20";
+      # The sleep lock runs `systemd-inhibit` and `sleep` from the unit's PATH,
+      # which is the session's, so it must not be overridden here: every
+      # background session inherits it.
+      ExecStart = "${lib.getExe pkgs.bosun} daemon -max-depth 10 -max-children 20 -sleep-lock ${bosunSleepLock} -sleep-lock-quiet ${bosunSleepLockQuiet}";
       # Every background session runs in the cgroup of the first `claude --bg`,
       # usually this unit's, so the default would stop them all with the daemon.
+      # The sleep lock's inhibitor is killed by Pdeathsig instead, so a crashed
+      # daemon does not leave it holding the lock.
       KillMode = "process";
       Restart = "on-failure";
     };

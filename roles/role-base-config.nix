@@ -40,6 +40,24 @@ in
       description = "Whether the machine hibernates, which takes swap at least the size of RAM: a suspend from idle, the lid or the session menu hibernates after HibernateDelaySec, and the session menu offers hibernation";
     };
 
+    bosun = {
+      sleepLock = mkOption {
+        type = types.enum [
+          "on"
+          "off"
+          "battery"
+        ];
+        default = "on";
+        description = "Whether bosun's daemon holds a logind sleep lock while a session other than the desk works: `battery` holds it only while a battery discharges";
+      };
+
+      sleepLockQuiet = mkOption {
+        type = types.str;
+        default = "10m";
+        description = "How long no session works before bosun's daemon releases the sleep lock, as a Go duration";
+      };
+    };
+
     keyboard = {
       layout = mkOption {
         type = types.enum [
@@ -112,6 +130,8 @@ in
     home-manager.extraSpecialArgs = {
       keyboardLayout = cfg.keyboard.layout;
       isDesktop = cfg.isDesktop;
+      bosunSleepLock = cfg.bosun.sleepLock;
+      bosunSleepLockQuiet = cfg.bosun.sleepLockQuiet;
     };
   };
 }
