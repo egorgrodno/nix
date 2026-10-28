@@ -18,11 +18,12 @@ Column {
         text: block.modelData.label
     }
 
-    Rectangle {
-        width: block.kind === "flag" ? Math.min(parent.width, blockText.implicitWidth + 2 * blockText.x) : parent.width
-        height: blockText.implicitHeight + 2 * blockText.y
-        radius: 4
-        color: {
+    BosunCodeBox {
+        fit: block.kind === "flag"
+        mono: block.mono
+        padX: block.boxed ? (block.kind === "flag" ? 8 : 12) : 0
+        padY: block.boxed ? (block.kind === "flag" ? 3 : 10) : 0
+        tint: {
             switch (block.kind) {
             case "removed":
                 return Theme.alpha(Theme.red, 0.15);
@@ -35,18 +36,7 @@ Column {
             }
             return Theme.tint(0.06);
         }
-
-        SelectableText {
-            id: blockText
-
-            x: block.boxed ? (block.kind === "flag" ? 8 : 12) : 0
-            y: block.boxed ? (block.kind === "flag" ? 3 : 10) : 0
-            width: parent.width - 2 * x
-            wrapMode: TextEdit.Wrap
-            font.family: block.mono ? Theme.fontMono : Theme.fontUI
-            font.pixelSize: block.mono ? 13 : 14
-            color: block.kind === "flag" ? Theme.yellow : block.kind === "note" ? Theme.foregroundMain : Theme.foregroundStrong
-            text: block.kind === "flag" ? `${BosunLook.alert}  ${block.modelData.text}` : block.modelData.text
-        }
+        textColor: block.kind === "flag" ? Theme.yellow : block.kind === "note" ? Theme.foregroundMain : Theme.foregroundStrong
+        text: block.kind === "flag" ? `${BosunLook.alert}  ${block.modelData.text}` : block.modelData.text
     }
 }

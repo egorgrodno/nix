@@ -76,23 +76,9 @@ Item {
                 Component {
                     id: codeBlock
 
-                    Rectangle {
-                        height: codeText.implicitHeight + 2 * codeText.y
-                        radius: 4
-                        color: Theme.tint(0.06)
-
-                        SelectableText {
-                            id: codeText
-
-                            x: 12
-                            y: 10
-                            width: parent.width - 2 * x
-                            wrapMode: TextEdit.WrapAnywhere
-                            text: block.modelData.text
-                            color: root.color
-                            font.family: Theme.fontMono
-                            font.pixelSize: 13
-                        }
+                    BosunCodeBox {
+                        text: block.modelData.text
+                        textColor: root.color
                     }
                 }
             }

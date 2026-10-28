@@ -38,6 +38,7 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `BosunRow` | A row that selects: fill while current, a lighter one on hover, a 2 px edge blue while the keyboard is in the list |
 | `BosunLink` | Blue text that opens what it names, strong on hover, with `clicked` |
 | `BosunBanner` | A glyph and wrapped text on a tint of its colour, a note in a pane or with `strip` a band across the panel |
+| `BosunCodeBox` | Selectable text in a box on a tint: a tool's input and result and a message's fenced code, which break at a space where they can and anywhere else |
 | `BosunFact` | A glyph and its words in a header |
 | `BosunSpinner` | A running state's spinner |
 | `BosunJumpButton` | A round button over a scrolling view's corner that jumps to its newest entry |
