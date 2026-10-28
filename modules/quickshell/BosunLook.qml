@@ -37,7 +37,7 @@ Singleton {
     readonly property string cancel: "\u{F073A}"
     readonly property string chevronRight: "\u{F0142}"
     readonly property string message: "\u{F12F5}"
-    readonly property string running: "\u{F0772}"
+    readonly property string working: "\u{F0493}"
     readonly property string interrupt: "\u{F04DB}"
     readonly property string thinking: "\u{F07F7}"
     readonly property string compacted: "\u{F084D}"

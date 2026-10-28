@@ -22,6 +22,7 @@ FloatingWindow {
     // Frames to run before the first one is timed.
     readonly property int warmup: 3
 
+    readonly property alias fake: data
     readonly property alias conv: loader.item
     // The ListView, reached through its cacheBuffer.
     property var list: null

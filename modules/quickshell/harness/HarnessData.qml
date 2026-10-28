@@ -300,6 +300,19 @@ QtObject {
         return out;
     }
 
+    // The entry a session in its turn ends on, for `snap-live`: Thinking while
+    // the last is thinking, Working while it is the user's prompt.
+    function live(kind) {
+        return Object.assign({
+            id: `live-${kind}`,
+            at: new Date().toISOString(),
+            kind
+        }, kind === "prompt" ? {
+            from: "user",
+            text: "Now fix the second one."
+        } : {});
+    }
+
     // `bosun status`'s sessions.
     readonly property var sessions: [
         {

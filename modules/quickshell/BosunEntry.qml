@@ -191,7 +191,7 @@ Item {
             Line {
                 glyph: ({
                         thinking: BosunLook.thinking,
-                        working: entry.item.started ? BosunLook.running : BosunLook.send,
+                        working: entry.item.started ? BosunLook.working : BosunLook.send,
                         compact: BosunLook.compacted
                     })[entry.kind] ?? BosunLook.command
                 label: ({
