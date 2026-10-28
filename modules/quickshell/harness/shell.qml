@@ -64,6 +64,8 @@ FloatingWindow {
 
     // Scrolls the row at `i` of the conversation's rows to the view's top.
     function show(i) {
+        // A view that follows the newest entry would return to it.
+        conv.following = false;
         list.positionViewAtIndex(i, ListView.Beginning);
     }
 
@@ -85,7 +87,7 @@ FloatingWindow {
     function snap(name) {
         if (snaps === "")
             return;
-        conv.grabToImage(r => r.saveToFile(`${snaps}/${pane}-${name}.png`));
+        stage.grabToImage(r => r.saveToFile(`${snaps}/${pane}-${name}.png`));
     }
 
     function census() {
@@ -177,14 +179,22 @@ FloatingWindow {
         }, Qt.size(280, 400));
     }
 
-    // The panel as the session pane or the desk pane builds it, on no node
-    // and following nothing, its entries fed through the feed's own
-    // `receive`.
-    Loader {
-        id: loader
+    // The conversation has no fill of its own, so a snapshot takes the stage.
+    Rectangle {
+        id: stage
 
         anchors.fill: parent
-        sourceComponent: win.pane === "desk" ? deskView : sessionView
+        color: Theme.backgroundRaised
+
+        // The panel as the session pane or the desk pane builds it, on no
+        // node and following nothing, its entries fed through the feed's own
+        // `receive`.
+        Loader {
+            id: loader
+
+            anchors.fill: parent
+            sourceComponent: win.pane === "desk" ? deskView : sessionView
+        }
     }
 
     Component {

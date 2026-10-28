@@ -38,6 +38,8 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `BosunJumpButton` | A round button over a scrolling view's corner that jumps to its newest entry |
 | `BosunHints` | Keycaps, each run beside what it does |
 
+**Harness.** `harness/run.sh` runs the bosun panel offscreen: timed scenarios on fake conversations, and scripts that call IPC on a real panel. A change to the panel's QML is measured there on its worktree, and a new entry kind or desk card **must** join `harness/HarnessData.qml`, or the harness cannot catch what it breaks. `harness/README.md` covers adding a scenario.
+
 **Look.** Meters, sparks and sliders fill in blue, and colour marks state:
 
 | Colour | State |

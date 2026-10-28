@@ -89,7 +89,7 @@ users = [
 | `modules/quickshell/` | The bar, its panels, notifications, OSD, launcher, lock screen, and the greeter's QML |
 | `modules/craft/` | The [Craft apps](https://github.com/storytold), each with the `<app>-cli` that serves MCP, pinned in `sources.json`, and `mcp-lazy`'s caches of their servers |
 
-`modules/desktop/` and `modules/quickshell/` each have a `CLAUDE.md`, which loads once a file beneath it is read.
+`modules/desktop/` and `modules/quickshell/` each have a `CLAUDE.md`, which loads once a file beneath it is read. A worker changing the bar's QML measures or drives it offscreen with `modules/quickshell/harness/run.sh`, never on the live screen; its README says how.
 
 ### Theme
 

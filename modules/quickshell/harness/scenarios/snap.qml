@@ -14,7 +14,7 @@ QtObject {
         if (f === 0)
             h.snap("end");
         if (f === 2)
-            h.list.positionViewAtBeginning();
+            h.show(0);
         if (f === 4)
             h.snap("start");
     }
