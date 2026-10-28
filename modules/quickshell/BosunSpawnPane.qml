@@ -161,22 +161,33 @@ BosunPane {
     }
 
     Field {
-        label: "Model"
+        label: "Model and effort"
 
-        Choices {
-            model: [""].concat(Bosun.models)
-            current: pane.model
-            onPicked: value => pane.model = value
-        }
-    }
+        Row {
+            spacing: 8
 
-    Field {
-        label: "Effort"
+            BosunDropdown {
+                name: "Model"
+                after: effortMenu
+                values: Bosun.models
+                current: pane.model
+                fallback: "default"
+                fallbackLabel: "Default"
+                resettable: true
+                onPicked: value => pane.model = value
+            }
 
-        Choices {
-            model: [""].concat(Bosun.efforts)
-            current: pane.effort
-            onPicked: value => pane.effort = value
+            BosunDropdown {
+                id: effortMenu
+
+                name: "Effort"
+                values: Bosun.efforts
+                current: pane.effort
+                fallback: "default"
+                fallbackLabel: "Default"
+                resettable: true
+                onPicked: value => pane.effort = value
+            }
         }
     }
 
@@ -286,7 +297,7 @@ BosunPane {
         Repeater {
             model: choices.model
 
-            TextButton {
+            ChoiceButton {
                 required property string modelData
 
                 height: 30
@@ -295,8 +306,6 @@ BosunPane {
                     return choices.glyph ? `${choices.glyph}  ${words}` : words;
                 }
                 lit: modelData === choices.current
-                hoverFill: lit ? Theme.blue : Theme.tint(0.12)
-                textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
                 onClicked: choices.picked(modelData)
             }
         }

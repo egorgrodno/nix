@@ -182,14 +182,12 @@ Item {
                         }
                     ]
 
-                    TextButton {
+                    ChoiceButton {
                         required property var modelData
 
                         height: 26
                         text: modelData.text
                         lit: table.kind === modelData.key
-                        hoverFill: lit ? Theme.blue : Theme.tint(0.12)
-                        textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
                         onClicked: BosunKept.logKind = modelData.key
                     }
                 }

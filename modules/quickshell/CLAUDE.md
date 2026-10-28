@@ -22,6 +22,7 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `Caption` | Muted, smaller `BarText` |
 | `Figure` | A changing number in mono, in a slot as wide as `widest` so it never moves its neighbours |
 | `TextButton` | A small labelled button, lit while `lit` is set |
+| `ChoiceButton` | A `TextButton` of a row of choices, blue while it is the one picked |
 | `Toggle` | A switch, blue while on |
 | `Chevron` | A ‹ or › that steps what it sits beside |
 | `Meter`, `Spark` | A 0 to 1 level, and a history scaled to its own peak |

@@ -247,13 +247,11 @@ Panel {
                         }
                     ]
 
-                    TextButton {
+                    ChoiceButton {
                         required property var modelData
 
                         text: modelData.label
                         lit: (modelData.scheme === "light") === ColorScheme.light
-                        hoverFill: lit ? Theme.blue : Theme.tint(0.12)
-                        textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
                         onClicked: if (!lit)
                             ColorScheme.set(modelData.scheme)
                     }

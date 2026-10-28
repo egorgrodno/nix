@@ -36,17 +36,11 @@ done
 "$WLRCTL" pointer click left
 shot spawn
 
-# A name, Tab to the task, and enough lines to pass the task field's cap.
-"$WLRCTL" keyboard type "my-worker"
-"$WLRCTL" keyboard type $'\t'
-for i in $(seq 18); do
-  "$WLRCTL" keyboard type "line $i of the task"$'\n'
-done
+# Its Model menu, under its button, which a press elsewhere closes.
 "$WLRCTL" pointer move -4000 -4000
-"$WLRCTL" pointer move 600 400
-for _ in $(seq 10); do
-  "$WLRCTL" pointer move 1 1
-  "$WLRCTL" pointer scroll 20 0
-done
-shot spawn-typed
+"$WLRCTL" pointer move 160 449
+"$WLRCTL" pointer click left
+shot spawn-model
+"$WLRCTL" pointer move 600 300
+"$WLRCTL" pointer click left
 echo "views captured in $SNAPS"
