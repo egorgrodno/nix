@@ -29,6 +29,17 @@ Item {
             return mine;
         return [...mine, held].sort((a, b) => Number(a.id) - Number(b.id));
     }
+    // One object per key: ScriptModel places a row that arrives among the
+    // rest, rather than updating them in place, only when the rest are the
+    // objects it had before.
+    readonly property var rowObjects: new Map()
+
+    function kept(row) {
+        if (!rowObjects.has(row.key))
+            rowObjects.set(row.key, row);
+        return rowObjects.get(row.key);
+    }
+
     readonly property var rows: {
         if (!Bosun.connected)
             return [
@@ -37,33 +48,33 @@ Item {
                     type: "none"
                 }
             ];
-        const head = name => ({
+        const head = name => kept({
                     key: `head:${name}`,
                     type: "head",
                     name: name
                 });
         const rows = [head("Waiting on you")];
         if (waiting.length === 0)
-            rows.push({
+            rows.push(kept({
                 key: "nothing",
                 type: "nothing"
-            });
+            }));
         for (const d of waiting)
-            rows.push({
+            rows.push(kept({
                 key: `decision:${d.id}`,
                 type: "decision",
                 id: d.id
-            });
-        rows.push(head("Desk"), {
+            }));
+        rows.push(head("Desk"), kept({
             key: "desk",
             type: "desk"
-        }, head("Fleet"));
+        }), head("Fleet"));
         for (const s of Bosun.tree)
-            rows.push({
+            rows.push(kept({
                 key: `session:${s.node}`,
                 type: "session",
                 node: s.node
-            });
+            }));
         return rows;
     }
     readonly property int logSlots: 6
@@ -154,26 +165,35 @@ Item {
 
         ScrollBar.vertical: OverlayScrollBar {}
 
-        delegate: Loader {
+        // A decision, and the line in place of any, arrive and leave.
+        delegate: BosunReveal {
             id: slot
 
             required property var modelData
 
             width: ListView.view.width
-            sourceComponent: {
-                switch (modelData.type) {
-                case "head":
-                    return header;
-                case "decision":
-                    return decisionRow;
-                case "desk":
-                    return deskRow;
-                case "session":
-                    return sessionRow;
-                case "nothing":
-                    return nothing;
+            animates: ["decision", "nothing"].includes(modelData.type)
+            full: rowLoader.height
+
+            Loader {
+                id: rowLoader
+
+                width: parent.width
+                sourceComponent: {
+                    switch (slot.modelData.type) {
+                    case "head":
+                        return header;
+                    case "decision":
+                        return decisionRow;
+                    case "desk":
+                        return deskRow;
+                    case "session":
+                        return sessionRow;
+                    case "nothing":
+                        return nothing;
+                    }
+                    return none;
                 }
-                return none;
             }
 
             Component {
@@ -302,7 +322,7 @@ Item {
             anchors.right: parent.right
             anchors.rightMargin: 20
             anchors.verticalCenter: headText.verticalCenter
-            visible: head.waiting && head.count > 0
+            visible: head.waiting && appear > 0
             count: head.count
         }
 

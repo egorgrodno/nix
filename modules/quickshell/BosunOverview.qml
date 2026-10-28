@@ -19,6 +19,11 @@ Item {
     // The decisions shown as cards; the rest wait in the full panel.
     readonly property int cardSlots: 3
     readonly property var cards: Bosun.mine.slice(0, cardSlots)
+    // In place of any card, one object for good: ScriptModel tells what
+    // arrives and leaves only among the objects it had before.
+    readonly property var noCards: ({
+            id: "nothing"
+        })
     // What Tab and the movement keys step through, in order.
     readonly property var keys: [...cards.map(d => `decision:${d.id}`), ...Bosun.tree.map(s => `session:${s.node}`), ...(Bosun.connected ? ["desk"] : [])]
     // The row the keyboard is on, while it is in the rows.
@@ -267,25 +272,63 @@ Item {
                     BosunBadge {
                         anchors.right: parent.right
                         anchors.verticalCenter: parent.verticalCenter
-                        visible: Bosun.mine.length > 0
                         count: Bosun.mine.length
                     }
                 }
 
-                // In place of cards, so the header never looks like a button.
-                Caption {
-                    visible: Bosun.mine.length === 0
-                    text: "Nothing waits on you"
-                    color: Theme.foregroundFaint
-                }
+                // The cards, or a faint line in place of any, so the header
+                // never looks like a button. Each arrives and leaves with the
+                // gap above it, which the first lays over the column's own.
+                Item {
+                    width: parent.width
+                    height: Math.max(0, cardList.contentHeight - rows.spacing)
 
-                Repeater {
-                    model: ScriptModel {
-                        values: overview.cards
-                        objectProp: "id"
+                    ListView {
+                        id: cardList
+
+                        y: -rows.spacing
+                        width: parent.width
+                        height: contentHeight
+                        interactive: false
+                        model: ScriptModel {
+                            values: overview.cards.length > 0 ? overview.cards : [overview.noCards]
+                            objectProp: "id"
+                        }
+
+                        delegate: BosunReveal {
+                            id: slot
+
+                            required property var modelData
+
+                            width: ListView.view.width
+                            full: cardLoader.y + cardLoader.height
+
+                            Loader {
+                                id: cardLoader
+
+                                y: rows.spacing
+                                width: parent.width
+                                sourceComponent: slot.modelData.id === "nothing" ? nothing : card
+                            }
+
+                            Component {
+                                id: nothing
+
+                                Caption {
+                                    text: "Nothing waits on you"
+                                    color: Theme.foregroundFaint
+                                }
+                            }
+
+                            Component {
+                                id: card
+
+                                DecisionCard {
+                                    modelData: slot.modelData
+                                }
+                            }
+                        }
                     }
-
-                    DecisionCard {}
                 }
 
                 BosunLink {

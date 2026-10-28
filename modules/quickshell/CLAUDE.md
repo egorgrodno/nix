@@ -47,7 +47,8 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `BosunJumpButton` | A round button over a scrolling view's corner that jumps to its newest entry |
 | `BosunHints` | Keycaps, each run beside what it does |
 | `BosunIconButton` | A square button of one glyph, with a tooltip |
-| `BosunBadge` | How many decisions wait, on a yellow pill |
+| `BosunBadge` | How many decisions wait, on a yellow pill that grows in, swells as one arrives and shrinks away at 0 |
+| `BosunReveal` | A list delegate whose row opens and fades in as it arrives in the model, and closes as it leaves |
 | `BosunStateGlyph` | A session state's glyph in its colour, the spinner for working |
 | `BosunCount` | A state's glyph, a number and a word, as the titlebar counts the fleet |
 | `BosunActivityLine` | What a session does: its tool's glyph and the call in mono, or its last words |

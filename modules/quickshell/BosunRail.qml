@@ -203,7 +203,6 @@ Item {
         BosunBadge {
             x: 36
             y: 3
-            visible: tile.count > 0
             count: tile.count
             pixelSize: 10
         }
