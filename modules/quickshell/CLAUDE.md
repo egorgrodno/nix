@@ -37,6 +37,7 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `BosunLine` | A line that opens at a click: chevron, glyph, label and an aside, with `open` and `toggled` for the caller to wire |
 | `BosunRow` | A row that selects: fill while current, a lighter one on hover, a 2 px edge blue while the keyboard is in the list |
 | `BosunLink` | Blue text that opens what it names, strong on hover, with `clicked` |
+| `BosunBanner` | A glyph and wrapped text on a tint of its colour, a note in a pane or with `strip` a band across the panel |
 | `BosunFact` | A glyph and its words in a header |
 | `BosunSpinner` | A running state's spinner |
 | `BosunJumpButton` | A round button over a scrolling view's corner that jumps to its newest entry |

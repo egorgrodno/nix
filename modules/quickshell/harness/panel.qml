@@ -34,6 +34,13 @@ ShellRoot {
         function panels(): int {
             return Bosun.panelsOpen;
         }
+
+        // Shows or clears the pause banner and the error strip.
+        function banners(on: bool): string {
+            Bosun.paused = on;
+            Bosun.error = on ? "the daemon cannot start panel-ipc: no such repository" : "";
+            return "ok";
+        }
     }
 
     Timer {

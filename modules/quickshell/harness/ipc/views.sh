@@ -30,6 +30,13 @@ for row in decision:7 desk session:select-lag session:panel-ipc log; do
   shot "${row%%:*}-${row##*:}"
 done
 
+# The pause banner and the error strip over a decision.
+call select decision:7 >/dev/null
+qs call harness banners true >/dev/null
+shot banners
+qs call harness banners false >/dev/null
+call select log >/dev/null
+
 # The pointer over a Log row and over a rail button.
 "$WLRCTL" pointer move -4000 -4000
 "$WLRCTL" pointer move 400 330

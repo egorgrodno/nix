@@ -139,14 +139,14 @@ BosunPane {
         onTriggered: pane.now = Date.now()
     }
 
-    Banner {
+    BosunBanner {
         visible: pane.settledText !== ""
         glyph: BosunLook.notice
         tint: Theme.foregroundMuted
         text: pane.settledText
     }
 
-    Banner {
+    BosunBanner {
         visible: pane.remaining >= 0
         glyph: BosunLook.clock
         tint: pane.remaining < 300000 ? Theme.red : pane.remaining < 900000 ? Theme.yellow : Theme.foregroundMuted
@@ -188,14 +188,14 @@ BosunPane {
         }
     }
 
-    Banner {
+    BosunBanner {
         visible: pane.live && (pane.decision?.reserved ?? "") !== ""
         glyph: BosunLook.reserved
         tint: Theme.yellow
         text: `Reserved: ${pane.decision?.reserved ?? ""}.${pane.decision?.userOnly ? " Only your own answer here settles it." : ""}`
     }
 
-    Banner {
+    BosunBanner {
         visible: (pane.decision?.refused ?? "") !== ""
         glyph: BosunLook.alert
         tint: Theme.yellow
@@ -322,41 +322,4 @@ BosunPane {
             }
         }
     ]
-
-    // A line on a tint of its colour, under a glyph.
-    component Banner: Rectangle {
-        id: banner
-
-        property string glyph
-        property color tint
-        property string text
-
-        width: parent?.width ?? 0
-        height: bannerText.implicitHeight + 20
-        radius: Theme.radius - 4
-        color: Theme.alpha(tint, 0.12)
-
-        BarText {
-            id: bannerGlyph
-
-            x: 12
-            y: 10
-            text: banner.glyph
-            color: banner.tint
-            font.pixelSize: 14
-        }
-
-        BarText {
-            id: bannerText
-
-            anchors.left: bannerGlyph.right
-            anchors.leftMargin: 10
-            y: 10
-            width: parent.width - x - 12
-            wrapMode: Text.Wrap
-            text: banner.text
-            color: banner.tint
-            font.pixelSize: 14
-        }
-    }
 }

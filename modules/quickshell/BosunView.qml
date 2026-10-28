@@ -567,35 +567,19 @@ Item {
             onExpandClicked: view.setExpanded(!view.expanded)
         }
 
-        Rectangle {
-            id: banner
+        // Whatever bands the panel shows under the title bar; a hidden one
+        // takes no height.
+        Column {
+            id: strips
 
             anchors.top: titlebar.bottom
             width: parent.width
-            height: visible ? bannerText.implicitHeight + 20 : 0
-            visible: Bosun.paused || Bosun.fleetOp === "pause"
-            color: Theme.alpha(Theme.yellow, 0.12)
 
-            BarText {
-                id: bannerGlyph
-
-                x: 20
-                y: 10
-                text: BosunLook.states.paused.glyph
-                color: Theme.yellow
-                font.pixelSize: 14
-            }
-
-            BarText {
-                id: bannerText
-
-                anchors.left: bannerGlyph.right
-                anchors.leftMargin: 10
-                y: 10
-                width: parent.width - x - 20
-                wrapMode: Text.Wrap
-                color: Theme.yellow
-                font.pixelSize: 14
+            BosunBanner {
+                strip: true
+                visible: Bosun.paused || Bosun.fleetOp === "pause"
+                glyph: BosunLook.states.paused.glyph
+                tint: Theme.yellow
                 text: {
                     if (Bosun.fleetOp === "pause")
                         return "Pausing: stopping every session.";
@@ -604,38 +588,14 @@ Item {
                     return turns.length > 0 ? `Paused. Nothing resumes on its own until you press Resume, which restarts the turns of ${named}.` : "Paused. Nothing resumes on its own until you press Resume. No session was in its turn.";
                 }
             }
-        }
 
-        // Why the last command failed, until the next one.
-        Rectangle {
-            id: errorStrip
-
-            anchors.top: banner.bottom
-            width: parent.width
-            height: visible ? errorText.implicitHeight + 20 : 0
-            visible: Bosun.error !== ""
-            color: Theme.alpha(Theme.red, 0.12)
-
-            BarText {
-                id: errorGlyph
-
-                x: 20
-                y: 10
-                text: BosunLook.alert
-                color: Theme.yellow
-                font.pixelSize: 14
-            }
-
-            BarText {
-                id: errorText
-
-                anchors.left: errorGlyph.right
-                anchors.leftMargin: 10
-                y: 10
-                width: parent.width - x - 20
-                wrapMode: Text.Wrap
-                color: Theme.yellow
-                font.pixelSize: 14
+            // Why the last command failed, until the next one.
+            BosunBanner {
+                strip: true
+                visible: Bosun.error !== ""
+                glyph: BosunLook.alert
+                tint: Theme.yellow
+                fill: Theme.red
                 text: Bosun.error
             }
         }
@@ -649,7 +609,7 @@ Item {
             readonly property real paneLeft: (view.expanded ? rail.width + 1 : 0) + (sidebar.visible ? sidebar.width + 1 : 0)
             readonly property real rest: width - paneLeft
 
-            anchors.top: errorStrip.bottom
+            anchors.top: strips.bottom
             anchors.bottom: parent.bottom
             width: parent.width
 
