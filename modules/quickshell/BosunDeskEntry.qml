@@ -57,12 +57,9 @@ Item {
             outlined: waits
             spacing: 4
 
-            SelectableText {
-                width: parent.width
-                wrapMode: TextEdit.Wrap
-                text: entry.item.text ?? ""
+            BosunMarkdown {
+                markdown: entry.item.text ?? ""
                 color: said.waits ? Theme.foregroundMuted : Theme.foregroundStrong
-                font.pixelSize: 14
             }
         }
     }
@@ -188,12 +185,8 @@ Item {
                 }
             }
 
-            SelectableText {
-                width: parent.width
-                wrapMode: TextEdit.Wrap
-                text: entry.item.input?.text ?? ""
-                color: Theme.foregroundStrong
-                font.pixelSize: 14
+            BosunMarkdown {
+                markdown: entry.item.input?.text ?? ""
             }
 
             SelectableText {
@@ -223,14 +216,12 @@ Item {
                 onToggled: entry.toggled()
             }
 
-            SelectableText {
+            BosunMarkdown {
                 x: 24
                 width: parent.width - x
                 visible: entry.open
-                wrapMode: TextEdit.Wrap
-                text: entry.item.text ?? ""
+                markdown: entry.item.text ?? ""
                 color: Theme.foregroundMuted
-                font.pixelSize: 14
             }
         }
     }

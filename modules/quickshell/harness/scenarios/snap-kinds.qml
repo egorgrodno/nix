@@ -1,7 +1,8 @@
 import QtQuick
 
 // A PNG of the first row of each entry kind in the conversation, at the top
-// of the view, as `<pane>-kind-<kind>.png` in `SNAPS` (run's `-o`).
+// of the view, as `<pane>-kind-<kind>.png` in `SNAPS` (run's `-o`). The
+// desk's first master answer is open.
 QtObject {
     property var kinds: []
     property int frames: 3
@@ -12,6 +13,10 @@ QtObject {
             if (!seen.has(row.kind))
                 seen.add(row.kind);
         kinds = [...seen];
+        // The master's answer on the desk opens at a click, and shows its text then.
+        const answer = h.rowIndex(row => row.kind === "desk-master");
+        if (answer >= 0)
+            h.conv.toggle(h.conv.rows[answer].id);
         frames = 3 * kinds.length;
     }
 

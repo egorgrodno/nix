@@ -54,7 +54,7 @@ QtObject {
                 merge({
                     kind: "prompt",
                     from: "user",
-                    text: `Please look at item ${i} and tell me what you find, including details.`
+                    text: i % 30 === 0 ? markdownMessage : `Please look at item ${i} and tell me what you find, including details.`
                 });
                 break;
             case 1:
@@ -191,6 +191,9 @@ QtObject {
         return out;
     }
 
+    // A user's message that carries Markdown, for the cards that render it.
+    readonly property string markdownMessage: "testing `markdown` (ignore **this**)"
+
     readonly property string userHead: "bosun: the user sent this through bosun tell, so they may not be watching this session:\n"
     readonly property string masterHead: "bosun: the master answers:\n"
 
@@ -209,7 +212,7 @@ QtObject {
                 merge({
                     kind: "prompt",
                     from: "user",
-                    text: `What is ${i % 7 === 0 ? "select-lag" : "panel-ipc"} doing, and does decision 7 wait on me?`
+                    text: i % 18 === 0 ? markdownMessage : `What is ${i % 7 === 0 ? "select-lag" : "panel-ipc"} doing, and does decision 7 wait on me?`
                 });
                 break;
             case 1:
@@ -223,7 +226,7 @@ QtObject {
                     kind: "tool",
                     name: "mcp__bosun__tell_master",
                     input: {
-                        text: `Instruction ${i}: spawn panel-ipc for egor/nix#88.`
+                        text: `Instruction ${i}: spawn **panel-ipc** for \`egor/nix#88\`, then:\n\n- tell me when it is ready\n- keep \`WORK\` untouched`
                     },
                     result: {
                         text: "queued"
@@ -247,7 +250,7 @@ QtObject {
                 merge({
                     kind: "prompt",
                     from: "bosun",
-                    text: `${userHead}Use the lighter model.\n\n${masterHead}The master spawned panel-ipc.`
+                    text: `${userHead}Use the lighter model.\n\n${masterHead}The master spawned **panel-ipc** for \`egor/nix#88\`:\n\n- it tests the *harness*\n- it reports back`
                 });
                 break;
             case 5:
@@ -488,7 +491,7 @@ QtObject {
         });
         // A tell the desk has not taken, which shows as pending.
         put("tell", "user", "desk", {
-            text: "A message the desk has not read yet."
+            text: "A message the desk has not read yet, with `code` and **bold**."
         });
         return out.slice(-200);
     }
