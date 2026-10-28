@@ -1,5 +1,13 @@
-{ pkgs, config, ... }:
+{
+  pkgs,
+  lib,
+  config,
+  ...
+}:
 
+let
+  secretScan = pkgs.callPackage ../../pkgs/git-secret-scan { };
+in
 {
   home.packages = [ (pkgs.callPackage ../../pkgs/carve { }) ];
 
@@ -42,6 +50,12 @@
         ls-conflicts = "diff --name-only --diff-filter=U --relative";
       };
       core.autocrlf = false;
+      # A config-based hook runs before the checkout's own pre-push hook rather
+      # than replacing it, as a global core.hooksPath would.
+      hook.secret-scan = {
+        event = "pre-push";
+        command = "${lib.getExe secretScan} ${config.xdg.configHome}/gitleaks";
+      };
     };
   };
 

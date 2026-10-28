@@ -254,6 +254,7 @@
         craft-update = pkgs.callPackage ./pkgs/craft-update { };
         # Installed for every user by modules/git.
         carve = pkgs.callPackage ./pkgs/carve { };
+        git-secret-scan = pkgs.callPackage ./pkgs/git-secret-scan { };
         # Installed for every user by modules/craft, with the apps' caches.
         mcp-lazy = pkgs.callPackage ./pkgs/mcp-lazy { };
         # Run by the bar's format panel, from modules/quickshell.
