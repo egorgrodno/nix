@@ -36,7 +36,7 @@ BosunPane {
             desk: "the desk",
             bosun: "bosun"
         }[entry?.by] ?? entry?.from ?? "";
-        const outcomeWord = outcome.charAt(0).toUpperCase() + outcome.slice(1);
+        const outcomeWord = BosunLook.capitalize(outcome);
         let text = "It no longer waits on you.";
         if (outcome === "withdrawn")
             text = `Withdrawn${at}${entry.cause ? `, when ${entry.cause}` : ""}.`;

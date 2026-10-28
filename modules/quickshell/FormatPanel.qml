@@ -265,14 +265,12 @@ Panel {
                     values: panel.disk ? [panel.disk.name, ...panel.disk.partitions.map(p => p.name)] : []
                 }
 
-                TextButton {
+                ChoiceButton {
                     required property string modelData
                     readonly property var partition: panel.disk?.partitions.find(p => p.name === modelData) ?? null
 
                     text: partition ? `${modelData.replace("/dev/", "")} · ${Stats.decimal(partition.size)}` : "Whole drive"
                     lit: modelData === panel.target
-                    hoverFill: lit ? Theme.blue : Theme.tint(0.12)
-                    textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
                     onClicked: if (!lit)
                         panel.aim(modelData)
                 }
@@ -289,13 +287,11 @@ Panel {
                 Repeater {
                     model: panel.filesystems
 
-                    TextButton {
+                    ChoiceButton {
                         required property var modelData
 
                         text: modelData.name
                         lit: modelData.type === panel.fstype
-                        hoverFill: lit ? Theme.blue : Theme.tint(0.12)
-                        textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
                         onClicked: {
                             panel.fstype = modelData.type;
                             panel.armed = false;

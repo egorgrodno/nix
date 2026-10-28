@@ -16,7 +16,7 @@ Rectangle {
     property bool oneLine: false
     // Submitting sends the text and clears it. Off, it only emits `accepted`.
     property bool sends: true
-    property bool sendGlyph: sends && !oneLine
+    readonly property bool sendGlyph: sends && !oneLine
     // A muted glyph in front of the text.
     property string leadGlyph
     // The field Tab moves to, where Tab would otherwise leave.
@@ -93,7 +93,7 @@ Rectangle {
         }
     }
 
-    height: oneLine ? 40 : Math.min(Math.max(minHeight, input.implicitHeight), maxLines * metrics.lineSpacing + 20)
+    height: Math.min(Math.max(minHeight, input.implicitHeight), maxLines * metrics.lineSpacing + 20)
     radius: Theme.radius - 4
     color: Theme.tint(0.06)
     border.color: input.activeFocus ? Theme.blue : Theme.tint(0.12)

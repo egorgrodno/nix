@@ -374,6 +374,7 @@ Item {
 
         current: sidebar.selected === rowKey
         focused: sidebar.focused
+        fades: true
         inset: 8
         height: 36
         onTapped: sidebar.chosen(rowKey)

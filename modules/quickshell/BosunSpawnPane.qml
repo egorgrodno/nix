@@ -151,12 +151,22 @@ BosunPane {
         label: "Repository"
         hint: pane.repos.length > 0 ? "Every repository Claude Code trusts" : "Claude Code trusts no repository: run claude in one first"
 
-        Choices {
-            model: pane.repos
-            current: pane.repo
-            glyph: BosunLook.folder
-            paths: true
-            onPicked: value => pane.repo = value
+        Flow {
+            width: parent.width
+            spacing: 6
+
+            Repeater {
+                model: pane.repos
+
+                ChoiceButton {
+                    required property string modelData
+
+                    height: 30
+                    text: `${BosunLook.folder}  ${BosunLook.tilde(modelData)}`
+                    lit: modelData === pane.repo
+                    onClicked: pane.repo = modelData
+                }
+            }
         }
     }
 
@@ -276,38 +286,6 @@ BosunPane {
             visible: field.hint !== ""
             text: field.hint
             font.pixelSize: 12
-        }
-    }
-
-    // One button per value, the current one lit; "" is the default.
-    component Choices: Flow {
-        id: choices
-
-        property var model: []
-        property string current
-        property string glyph
-        // Values are paths, shown from ~.
-        property bool paths: false
-
-        signal picked(string value)
-
-        width: parent?.width ?? 0
-        spacing: 6
-
-        Repeater {
-            model: choices.model
-
-            ChoiceButton {
-                required property string modelData
-
-                height: 30
-                text: {
-                    const words = modelData === "" ? "Default" : choices.paths ? BosunLook.tilde(modelData) : modelData;
-                    return choices.glyph ? `${choices.glyph}  ${words}` : words;
-                }
-                lit: modelData === choices.current
-                onClicked: choices.picked(modelData)
-            }
         }
     }
 }

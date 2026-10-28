@@ -42,10 +42,12 @@ Item {
             color: line.lit || !line.opens ? "transparent" : Theme.foregroundMuted
             font.pixelSize: 14
 
-            BosunSpinner {
+            Loader {
                 anchors.centerIn: parent
-                visible: line.lit
-                size: 12
+                active: line.lit
+                sourceComponent: BosunSpinner {
+                    size: 12
+                }
             }
         }
 

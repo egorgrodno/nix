@@ -18,6 +18,9 @@ shot() {
   "$GRIM" "$SNAPS/$1.png"
 }
 
+# A failure between the two calls must not leave the banners for the next script.
+trap 'qs call harness banners false >/dev/null 2>&1 || true' EXIT
+
 call open
 for _ in $(seq 25); do
   [[ $(field entered) == true ]] && break

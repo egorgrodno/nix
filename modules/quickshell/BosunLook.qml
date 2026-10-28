@@ -127,7 +127,7 @@ Singleton {
             return "Paused in its turn, which Resume restarts";
         const words = [states[key].word, session.status, session.state].filter((w, i, all) => w && all.indexOf(w) === i);
         const text = words.join(", ");
-        return text.charAt(0).toUpperCase() + text.slice(1);
+        return capitalize(text);
     }
 
     function decisionGlyph(decision) {
@@ -294,6 +294,10 @@ Singleton {
         return "";
     }
 
+    function capitalize(text) {
+        return text.charAt(0).toUpperCase() + text.slice(1);
+    }
+
     function tilde(path) {
         const home = Quickshell.env("HOME");
         return path?.startsWith(`${home}/`) ? `~${path.slice(home.length)}` : path ?? "";
@@ -308,6 +312,9 @@ Singleton {
     // The kinds of log entry the panel shows; any other is one bosun cannot
     // show yet.
     readonly property var logKinds: ["decision", "escalated", "settled", "allowed", "parked", "stalled", "away", "back", "granted", "revoked", "expired", "sleeplock", "tell", "message", "spawned", "resumed", "merged", "killed", "paused", "unpaused", "model", "turn_end", "exit", "say", "interrupt", "compact", "clear", "prompt"]
+
+    // The kinds that carry the decision they are about, and need it to show.
+    readonly property var decisionKinds: ["decision", "escalated", "settled", "allowed"]
 
     // How a decision reached the user, by the route the daemon logs.
     function routeWords(route) {
@@ -327,7 +334,7 @@ Singleton {
     }
 
     function knows(entry) {
-        return logKinds.includes(entry.kind) && (!["decision", "escalated", "settled", "allowed"].includes(entry.kind) || entry.decision);
+        return logKinds.includes(entry.kind) && (!decisionKinds.includes(entry.kind) || entry.decision);
     }
 
     // How a settled entry's decision went: "allowed", "denied", "answered",
@@ -565,7 +572,7 @@ Singleton {
         case "expired":
             return entry.grant ? `Grant ${entry.grant.id} (${entry.grant.class}) expired` : "A grant expired";
         case "sleeplock":
-            return line(entry.text).charAt(0).toUpperCase() + line(entry.text).slice(1);
+            return capitalize(line(entry.text));
         case "compact":
             return `Compacted ${entry.node}'s conversation`;
         case "clear":
@@ -604,7 +611,7 @@ Singleton {
     function logGroup(entry) {
         if (!knows(entry))
             return "";
-        if (["decision", "escalated", "settled", "allowed", "parked", "stalled", "away", "back", "granted", "revoked", "expired"].includes(entry.kind))
+        if ([...decisionKinds, "parked", "stalled", "away", "back", "granted", "revoked", "expired"].includes(entry.kind))
             return "decisions";
         return ["tell", "message"].includes(entry.kind) ? "messages" : "sessions";
     }

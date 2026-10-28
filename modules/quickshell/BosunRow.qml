@@ -16,6 +16,8 @@ Item {
     // edge sits.
     property real inset: 0
     property real edgeOffset: 0
+    // The fill eases between states, which a long list does not need.
+    property bool fades: false
     readonly property bool hovered: hover.hovered
 
     signal tapped
@@ -36,6 +38,8 @@ Item {
         }
 
         Behavior on color {
+            enabled: row.fades
+
             ColorAnimation {
                 duration: 150
                 easing.type: Easing.OutQuad

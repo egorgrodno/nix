@@ -586,13 +586,11 @@ Panel {
             Repeater {
                 model: choices.values
 
-                TextButton {
+                ChoiceButton {
                     required property var modelData
 
                     text: choices.text(modelData)
                     lit: choices.chosen(modelData)
-                    hoverFill: lit ? Theme.blue : Theme.tint(0.12)
-                    textColor: lit ? Theme.backgroundMain : Theme.foregroundStrong
                     onClicked: choices.picked(modelData)
                 }
             }
