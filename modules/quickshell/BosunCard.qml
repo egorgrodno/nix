@@ -10,7 +10,8 @@ Rectangle {
     property string caption
     property color captionColor: Theme.foregroundMuted
     property string age
-    property color fill: Theme.tint(0.05)
+    // The user's own message, on blue instead of grey.
+    property bool mine: false
     // Outlined instead of filled, for a message not yet taken.
     property bool outlined: false
     property real spacing: 6
@@ -20,7 +21,7 @@ Rectangle {
 
     height: body.implicitHeight + 2 * insetY
     radius: Theme.radius - 4
-    color: outlined ? "transparent" : fill
+    color: outlined ? "transparent" : mine ? Theme.alpha(Theme.blue, 0.16) : Theme.tint(0.05)
     border.width: outlined ? 1 : 0
     border.color: Theme.tint(0.12)
 

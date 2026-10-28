@@ -118,6 +118,7 @@ Item {
 
             caption: queued ? `${BosunLook.queued}  Queued for the turn` : `${BosunLook.promptGlyph(entry.item, entry.conversation.parentNode)}  ${BosunLook.promptTitle(entry.item, entry.conversation.parentNode)}`
             age: BosunLook.ago(entry.item.at, entry.conversation.now)
+            mine: entry.item.from === "user"
             outlined: queued
             spacing: 4
 

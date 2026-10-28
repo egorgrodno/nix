@@ -4,7 +4,7 @@ import QtQuick
 import Quickshell
 
 // An entry of the front desk's conversation of a kind BosunDesk adds: the
-// user's message on the right, the desk's answer with what it names to open,
+// user's message on a card, the desk's answer with what it names to open,
 // an instruction to the master on a card with what became of it, the
 // master's answer on a line that opens, and a decision answered on the
 // user's word.
@@ -15,7 +15,6 @@ Item {
     // The BosunConversation it sits in.
     required property var conversation
     property bool open: false
-    readonly property real bubbleWidth: Math.min(width * 0.75, 640)
     readonly property real cardWidth: Math.min(width, 700)
 
     signal toggled
@@ -46,46 +45,24 @@ Item {
     Component {
         id: bubble
 
-        Item {
+        BosunCard {
             id: said
 
             readonly property bool waits: entry.item.kind === "desk-pending"
 
-            width: entry.width
-            height: bubbleBox.height + (waits ? waitsText.height + 4 : 0)
+            width: entry.cardWidth
+            caption: waits ? `${BosunLook.queued}  Waits for the desk` : `${BosunLook.account}  You`
+            age: BosunLook.ago(entry.item.at, entry.conversation.now)
+            mine: true
+            outlined: waits
+            spacing: 4
 
-            Rectangle {
-                id: bubbleBox
-
-                anchors.right: parent.right
-                width: Math.min(entry.bubbleWidth, bubbleText.implicitWidth + 24)
-                height: bubbleText.implicitHeight + 20
-                radius: Theme.radius - 4
-                color: said.waits ? "transparent" : Theme.alpha(Theme.blue, 0.16)
-                border.width: said.waits ? 1 : 0
-                border.color: Theme.tint(0.16)
-
-                SelectableText {
-                    id: bubbleText
-
-                    x: 12
-                    y: 10
-                    width: Math.min(implicitWidth, entry.bubbleWidth - 24)
-                    wrapMode: TextEdit.Wrap
-                    text: entry.item.text ?? ""
-                    color: said.waits ? Theme.foregroundMuted : Theme.foregroundStrong
-                    font.pixelSize: 14
-                }
-            }
-
-            Caption {
-                id: waitsText
-
-                anchors.right: parent.right
-                anchors.top: bubbleBox.bottom
-                anchors.topMargin: 4
-                visible: said.waits
-                text: `${BosunLook.queued}  Waits for the desk`
+            SelectableText {
+                width: parent.width
+                wrapMode: TextEdit.Wrap
+                text: entry.item.text ?? ""
+                color: said.waits ? Theme.foregroundMuted : Theme.foregroundStrong
+                font.pixelSize: 14
             }
         }
     }
