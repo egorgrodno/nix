@@ -383,18 +383,108 @@ QtObject {
                 instruction: number
             });
         }
-        // A decision's life, as the Log keeps it.
-        put("decision", "bosun", "select-lag", {
+        // A decision's life, as the Log keeps it, with the routing fields the
+        // daemon logs.
+        const routing = {
+            rule: "unboxed.write",
+            match: "./modules/quickshell/harness",
+            route: "escalated"
+        };
+        put("decision", "worker", "select-lag", Object.assign({
             decision: decisions[0]
-        });
-        put("escalated", "master", "select-lag", {
+        }, routing));
+        put("escalated", "master", "select-lag", Object.assign({
             decision: decisions[0],
             text: decisions[0].note
-        });
-        put("settled", "desk", "select-lag", {
+        }, routing));
+        put("settled", "desk", "select-lag", Object.assign({
             decision: decisions[0],
             behavior: "allow",
-            words: "yes, go ahead"
+            words: "yes, go ahead",
+            waited: 252.4
+        }, routing));
+        put("allowed", "bosun", "select-lag", {
+            decision: decisions[0],
+            behavior: "allow"
+        });
+        // The rest of the kinds the daemon logs, one of each.
+        const grant = {
+            id: "g3",
+            class: "git-write",
+            since: new Date().toISOString(),
+            until: new Date(Date.now() + 2 * 3600000).toISOString(),
+            by: "user"
+        };
+        put("parked", "bosun", "select-lag", {
+            from: "master",
+            decision: decisions[0],
+            text: "the master escalated it: " + decisions[0].note
+        });
+        put("stalled", "bosun", "select-lag", {
+            text: "select-lag's decision 7 has waited on the user for 12m. It waits for permission to run make test."
+        });
+        put("away", "user", "", {
+            text: "I am at lunch until two"
+        });
+        put("back", "user", "", {
+            text: "Away mode is off. bosun parked 1 decision while you were away: 7, select-lag's Bash."
+        });
+        put("granted", "user", "", {
+            grant,
+            text: "yes, let it push to its own branches for two hours"
+        });
+        put("revoked", "user", "", {
+            grant,
+            text: "that is enough"
+        });
+        put("expired", "bosun", "", {
+            grant
+        });
+        put("sleeplock", "bosun", "", {
+            text: "took the sleep lock: 2 sessions work"
+        });
+        put("sleeplock", "bosun", "", {
+            text: "could not hold the sleep lock",
+            error: "the inhibit call was refused"
+        });
+        put("message", "session", "panel-ipc", {
+            from: "select-lag",
+            text: "The harness is ready for you to test."
+        });
+        put("resumed", "master", "panel-ipc", {
+            text: "Continue with the Log page."
+        });
+        put("killed", "user", "panel-ipc");
+        put("paused", "user", "");
+        put("unpaused", "user", "", {
+            text: "select-lag resumed"
+        });
+        put("model", "user", "master", {
+            model: "opus",
+            effort: "high"
+        });
+        put("turn_end", "worker", "select-lag", {
+            text: "Done: the table scrolls."
+        });
+        put("exit", "worker", "panel-ipc", {
+            text: "the session ended in its turn"
+        });
+        put("say", "user", "select-lag", {
+            text: "also run the linter",
+            via: "supervisor"
+        });
+        put("interrupt", "user", "select-lag", {
+            via: "supervisor"
+        });
+        put("compact", "user", "master", {
+            via: "supervisor"
+        });
+        put("clear", "user", "desk", {
+            via: "resume"
+        });
+        put("prompt", "user", "select-lag", {
+            behavior: "deny",
+            text: "use the Makefile instead"
         });
         // A tell the desk has not taken, which shows as pending.
         put("tell", "user", "desk", {

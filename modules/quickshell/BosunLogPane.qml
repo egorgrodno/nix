@@ -21,11 +21,49 @@ BosunPane {
             return decision.kind === "permission" ? "" : Bosun.summaryOf(decision);
         case "escalated":
         case "allowed":
+        case "sleeplock":
             return "";
         case "settled":
             return entry.text ?? "";
         }
         return entry.text ?? "";
+    }
+    // How a decision reached the user, as the daemon logs it: the route, the
+    // reserved rule that caught it and what it matched, and how long it
+    // waited; and the grant an entry is about.
+    readonly property var details: {
+        if (!known)
+            return [];
+        const waited = entry.waited ?? 0;
+        const grant = entry.grant;
+        return [
+            entry.route ? {
+                label: "Route",
+                value: `${entry.route}: ${BosunLook.routeWords(entry.route)}`
+            } : null,
+            entry.rule ? {
+                label: "Rule",
+                value: entry.rule,
+                mono: true
+            } : null,
+            entry.match ? {
+                label: "Match",
+                value: entry.match,
+                mono: true
+            } : null,
+            waited > 0 ? {
+                label: "Waited",
+                value: BosunLook.span(waited * 1000)
+            } : null,
+            grant ? {
+                label: "Grant",
+                value: `${grant.id}: ${grant.class}`
+            } : null,
+            grant?.until ? {
+                label: "Until",
+                value: BosunLook.grantUntil(grant)
+            } : null
+        ].filter(row => row);
     }
     // What it names, as the expanded Log links it, and a message's sender.
     readonly property var links: {
@@ -106,7 +144,7 @@ BosunPane {
     // The decision as it stood then.
     Column {
         width: parent.width
-        visible: pane.decision !== null && pane.entry.kind === "settled"
+        visible: pane.decision !== null && ["settled", "parked"].includes(pane.entry.kind)
         spacing: 4
 
         Caption {
@@ -126,6 +164,37 @@ BosunPane {
         model: pane.decision?.kind === "permission" ? Bosun.callOf(pane.decision) : []
 
         delegate: BosunCallBlock {}
+    }
+
+    Column {
+        width: parent.width
+        visible: pane.details.length > 0
+        spacing: 4
+
+        Repeater {
+            model: pane.details
+
+            Row {
+                id: fact
+
+                required property var modelData
+
+                spacing: 12
+
+                Caption {
+                    width: 56
+                    text: fact.modelData.label
+                }
+
+                BarText {
+                    width: pane.bodyWidth - 68
+                    wrapMode: Text.Wrap
+                    text: fact.modelData.value
+                    font.family: fact.modelData.mono ? Theme.fontMono : Theme.fontUI
+                    font.pixelSize: 13
+                }
+            }
+        }
     }
 
     Row {

@@ -35,6 +35,12 @@ ShellRoot {
             return Bosun.panelsOpen;
         }
 
+        // The seq of the first log entry of `kind`, for `select log:<seq>`.
+        function logSeq(kind: string): string {
+            const entry = Bosun.log.find(e => e.kind === kind);
+            return entry ? `${entry.seq}` : "";
+        }
+
         // Shows or clears the pause banner and the error strip.
         function banners(on: bool): string {
             Bosun.paused = on;

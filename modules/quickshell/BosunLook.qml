@@ -45,6 +45,10 @@ Singleton {
     readonly property string queued: "\u{F011D}"
     readonly property string cleared: "\u{F00E2}"
     readonly property string eye: "\u{F06D0}"
+    readonly property string away: "\u{F001D}"
+    readonly property string parked: "\u{F03E3}"
+    readonly property string grant: "\u{F0306}"
+    readonly property string sleep: "\u{F04B2}"
 
     readonly property var states: ({
             working: {
@@ -303,7 +307,24 @@ Singleton {
 
     // The kinds of log entry the panel shows; any other is one bosun cannot
     // show yet.
-    readonly property var logKinds: ["decision", "escalated", "settled", "allowed", "tell", "message", "spawned", "resumed", "merged", "killed", "paused", "unpaused", "model", "turn_end", "exit", "say", "interrupt", "prompt"]
+    readonly property var logKinds: ["decision", "escalated", "settled", "allowed", "parked", "stalled", "away", "back", "granted", "revoked", "expired", "sleeplock", "tell", "message", "spawned", "resumed", "merged", "killed", "paused", "unpaused", "model", "turn_end", "exit", "say", "interrupt", "compact", "clear", "prompt"]
+
+    // How a decision reached the user, by the route the daemon logs.
+    function routeWords(route) {
+        return ({
+                master: "stayed with the master",
+                escalated: "went from a worker to the master, which passed it to you",
+                requester: "is the master's or the desk's own, which nobody sits above",
+                userOnly: "is a reserved action on your list",
+                prompt: "is a notice of a permission left in its session's own prompt",
+                notice: "is any other notice"
+            })[route] ?? route;
+    }
+
+    // "Oct 27 14:02", for a grant's end.
+    function grantUntil(grant) {
+        return grant?.until ? Qt.formatDateTime(new Date(grant.until), "MMM d HH:mm") : "";
+    }
 
     function knows(entry) {
         return logKinds.includes(entry.kind) && (!["decision", "escalated", "settled", "allowed"].includes(entry.kind) || entry.decision);
@@ -343,8 +364,29 @@ Singleton {
         if (!knows(entry))
             return "bosun can't show this entry yet";
         const d = entry.decision;
+        const g = entry.grant;
         const who = actorOf(entry);
         switch (entry.kind) {
+        case "parked":
+            return d ? `${who} parked ${decisionName(d)}` : `${who} parked a decision`;
+        case "stalled":
+            return `${entry.node}'s decision stalled`;
+        case "away":
+            return `${who} turned away mode on`;
+        case "back":
+            return `${who} turned away mode off`;
+        case "granted":
+            return g ? `${who} gave standing grant ${g.id}` : `${who} gave a standing grant`;
+        case "revoked":
+            return g ? `${who} revoked grant ${g.id}` : `${who} revoked a grant`;
+        case "expired":
+            return g ? `Grant ${g.id} expired` : "A grant expired";
+        case "sleeplock":
+            return entry.text ? `${who} ${entry.text}` : `${who} held the sleep lock`;
+        case "compact":
+            return `${who} compacted ${entry.node}'s conversation`;
+        case "clear":
+            return `${who} cleared ${entry.node}'s conversation`;
         case "decision":
             return d.kind === "permission" ? `${d.node} asks to use ${d.tool}` : d.kind === "question" ? `${d.node} asks` : `${d.node} says`;
         case "escalated":
@@ -409,7 +451,15 @@ Singleton {
             return Bosun.summaryOf(d);
         case "settled":
             return outcomeOf(entry) === "answered" ? entry.text ?? "" : Bosun.summaryOf(d);
+        case "parked":
+            return d ? Bosun.summaryOf(d) : entry.text ?? "";
+        case "granted":
+            return entry.grant ? `${entry.grant.class}, until ${grantUntil(entry.grant)}` : "";
+        case "revoked":
+        case "expired":
+            return entry.grant?.class ?? "";
         case "spawned":
+        case "sleeplock":
             return "";
         }
         return entry.text ?? "";
@@ -489,13 +539,37 @@ Singleton {
             case "answered":
                 return `Answered ${d.node}${after(entry.text)}`;
             case "allowed":
-                return entry.by === "session" ? `Allowed ${line(actOf(d, true))} in its own prompt` : `Allowed ${d.node} to ${line(actOf(d))}`;
+                return entry.by === "session" ? `Allowed ${line(actOf(d, true))} in its own prompt` : `Allowed ${d.node} to ${line(actOf(d))}${entry.grant ? `, under grant ${entry.grant.id}` : ""}`;
             }
             if (entry.by === "session")
                 return `Denied ${line(actOf(d, true))} in its own prompt`;
             return `Denied ${d.node} ${line(actOf(d, true))}${entry.text ? `: “${line(entry.text)}”` : ""}`;
         case "allowed":
             return d.kind === "permission" ? `Allowed ${d.node} to ${line(actOf(d))} again, as decision ${d.id} did` : `Allowed ${d.node}'s call again, as decision ${d.id} did`;
+        case "parked":
+            if (!d)
+                return "Parked a decision";
+            if (d.kind === "notice")
+                return `Parked ${d.node}'s notice: ${line(d.note)}`;
+            return d.kind === "question" ? `Parked ${d.node}'s question: ${line(d.question)}` : `Parked ${d.node}'s request to ${line(actOf(d))}`;
+        case "stalled":
+            return line(entry.text);
+        case "away":
+            return `Turned away mode on${after(entry.text)}`;
+        case "back":
+            return "Turned away mode off";
+        case "granted":
+            return entry.grant ? `Granted ${entry.grant.id}: ${entry.grant.class} until ${grantUntil(entry.grant)}${entry.text ? `, on your words “${line(entry.text)}”` : ""}` : "Granted a grant";
+        case "revoked":
+            return entry.grant ? `Revoked grant ${entry.grant.id}` : "Revoked a grant";
+        case "expired":
+            return entry.grant ? `Grant ${entry.grant.id} (${entry.grant.class}) expired` : "A grant expired";
+        case "sleeplock":
+            return line(entry.text).charAt(0).toUpperCase() + line(entry.text).slice(1);
+        case "compact":
+            return `Compacted ${entry.node}'s conversation`;
+        case "clear":
+            return `Cleared ${entry.node}'s conversation`;
         case "tell":
         case "message":
             return line(entry.text);
@@ -515,8 +589,14 @@ Singleton {
             return `Switched ${entry.node} to ${[entry.model, entry.effort].filter(part => part).join(" ")}`;
         case "turn_end":
             return entry.text ? `Ended its turn: “${line(entry.text)}”` : "Ended its turn";
+        case "say":
+            return `Said to ${entry.node}${after(entry.text)}`;
+        case "interrupt":
+            return `Interrupted ${entry.node}'s turn`;
+        case "prompt":
+            return `${entry.behavior === "deny" ? "Denied" : "Approved"} ${entry.node}'s own permission prompt${after(entry.text)}`;
         }
-        return `Stopped${after(entry.text)}`;
+        return `Stopped in its turn${after(entry.text)}`;
     }
 
     // The expanded Log's kind filter an entry falls under besides All:
@@ -524,7 +604,7 @@ Singleton {
     function logGroup(entry) {
         if (!knows(entry))
             return "";
-        if (["decision", "escalated", "settled", "allowed"].includes(entry.kind))
+        if (["decision", "escalated", "settled", "allowed", "parked", "stalled", "away", "back", "granted", "revoked", "expired"].includes(entry.kind))
             return "decisions";
         return ["tell", "message"].includes(entry.kind) ? "messages" : "sessions";
     }
@@ -592,6 +672,23 @@ Singleton {
             return "\u{F05E1}";
         case "allowed":
             return "\u{F05E1}";
+        case "parked":
+            return parked;
+        case "stalled":
+            return clock;
+        case "away":
+        case "back":
+            return away;
+        case "granted":
+        case "revoked":
+        case "expired":
+            return grant;
+        case "sleeplock":
+            return sleep;
+        case "compact":
+            return compacted;
+        case "clear":
+            return cleared;
         case "tell":
             return entry.by === "desk" ? desk : entry.by === "master" ? master : "\u{F12F5}";
         case "say":
@@ -636,7 +733,14 @@ Singleton {
             }
             break;
         case "allowed":
+        case "granted":
             return Theme.green;
+        case "revoked":
+            return Theme.red;
+        case "parked":
+        case "stalled":
+        case "away":
+            return Theme.yellow;
         case "prompt":
             return entry.behavior === "deny" ? Theme.red : Theme.green;
         case "spawned":

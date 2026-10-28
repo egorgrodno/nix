@@ -31,6 +31,12 @@ for row in decision:7 desk session:select-lag session:panel-ipc log:32 log:33 lo
   shot "${row%%:*}-${row##*:}"
 done
 
+# One Log entry of each kind the daemon logs, as the table and the pane show it.
+for kind in allowed parked stalled away back granted revoked expired sleeplock message resumed killed paused unpaused model turn_end exit say interrupt compact clear prompt; do
+  call select "log:$(qs call harness logSeq "$kind")" >/dev/null
+  shot "kind-$kind"
+done
+
 # The pause banner and the error strip over a decision.
 call select decision:7 >/dev/null
 qs call harness banners true >/dev/null
