@@ -209,7 +209,7 @@ Item {
 
             BosunLine {
                 glyph: BosunLook.master
-                label: `The master answered: ${(entry.item.text ?? "").split("\n")[0]}`
+                label: `The master answered: ${BosunLook.plain(entry.item.text)}`
                 labelColor: Theme.foregroundMuted
                 aside: BosunLook.ago(entry.item.at, entry.conversation.now)
                 open: entry.open

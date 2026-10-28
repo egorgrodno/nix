@@ -890,6 +890,12 @@ Singleton {
         return Qt.formatDate(new Date(at), "MMM d");
     }
 
+    // Markdown on one line without its markers, for a label that shows the
+    // start of a message.
+    function plain(markdown) {
+        return (markdown ?? "").replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/^\s{0,3}#{1,6}\s+/gm, "").replace(/[`*]+|\b_+|_+\b(?!\w)/g, "").replace(/\s+/g, " ").trim();
+    }
+
     // "now", "4m", "2h" or "3d": an age in a sidebar row's right column.
     function age(at, now) {
         if (!at)
