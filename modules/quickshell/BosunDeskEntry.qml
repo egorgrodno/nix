@@ -158,7 +158,7 @@ Item {
                         id: headText
 
                         y: head.wraps ? 0 : (head.height - height) / 2
-                        text: `${BosunLook.master}  Instruction ${entry.item.number} to the master`
+                        text: `${BosunLook.master}  Instruction ${card.outcome?.number || entry.item.number} to the master`
                     }
 
                     Flow {

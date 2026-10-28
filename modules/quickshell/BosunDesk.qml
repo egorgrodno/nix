@@ -168,8 +168,10 @@ Singleton {
     // What became of an instruction the desk passed to the master: the
     // log's `tell` that carried it, the master's spawned, resumed and merged
     // entries, and its answers to the desk. Nothing links them in the
-    // daemon, so each takes what the master did between this instruction and
-    // the desk's next; two instructions in flight at once mix theirs.
+    // daemon of an old log, so each takes what the master did between this
+    // instruction and the desk's next; two instructions in flight at once mix
+    // theirs. Numbered entries link exactly: those carrying the tell's
+    // `instruction`. `number` is that number, or 0 for an old log's tell.
     function outcome(text, at) {
         const tells = Bosun.log.filter(e => e.kind === "tell" && e.by === "desk" && e.node === "master");
         const when = new Date(at ?? 0).getTime();
@@ -180,11 +182,13 @@ Singleton {
         });
         if (i < 0)
             return null;
+        const number = tells[i].instruction ?? 0;
         const from = tells[i].seq;
         const to = i + 1 < tells.length ? tells[i + 1].seq : Infinity;
-        const after = Bosun.log.filter(e => e.seq > from && e.seq < to && e.by === "master");
+        const after = number > 0 ? Bosun.log.filter(e => e.instruction === number) : Bosun.log.filter(e => e.seq > from && e.seq < to && e.by === "master");
         return {
             tell: tells[i],
+            number: number,
             acts: after.filter(e => ["spawned", "resumed", "merged"].includes(e.kind)),
             answers: after.filter(e => e.kind === "tell" && e.node === "desk")
         };
