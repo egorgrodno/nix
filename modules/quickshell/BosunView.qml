@@ -3,31 +3,27 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell
 
-// The bosun panel's content: the titlebar, a banner while the fleet is
-// paused, then the sidebar, and beside it the selected row whole, or the New
-// worker form. Expanded to the work area, the sidebar shrinks to a rail of its
-// sections, which can show the sidebar beside it again. There the Log becomes
-// a table with the selected entry whole beside it, and any other pane keeps to
-// a column narrow enough to read. Keys act only while no text field has
-// focus, which starts in the sidebar, and Ctrl+C copies the text the mouse
-// selected, which never takes it. Approving, denying, pausing and clearing a
-// conversation by key take a second press of the same key within three
-// seconds, and so do Pause, Kill and Clear by click: the first arms and lights
-// the button, and any other key or a move disarms it. Approve and Deny act on
-// a single click.
+// The full bosun panel: the titlebar, a banner while the fleet is paused,
+// then the sidebar, or the rail it collapses to, and beside it the selected
+// row whole in a column narrow enough to read, or the New worker form. The Log
+// is a table with the selected entry whole beside it. Keys act only while no
+// text field has focus, which starts in the sidebar, and Ctrl+C copies the
+// text the mouse selected, which never takes it. Approving, denying, pausing
+// and clearing a conversation by key take a second press of the same key
+// within three seconds, and so do Pause, Kill and Clear by click: the first
+// arms and lights the button, and any other key or a move disarms it. Approve
+// and Deny act on a single click.
 Item {
     id: view
 
     // Where Panel.qml sends the keyboard from a field a press lands outside:
     // the list beside the pane.
-    readonly property Item keyboardHome: logShown ? logTable : sidebar.visible ? sidebar : rail
+    readonly property Item keyboardHome: logShown ? logTable : sidebarOpen ? sidebar : rail
 
-    // The panel's window, a Panel.
-    readonly property var window: QsWindow.window
     // BosunKept holds what the panel shows, so it opens where it closed.
     readonly property string selected: BosunKept.selected
     readonly property var held: BosunKept.held
-    readonly property bool expanded: BosunKept.expanded
+    readonly property bool sidebarOpen: BosunKept.sidebarOpen
     // The key a first press armed: "y", "d", "p" or "C".
     property string armed: ""
     // How it was armed: "key" or "click".
@@ -44,17 +40,7 @@ Item {
             return Bosun.desk ? "desk" : "session";
         return selected.split(":")[0];
     }
-    // The rail's section the selection is in.
-    readonly property string section: {
-        if (selected === "desk")
-            return "desk";
-        return ({
-                decision: "waiting",
-                session: "fleet",
-                log: "log"
-            })[paneKind] ?? "";
-    }
-    readonly property bool logShown: expanded && paneKind === "log"
+    readonly property bool logShown: paneKind === "log"
     readonly property var decision: {
         if (paneKind !== "decision")
             return null;
@@ -98,26 +84,17 @@ Item {
         select(keys[from < 0 ? 0 : Math.max(0, Math.min(keys.length - 1, from + step))]);
     }
 
-    // A rail glyph: its section's first row, unless the selection is in it.
-    function openSection(name) {
-        if (name === section)
-            return;
-        switch (name) {
-        case "waiting":
-            if (sidebar.waiting.length > 0)
+    // A rail tile: Waiting on you opens the first decision, unless one is
+    // selected, and the Log the entry last selected.
+    function pickTile(key) {
+        if (key === "waiting") {
+            if (paneKind !== "decision" && sidebar.waiting.length > 0)
                 select(`decision:${sidebar.waiting[0].id}`);
-            break;
-        case "desk":
-            select("desk");
-            break;
-        case "fleet":
-            if (sidebar.tree.length > 0)
-                select(`session:${sidebar.tree[0].node}`);
-            break;
-        case "log":
+        } else if (key === "log")
             openLog();
-            break;
-        }
+        else
+            select(key);
+        rail.forceActiveFocus();
     }
 
     // The entry last selected, else the latest.
@@ -136,9 +113,19 @@ Item {
             select(link.key, link.item);
     }
 
-    function setExpanded(on) {
-        BosunKept.expanded = on;
-        following.restart();
+    function toggleSidebar() {
+        BosunKept.sidebarOpen = !BosunKept.sidebarOpen;
+    }
+
+    // "open", "closed" or "toggle", for a script.
+    function setSidebar(how) {
+        if (how === "toggle")
+            toggleSidebar();
+        else if (["open", "closed"].includes(how))
+            BosunKept.sidebarOpen = how === "open";
+        else
+            return `no sidebar ${how}`;
+        return "";
     }
 
     // An item that hides keeps the keyboard, so it follows the list as the
@@ -149,18 +136,6 @@ Item {
             if (item === view)
                 return;
         keyboardHome.forceActiveFocus();
-    }
-
-    // The composer with the keyboard, for BosunComposer to take it back when
-    // the panel opens again.
-    function keepField() {
-        let item = view.Window.activeFocusItem;
-        while (item && item.draftKey === undefined)
-            item = item.parent;
-        BosunKept.typing = item ? {
-            key: item.draftKey,
-            cursor: item.cursor
-        } : null;
     }
 
     function currentPane() {
@@ -364,27 +339,9 @@ Item {
 
     function panelState() {
         return {
-            entered: window?.entered === true,
             kind: paneKind,
             focus: focusName(),
             armed: killing !== "" ? "kill" : armed
-        };
-    }
-
-    // The box at rest in the compositor's layout, where a screenshot crops.
-    function geometry() {
-        const box = window?.boxRect;
-        const screen = window?.screen;
-        return {
-            screen: {
-                name: screen?.name ?? "",
-                x: screen?.x ?? 0,
-                y: screen?.y ?? 0
-            },
-            x: Math.round((screen?.x ?? 0) + box.x),
-            y: Math.round((screen?.y ?? 0) + box.y),
-            width: Math.round(box.width),
-            height: Math.round(box.height)
         };
     }
 
@@ -432,11 +389,11 @@ Item {
             else
                 keyboardHome.forceActiveFocus();
             return true;
-        // Out of the expanded size, else on to Panel.qml, which closes.
+        // From the pane back to the list, else on to Panel.qml, which closes.
         case Qt.Key_Escape:
-            if (!expanded)
+            if (!paneKeys.activeFocus)
                 return false;
-            setExpanded(false);
+            keyboardHome.forceActiveFocus();
             return true;
         }
         switch (event.text) {
@@ -481,7 +438,15 @@ Item {
         case "C":
             return armable("C") && twice("C", was, clearNow);
         case "f":
-            setExpanded(!expanded);
+            BosunKept.full = false;
+            return true;
+        case "[":
+            toggleSidebar();
+            return true;
+        case "/":
+            if (!logShown)
+                return false;
+            logTable.focusFilter();
             return true;
         }
         return false;
@@ -494,14 +459,9 @@ Item {
         killing = "";
     }
     Component.onCompleted: {
-        Bosun.views = [...Bosun.views, view];
         if (selected === "")
             select(defaultKey());
         keyboardHome.forceActiveFocus();
-    }
-    Component.onDestruction: {
-        Bosun.views = Bosun.views.filter(v => v !== view);
-        BosunKept.save();
     }
 
     // The selection stays where it is as rows come and go: only the user's
@@ -560,11 +520,12 @@ Item {
             pauseArmed: view.armed === "p"
             pauseByKey: view.armedBy === "key"
             spawning: view.selected === "spawn"
-            expanded: view.expanded
+            sidebarOpen: view.sidebarOpen
             onPauseClicked: view.pause()
             onResumeClicked: Bosun.unpause()
             onNewWorkerClicked: view.selected === "spawn" ? view.closeSpawn() : view.openSpawn()
-            onExpandClicked: view.setExpanded(!view.expanded)
+            onSidebarToggled: view.toggleSidebar()
+            onOverviewClicked: BosunKept.full = false
         }
 
         // Whatever bands the panel shows under the title bar; a hidden one
@@ -600,13 +561,14 @@ Item {
             }
         }
 
-        // The rail while expanded, the sidebar, the Log's table while it
-        // shows, and the pane, each after a 1-pixel rule.
+        // The sidebar or its rail, the Log's table while it shows, and the
+        // pane, each after a 1-pixel rule. The sidebar collapsed still gives
+        // the movement keys its rows.
         Item {
             id: body
 
-            // Where the panes start, past the rail and the sidebar.
-            readonly property real paneLeft: (view.expanded ? rail.width + 1 : 0) + (sidebar.visible ? sidebar.width + 1 : 0)
+            // Where the panes start, past the sidebar or the rail.
+            readonly property real paneLeft: (view.sidebarOpen ? sidebar.width : rail.width) + 1
             readonly property real rest: width - paneLeft
 
             anchors.top: strips.bottom
@@ -617,11 +579,9 @@ Item {
                 id: rail
 
                 height: parent.height
-                visible: view.expanded
-                section: view.section
-                sidebarShown: BosunKept.sidebarShown
-                onPicked: name => view.openSection(name)
-                onSidebarToggled: BosunKept.sidebarShown = !BosunKept.sidebarShown
+                visible: !view.sidebarOpen
+                selected: view.selected
+                onPicked: key => view.pickTile(key)
                 Keys.onPressed: event => event.accepted = view.press(event)
             }
 
@@ -633,20 +593,18 @@ Item {
             BosunSidebar {
                 id: sidebar
 
-                x: view.expanded ? rail.width + 1 : 0
                 height: parent.height
                 width: 380
-                visible: !view.expanded || BosunKept.sidebarShown
-                expanded: view.expanded
+                visible: view.sidebarOpen
                 selected: view.selected
                 held: view.paneKind === "decision" ? view.decision : null
                 onChosen: key => {
                     view.select(key);
                     sidebar.forceActiveFocus();
                 }
-                onLogExpanded: {
-                    view.setExpanded(true);
+                onLogOpened: {
                     view.openLog();
+                    sidebar.forceActiveFocus();
                 }
                 Keys.onPressed: event => event.accepted = view.press(event)
             }
@@ -675,12 +633,12 @@ Item {
             }
 
             // The selected row whole: beside the Log's table at about a third
-            // of what the panel leaves, as the mockup has it, else in that, at
-            // most 1200 wide.
+            // of what the panel leaves, as the mockup has it, else centred in
+            // that, at most 1200 wide.
             Item {
                 id: detail
 
-                readonly property real column: view.logShown ? Math.round(body.rest * 0.35) : view.expanded ? Math.min(body.rest, 1200) : body.rest
+                readonly property real column: view.logShown ? Math.round(body.rest * 0.35) : Math.min(body.rest, 1200)
 
                 x: view.logShown ? body.width - column : body.paneLeft + (body.rest - column) / 2
                 width: column

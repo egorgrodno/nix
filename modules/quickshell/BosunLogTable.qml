@@ -4,10 +4,10 @@ import QtQuick
 import QtQuick.Controls.Basic
 import Quickshell
 
-// The expanded panel's Log: every entry the daemon keeps, newest first, as a
-// table of when, who and what, with the link to what each names. Filtered by
-// kind, by session and by text. the movement keys move through the rows and Enter opens
-// what the selected one names.
+// The Log: every entry the daemon keeps, newest first, as a table of when, who
+// and what, with the link to what each names. Filtered by kind, by session and
+// by text. The movement keys move through the rows, Enter opens what the
+// selected one names, and / takes the filter.
 Item {
     id: table
 
@@ -34,10 +34,6 @@ Item {
             return words === "" || `${BosunLook.logWho(e)} ${BosunLook.logWhat(e)}`.toLowerCase().includes(words);
         }).reverse();
     }
-    readonly property int today: {
-        const day = new Date().toDateString();
-        return Bosun.log.filter(e => e.at && new Date(e.at).toDateString() === day).length;
-    }
     // Every session the log names, then those in the fleet it does not.
     readonly property var sessions: {
         const names = new Set();
@@ -59,6 +55,10 @@ Item {
             return;
         const from = rows.findIndex(e => e.seq === selectedSeq);
         chosen(rows[from < 0 ? 0 : Math.max(0, Math.min(rows.length - 1, from + step))]);
+    }
+
+    function focusFilter() {
+        field.focusIn();
     }
 
     function openNamed() {
@@ -108,21 +108,16 @@ Item {
         }
     }
 
-    // The title, and the filters beside it. Once the field there would be
-    // narrower than 160, the field stays beside the title and the chips and
-    // the session go under it.
+    // The title with the field beside it, and the chips and the session under
+    // them, on two rows at any width, so the table stays put as the sidebar
+    // opens and collapses.
     Item {
         id: header
-
-        // Beside the title, what the filters leave for the field.
-        readonly property real beside: width - todayText.x - todayText.width - 24
-        readonly property real room: beside - filters.width - filters.spacing
-        readonly property bool wraps: room < 160
 
         x: 28
         y: 18
         width: parent.width - 2 * x
-        height: wraps ? 66 : 28
+        height: 66
         clip: true
 
         BarText {
@@ -140,15 +135,13 @@ Item {
             anchors.left: title.right
             anchors.leftMargin: 12
             anchors.baseline: title.baseline
-            text: `${table.today} ${table.today === 1 ? "event" : "events"} today`
+            text: `${Bosun.logToday} ${Bosun.logToday === 1 ? "event" : "events"} today`
         }
 
         Row {
             id: filters
 
-            anchors.right: header.wraps ? parent.right : field.left
-            anchors.rightMargin: header.wraps ? 0 : spacing
-            y: header.wraps ? 38 : 0
+            y: 38
             height: 28
             spacing: 10
 
@@ -211,7 +204,7 @@ Item {
             id: field
 
             anchors.right: parent.right
-            width: Math.max(120, Math.min(260, header.wraps ? header.beside : header.room))
+            width: Math.max(120, Math.min(260, header.width - todayText.x - todayText.width - 24))
             height: 28
             oneLine: true
             sends: false
@@ -224,14 +217,15 @@ Item {
         }
     }
 
-    // The table's columns, shared by the heading and the rows.
+    // The table's columns, shared by the heading and the rows. Who narrows
+    // in a narrow table, beside the open sidebar.
     QtObject {
         id: columns
 
         readonly property real time: 12
         readonly property real glyph: 64
         readonly property real who: 92
-        readonly property real what: 304
+        readonly property real what: list.width < 800 ? 262 : 304
     }
 
     Item {
@@ -329,16 +323,16 @@ Item {
         anchors.bottomMargin: 20
         model: [
             {
-                keys: ["Esc"],
-                text: "back to the normal size"
-            },
-            {
                 keys: [Host.directions.down, Host.directions.up],
                 text: "move"
             },
             {
                 keys: ["Enter"],
                 text: "open what it names"
+            },
+            {
+                keys: ["/"],
+                text: "filter"
             }
         ]
     }

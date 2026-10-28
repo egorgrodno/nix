@@ -65,7 +65,7 @@ BosunPane {
             } : null
         ].filter(row => row);
     }
-    // What it names, as the expanded Log links it, and a message's sender.
+    // What it names, as the Log's table links it, and a message's sender.
     readonly property var links: {
         if (!entry)
             return [];

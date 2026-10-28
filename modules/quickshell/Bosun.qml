@@ -36,6 +36,24 @@ Singleton {
     property var decisions: []
     readonly property var mine: decisions.filter(d => d.holder === "user")
     readonly property var masters: decisions.filter(d => d.holder === "master")
+    // The master and its workers, depth first, each session under its parent,
+    // as `bosun status` prints it.
+    readonly property var tree: {
+        const children = new Map();
+        for (const s of sessions.filter(s => s.node !== "desk")) {
+            const parent = s.parent ?? "";
+            children.set(parent, [...(children.get(parent) ?? []), s]);
+        }
+        const rows = [];
+        const walk = parent => {
+            for (const s of children.get(parent) ?? []) {
+                rows.push(s);
+                walk(s.node);
+            }
+        };
+        walk("");
+        return rows;
+    }
     // A worker under the master, which the daemon's clear of the master refuses.
     readonly property bool hasWorkers: sessions.some(s => s.node !== "master" && s.node !== "desk")
     readonly property bool working:sessions.some(s => s.status === "busy" || s.status === "waiting")
@@ -51,19 +69,27 @@ Singleton {
     // The fleet's log, oldest first, the latest 200 as the daemon keeps them:
     // each entry with its `seq`, `at`, `kind`, `by` and what its kind carries.
     property var log: []
+    // How many of the log's entries came today, counted back from the newest.
+    readonly property int logToday: {
+        const midnight = new Date().setHours(0, 0, 0, 0);
+        let n = 0;
+        for (let i = log.length - 1; i >= 0 && Date.parse(log[i].at) >= midnight; i--)
+            n++;
+        return n;
+    }
     // Why the last command failed, until the next one.
     property string error: ""
     // The node whose model switch has not finished.
     property string switching: ""
     readonly property ShellScreen screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
-    // The BosunView of each panel that shows, one per screen at most.
-    property var views: []
-    readonly property int panelsOpen: views.length
+    // The BosunPanel of each panel that shows, one per screen at most.
+    property var panels: []
+    readonly property int panelsOpen: panels.length
     // The one a script's IPC call reaches: the open panel on the focused
     // screen, else the newest.
-    readonly property var view: {
-        const open = views.filter(v => v.window?.open === true);
-        return open.find(v => v.window.screen === screen) ?? open[open.length - 1] ?? null;
+    readonly property var panel: {
+        const open = panels.filter(v => v.open);
+        return open.find(v => v.screen === screen) ?? open[open.length - 1] ?? null;
     }
     // The desk's latest reply, its `activity` text and when, which a
     // notification told of or the snapshot already held.
@@ -621,13 +647,13 @@ Singleton {
     // What `act` returns for the panel that shows, "ok" if it returns "", else
     // "error: " and why. Without a panel, the same.
     function drive(act) {
-        const why = view ? act(view) : "no panel is open";
+        const why = panel ? act(panel) : "no panel is open";
         return why === "" ? "ok" : `error: ${why}`;
     }
 
     // For scripts, in place of keystrokes that land in whatever window has the
     // focus. Nothing here sends, interrupts or answers, and an action with two
-    // presses stops at the first: those stay the user's. BosunView holds the
+    // presses stops at the first: those stay the user's. BosunPanel holds the
     // panel's side.
     IpcHandler {
         target: "bosun"
@@ -641,12 +667,12 @@ Singleton {
         }
 
         function close(): void {
-            for (const v of root.views)
-                v.window?.close();
+            for (const p of root.panels)
+                p.close();
         }
 
         function isOpen(): bool {
-            return root.view !== null;
+            return root.panel !== null;
         }
 
         function select(row: string): string {
@@ -658,12 +684,11 @@ Singleton {
         }
 
         function mode(name: string): string {
-            return root.drive(v => {
-                if (!["expanded", "sidebar"].includes(name))
-                    return `no mode ${name}`;
-                v.setExpanded(name === "expanded");
-                return "";
-            });
+            return root.drive(v => v.setMode(name));
+        }
+
+        function sidebar(how: string): string {
+            return root.drive(v => v.setSidebar(how));
         }
 
         function arm(action: string): string {
@@ -672,15 +697,15 @@ Singleton {
 
         function state(): string {
             return JSON.stringify(Object.assign({
-                open: root.view !== null,
+                open: root.panel !== null,
                 selected: BosunKept.selected,
-                mode: BosunKept.expanded ? "expanded" : "sidebar",
-                sidebarShown: BosunKept.sidebarShown
-            }, root.view?.panelState()));
+                mode: BosunKept.full ? "full" : "overview",
+                sidebarOpen: BosunKept.sidebarOpen
+            }, root.panel?.panelState()));
         }
 
         function geometry(): string {
-            return root.view ? JSON.stringify(root.view.geometry()) : "error: no panel is open";
+            return root.panel ? JSON.stringify(root.panel.geometry()) : "error: no panel is open";
         }
     }
 }

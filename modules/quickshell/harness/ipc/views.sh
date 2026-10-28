@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Takes a PNG of each pane of the expanded panel into $SNAPS, for comparing
-# looks between revisions. $GRIM captures the harness compositor's own screen.
+# Takes a PNG of each pane of the full panel into $SNAPS, for comparing looks
+# between revisions. $GRIM captures the harness compositor's own screen.
 set -euo pipefail
 
 [[ -n ${SNAPS:-} ]] || {
@@ -8,9 +8,8 @@ set -euo pipefail
   exit 0
 }
 
-qs() { "$QS" ipc --path "$QS_CONFIG" "$@"; }
-call() { qs call bosun "$@"; }
-field() { call state | jq -r ".$1"; }
+# shellcheck source=lib.bash
+source "$(dirname "${BASH_SOURCE[0]}")/lib.bash"
 
 # Lets the panel settle, then captures it as $1.
 shot() {
@@ -22,11 +21,9 @@ shot() {
 trap 'qs call harness banners false >/dev/null 2>&1 || true' EXIT
 
 call open
-for _ in $(seq 25); do
-  [[ $(field entered) == true ]] && break
-  sleep 0.2
-done
-call mode expanded
+await entered true
+call mode full
+call sidebar closed
 
 # log:32 and log:33 are the escalated and the settled entry of decision 7.
 for row in decision:7 desk session:select-lag session:panel-ipc log:32 log:33 log; do
@@ -47,40 +44,26 @@ shot banners
 qs call harness banners false >/dev/null
 call select log >/dev/null
 
-# The pointer over a Log row and over a rail button.
-"$WLRCTL" pointer move -4000 -4000
-"$WLRCTL" pointer move 400 330
+# The pointer over a Log row and over a rail tile, whose tooltip shows.
+point 400 330
 shot log-hover
-"$WLRCTL" pointer move -400 -141
+point 46 250
 shot rail-hover
 
-# The sidebar beside the rail, on a session, with the pointer over another row.
-call mode sidebar
+# The sidebar open, on a session, with the pointer over another row.
+call sidebar open
 call select session:select-lag >/dev/null
-"$WLRCTL" pointer move -4000 -4000
-"$WLRCTL" pointer move 200 415
+point 200 375
 shot sidebar-hover
-call mode expanded
 
 # The New worker form, by its button in the title bar.
-"$WLRCTL" pointer move -4000 -4000
-"$WLRCTL" pointer move 1157 85
-"$WLRCTL" pointer click left
+click 1315 83
 shot spawn
 
 # Its Model menu, under its button, which a press elsewhere closes.
-"$WLRCTL" pointer move -4000 -4000
-"$WLRCTL" pointer move 160 449
-"$WLRCTL" pointer click left
+click 480 447
 shot spawn-model
-"$WLRCTL" pointer move -4000 -4000
-"$WLRCTL" pointer move 600 300
-"$WLRCTL" pointer click left
+click 900 300
 
-# Leaves the panel gone, not mid-close, for the next script.
-call close
-for _ in $(seq 25); do
-  [[ $(qs call harness panels) == 0 ]] && break
-  sleep 0.2
-done
+closed
 echo "views captured in $SNAPS"

@@ -14,6 +14,9 @@ PopupWindow {
     // Built in place of the text.
     property Component content: null
     property bool hovered
+    // To the target's right, centred on it, sliding out from it, as for a
+    // rail's tile.
+    property bool beside: false
     // The target's x in its window, read when the tooltip opens.
     property real targetX
     // False from the start of the fade out.
@@ -31,13 +34,13 @@ PopupWindow {
     }
 
     anchor.item: target
-    anchor.rect.x: Math.max(Theme.outerGap, Math.min(targetX + (target.width - implicitWidth) / 2, (target.QsWindow.window?.width ?? 0) - Theme.outerGap - implicitWidth)) - targetX
-    anchor.rect.y: upward ? -4 : 0
-    anchor.rect.width: implicitWidth
-    anchor.rect.height: upward ? 1 : target.height + 4
-    anchor.edges: upward ? Edges.Top : Edges.Bottom
-    anchor.gravity: upward ? Edges.Top : Edges.Bottom
-    anchor.adjustment: PopupAdjustment.SlideX
+    anchor.rect.x: beside ? target.width + 4 : Math.max(Theme.outerGap, Math.min(targetX + (target.width - implicitWidth) / 2, (target.QsWindow.window?.width ?? 0) - Theme.outerGap - implicitWidth)) - targetX
+    anchor.rect.y: beside ? 0 : upward ? -4 : 0
+    anchor.rect.width: beside ? 1 : implicitWidth
+    anchor.rect.height: beside ? target.height : upward ? 1 : target.height + 4
+    anchor.edges: beside ? Edges.Right : upward ? Edges.Top : Edges.Bottom
+    anchor.gravity: beside ? Edges.Right : upward ? Edges.Top : Edges.Bottom
+    anchor.adjustment: beside ? PopupAdjustment.SlideY : PopupAdjustment.SlideX
     implicitWidth: box.implicitWidth
     implicitHeight: box.implicitHeight
     color: "transparent"
@@ -81,12 +84,20 @@ PopupWindow {
         border.color: Theme.tint(0.08)
         border.width: 1
         radius: Theme.radius
-        y: tip.shown ? 0 : tip.upward ? Theme.slide : -Theme.slide
+        x: tip.shown || !tip.beside ? 0 : -Theme.slide
+        y: tip.shown || tip.beside ? 0 : tip.upward ? Theme.slide : -Theme.slide
         opacity: tip.shown ? 1 : 0
         onOpacityChanged: if (!tip.shown && opacity === 0)
             tip.visible = false
 
         // One curve both ways, as in Panel.qml.
+        Behavior on x {
+            NumberAnimation {
+                duration: 200
+                easing.type: Easing.OutExpo
+            }
+        }
+
         Behavior on y {
             NumberAnimation {
                 duration: 200
@@ -115,6 +126,9 @@ PopupWindow {
             id: body
 
             anchors.centerIn: parent
+            // Built from the hover on, so a target that never shows its tip
+            // keeps none.
+            active: delay.running || tip.visible
             sourceComponent: tip.content
         }
     }

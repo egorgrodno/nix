@@ -37,13 +37,16 @@ PanelWindow {
     property bool entered: false
     // Between the box's edge and the content.
     property int padding: 20
+    // How far the box reaches past the outer gap's inner edge, toward the
+    // screen's, as Hyprland's window border does.
+    property int grow: 0
+    property int boxRadius: Theme.radius
+    // Where the box's edge on the bar's side rests, from the screen's.
+    readonly property int edge: Theme.barHeight + Theme.outerGap - grow
     readonly property real boxHeight: column.implicitHeight + 2 * padding
     // Where the box ends up on its screen, whatever the open animation or a
     // change of height has reached.
-    readonly property rect boxRect: {
-        const edge = Theme.barHeight + Theme.outerGap;
-        return Qt.rect(boxX, upward ? (screen?.height ?? 0) - edge - boxHeight : edge, boxWidth, boxHeight);
-    }
+    readonly property rect boxRect: Qt.rect(boxX, upward ? (screen?.height ?? 0) - edge - boxHeight : edge, boxWidth, boxHeight)
     // Where the keyboard goes from a text field a press lands outside, unless
     // an item around the field sets its own.
     property Item keyboardHome: box
@@ -115,12 +118,14 @@ PanelWindow {
     function place() {
         if (module) {
             const x = module.mapToItem(null, 0, 0).x;
-            boxX = Math.max(Theme.outerGap, Math.min(x + (module.width - boxWidth) / 2, bar.width - Theme.outerGap - boxWidth));
+            boxX = Math.max(Theme.outerGap - grow, Math.min(x + (module.width - boxWidth) / 2, bar.width - Theme.outerGap + grow - boxWidth));
         } else
             boxX = Qt.binding(() => Math.max(0, (screen?.width ?? boxWidth) - boxWidth) / 2);
     }
 
     onBoxWidthChanged: if (open && module)
+        place()
+    onGrowChanged: if (open && module)
         place()
 
     Component.onCompleted: {
@@ -148,7 +153,7 @@ PanelWindow {
         x: panel.boxX - panel.margins.left
         width: panel.boxWidth
         height: box.height
-        y: panel.upward ? parent.height - Theme.slide - height : Theme.slide
+        y: panel.upward ? parent.height - Theme.slide + panel.grow - height : Theme.slide - panel.grow
 
         Shadow {
             target: box
@@ -167,7 +172,7 @@ PanelWindow {
             color: Theme.alpha(Theme.backgroundRaised, 0.97)
             border.color: Theme.tint(0.08)
             border.width: 1
-            radius: Theme.radius
+            radius: panel.boxRadius
             clip: true
             focus: true
             Keys.onEscapePressed: panel.close()

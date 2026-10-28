@@ -313,28 +313,133 @@ QtObject {
         } : {});
     }
 
-    // `bosun status`'s sessions.
+    // `bosun status`'s sessions, each state the panel draws among them, the
+    // desk with a reply the user has not seen.
     readonly property var sessions: [
         {
             node: "master",
-            status: "idle"
+            status: "idle",
+            depth: 0,
+            model: "opus",
+            effort: "high",
+            context: {
+                used: 148000,
+                total: 1000000
+            },
+            activity: {
+                at: at(0, 5),
+                text: "All three tiers are merged, live and pushed: /etc/nixos e66106c"
+            }
         },
         {
             node: "desk",
-            status: "idle"
+            status: "idle",
+            model: "sonnet",
+            effort: "medium",
+            unseen: true,
+            context: {
+                used: 52000,
+                total: 200000
+            },
+            activity: {
+                at: at(0, 2),
+                text: "Both are done. Markdown: there was no overall review issue, only one-off fixes. I filed egor/nix#159 and haven't sent it to the master."
+            }
         },
         {
             node: "select-lag",
             id: "abc",
             status: "busy",
-            parent: "master"
+            parent: "master",
+            depth: 1,
+            model: "sonnet",
+            effort: "low",
+            context: {
+                used: 42000,
+                total: 1000000
+            },
+            activity: {
+                at: at(0, 2),
+                tool: "Bash",
+                arg: "nixos-rebuild test --sudo --flake /etc/nixos"
+            }
         },
         {
             node: "panel-ipc",
             status: "waiting",
-            parent: "master"
+            parent: "master",
+            depth: 1,
+            effort: "high",
+            activity: {
+                at: at(0, 3),
+                text: "Wants to run the harness's IPC scripts on labwc"
+            }
+        },
+        {
+            node: "notes-sync-with-a-long-name",
+            status: "idle",
+            parent: "master",
+            depth: 1,
+            effort: "medium",
+            activity: {
+                at: at(0, 60),
+                text: "Synced 14 notes to notevault; nothing left to do"
+            }
+        },
+        {
+            node: "paused-one",
+            status: "busy",
+            paused: true,
+            parent: "notes-sync-with-a-long-name",
+            depth: 2
+        },
+        {
+            node: "stopped-one",
+            status: "stopped",
+            parent: "master",
+            depth: 1
         }
     ]
+
+    // `count` more workers under the master, cycling through the states, for
+    // a fleet that outgrows the rail.
+    function fleet(count) {
+        const statuses = ["busy", "idle", "waiting", "stopped"];
+        return sessions.concat(Array.from({
+            length: count
+        }, (_, k) => ({
+                    node: `worker-${k + 1}`,
+                    status: statuses[k % statuses.length],
+                    parent: "master",
+                    depth: 1,
+                    effort: "low",
+                    activity: {
+                        at: at(0, k),
+                        text: `Worker ${k + 1} reports its progress on one line`
+                    }
+                })));
+    }
+
+    // A decision waiting on the user, numbered `id`, from `node`: a
+    // permission, or a question for an odd `id`.
+    function decision(id, node) {
+        return Number(id) % 2 === 0 ? {
+            id: `${id}`,
+            holder: "user",
+            node,
+            kind: "permission",
+            tool: "Bash",
+            input: {
+                command: `nixos-rebuild test --sudo --flake /etc/nixos # ${id}`
+            }
+        } : {
+            id: `${id}`,
+            holder: "user",
+            node,
+            kind: "question",
+            question: `Should decision ${id} go ahead with the change to the panel, or wait for the review?`
+        };
+    }
 
     // Decision 7 carries the master's note and what reserved it, and a command
     // long enough to wrap, with a path that cannot break at a space.

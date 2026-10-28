@@ -16,7 +16,8 @@ Rectangle {
     property bool oneLine: false
     // Submitting sends the text and clears it. Off, it only emits `accepted`.
     property bool sends: true
-    readonly property bool sendGlyph: sends && !oneLine
+    // A glyph that sends, which a single line goes without unless it asks.
+    property bool sendGlyph: sends && !oneLine
     // A muted glyph in front of the text.
     property string leadGlyph
     // The field Tab moves to, where Tab would otherwise leave.
@@ -191,7 +192,7 @@ Rectangle {
         visible: field.sendGlyph
         anchors.right: parent.right
         anchors.rightMargin: 12
-        y: (40 - implicitHeight) / 2
+        y: ((field.oneLine ? field.height : 40) - implicitHeight) / 2
         text: BosunLook.send
         color: input.text !== "" && sendMouse.containsMouse ? Theme.foregroundStrong : Theme.foregroundMuted
 

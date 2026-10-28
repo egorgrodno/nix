@@ -27,7 +27,7 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `Chevron` | A ‹ or › that steps what it sits beside |
 | `Meter`, `Spark` | A 0 to 1 level, and a history scaled to its own peak |
 | `Pill`, `Segment` | A right-hand module with an optional tooltip, and a group of modules on a bar |
-| `Tooltip` | The hover tip under or over a module |
+| `Tooltip` | The hover tip under or over a module, or with `beside` to its right |
 | `OverlayScrollBar` | The scroll bar of every view that scrolls, attached as `ScrollBar.vertical` or `ScrollBar.horizontal` |
 | `BosunDropdown` | A button showing the current value that opens a menu of the others, inside the panel's window |
 | `BosunComposer` | Every text field of the panel: grows to a few lines and sends on Ctrl+Enter; `oneLine` makes it a line that Return submits; `sends: false` makes a submit emit `accepted` and keep the text |
@@ -35,7 +35,7 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `SelectableText` | `BarText`'s look in a read-only `TextEdit` the mouse selects, for `MouseSelection` to copy |
 | `SelectableMarkdown` | Todoist-style Markdown the mouse selects, built on `SelectableText` |
 | `BosunLine` | A line that opens at a click: chevron, glyph, label and an aside, with `open` and `toggled` for the caller to wire |
-| `BosunRow` | A row that selects: fill while current, a lighter one on hover, a 2 px edge blue while the keyboard is in the list |
+| `BosunRow` | A row that selects: fill while current, a lighter one on hover, a 2 px edge blue while the keyboard is in the list; `inert` for an entry with nothing behind it, which takes no hover or click |
 | `BosunLink` | Blue text that opens what it names, strong on hover, with `clicked` |
 | `BosunBanner` | A glyph and wrapped text on a tint of its colour, a note in a pane or with `strip` a band across the panel |
 | `BosunCodeBox` | Selectable text in a box on a tint: a tool's input and result and a message's fenced code, which break at a space where they can and anywhere else |
@@ -46,6 +46,12 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `BosunSpinner` | A running state's spinner |
 | `BosunJumpButton` | A round button over a scrolling view's corner that jumps to its newest entry |
 | `BosunHints` | Keycaps, each run beside what it does |
+| `BosunIconButton` | A square button of one glyph, with a tooltip |
+| `BosunBadge` | How many decisions wait, on a yellow pill |
+| `BosunStateGlyph` | A session state's glyph in its colour, the spinner for working |
+| `BosunCount` | A state's glyph, a number and a word, as the titlebar counts the fleet |
+| `BosunActivityLine` | What a session does: its tool's glyph and the call in mono, or its last words |
+| `BosunDashed` | A dashed yellow outline behind what has yet to be dealt with |
 
 **Harness.** `harness/run.sh` runs the bosun panel offscreen: timed scenarios on fake conversations, and scripts that call IPC on a real panel. A change to the panel's QML is measured there on its worktree, and a new entry kind or desk card **must** join `harness/HarnessData.qml`, or the harness cannot catch what it breaks. `harness/README.md` covers adding a scenario.
 

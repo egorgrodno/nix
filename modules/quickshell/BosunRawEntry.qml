@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Shapes
 
 // An entry the panel cannot render, in a dashed yellow box: its type, then
 // its raw JSON on one line, whole at a click on Raw.
@@ -17,26 +16,7 @@ Item {
     width: parent?.width ?? 0
     height: body.implicitHeight + 20
 
-    Shape {
-        anchors.fill: parent
-        preferredRendererType: Shape.CurveRenderer
-
-        ShapePath {
-            strokeColor: Theme.alpha(Theme.yellow, 0.6)
-            strokeWidth: 1
-            strokeStyle: ShapePath.DashLine
-            dashPattern: [4, 3]
-            fillColor: Theme.alpha(Theme.yellow, 0.05)
-
-            PathRectangle {
-                x: 0.5
-                y: 0.5
-                width: raw.width - 1
-                height: raw.height - 1
-                radius: 4
-            }
-        }
-    }
+    BosunDashed {}
 
     Column {
         id: body

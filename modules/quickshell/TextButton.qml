@@ -5,17 +5,19 @@ Rectangle {
     id: button
 
     property alias text: label.text
+    property color fill: Theme.tint(0.06)
     property color hoverFill: Theme.tint(0.12)
     property bool lit: false
     property color textColor: Theme.foregroundStrong
     property color litTextColor: textColor
+    readonly property bool hovered: mouse.containsMouse
 
     signal clicked
 
     width: label.implicitWidth + 20
     height: 28
     radius: Theme.radius - 4
-    color: lit || mouse.containsMouse ? hoverFill : Theme.tint(0.06)
+    color: lit || mouse.containsMouse ? hoverFill : fill
 
     Behavior on color {
         ColorAnimation {

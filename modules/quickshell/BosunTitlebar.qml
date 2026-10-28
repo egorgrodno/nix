@@ -2,9 +2,9 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 
-// bosun's name, the fleet's sessions counted by state, the decisions the
-// master holds, then Pause all, or Resume while paused, New worker, and Expand,
-// which switches between the normal size and the work area.
+// The sidebar's toggle, bosun's name, the fleet's sessions counted by
+// state, the decisions the master holds, then Pause all, or Resume while
+// paused, New worker, and a button that shrinks the panel to the overview.
 Item {
     id: bar
 
@@ -14,26 +14,32 @@ Item {
     property bool pauseByKey: false
     // While the New worker form is open.
     property bool spawning: false
-    // While the panel fills the work area.
-    property bool expanded: false
-    readonly property var counts: {
-        const fleet = Bosun.sessions.filter(s => s.node !== "desk").map(s => BosunLook.stateOf(s));
-        return BosunLook.stateOrder.map(key => ({
-                    key: key,
-                    n: fleet.filter(k => k === key).length
-                })).filter(c => c.n > 0);
-    }
+    // While the sidebar shows, else its rail.
+    property bool sidebarOpen: true
 
     signal pauseClicked
     signal resumeClicked
     signal newWorkerClicked
-    signal expandClicked
+    signal sidebarToggled
+    signal overviewClicked
 
     height: 52
 
-    Row {
+    BosunIconButton {
+        id: sidebarButton
+
         anchors.left: parent.left
-        anchors.leftMargin: 20
+        anchors.leftMargin: 10
+        anchors.verticalCenter: parent.verticalCenter
+        text: BosunLook.dockLeft
+        lit: bar.sidebarOpen
+        tip: bar.sidebarOpen ? "Collapse the sidebar" : "Open the sidebar"
+        onClicked: bar.sidebarToggled()
+    }
+
+    Row {
+        anchors.left: sidebarButton.right
+        anchors.leftMargin: 12
         anchors.verticalCenter: parent.verticalCenter
         spacing: 22
 
@@ -55,14 +61,12 @@ Item {
         }
 
         Repeater {
-            model: bar.counts
+            model: BosunLook.fleetCounts
 
-            Count {
+            BosunCount {
                 required property var modelData
 
-                glyph: BosunLook.states[modelData.key].glyph
-                glyphColor: BosunLook.stateColor(modelData.key)
-                spinning: modelData.key === "working"
+                stateKey: modelData.key
                 n: modelData.n
                 word: BosunLook.states[modelData.key].word
             }
@@ -70,7 +74,7 @@ Item {
 
         // Only a count: the master answers these, and the user only the ones
         // it passes on.
-        Count {
+        BosunCount {
             visible: Bosun.masters.length > 0
             glyph: BosunLook.master
             n: Bosun.masters.length
@@ -85,6 +89,7 @@ Item {
         spacing: 8
 
         TextButton {
+            height: 32
             visible: Bosun.connected && (!Bosun.paused || Bosun.fleetOp === "pause")
             enabled: Bosun.fleetOp === ""
             text: Bosun.fleetOp === "pause" ? `${BosunLook.pause}  Pausing…` : bar.pauseArmed ? `${BosunLook.pause}  ${bar.pauseByKey ? "Press p again to pause" : "Click again to pause"}` : `${BosunLook.pause}  Pause all`
@@ -94,6 +99,7 @@ Item {
         }
 
         TextButton {
+            height: 32
             visible: Bosun.connected && Bosun.paused && Bosun.fleetOp !== "pause"
             enabled: Bosun.fleetOp === ""
             text: Bosun.fleetOp === "unpause" ? `${BosunLook.play}  Resuming…` : bar.pauseArmed ? `${BosunLook.play}  Press p again to resume` : `${BosunLook.play}  Resume`
@@ -103,6 +109,7 @@ Item {
         }
 
         TextButton {
+            height: 32
             visible: Bosun.connected
             text: `${BosunLook.plus}  New worker`
             lit: bar.spawning
@@ -110,24 +117,10 @@ Item {
             onClicked: bar.newWorkerClicked()
         }
 
-        TextButton {
-            id: expandButton
-
-            width: 28
-            text: bar.expanded ? BosunLook.collapse : BosunLook.expand
-            lit: bar.expanded
-            hoverFill: lit ? Theme.alpha(Theme.blue, 0.5) : Theme.tint(0.12)
-            onClicked: bar.expandClicked()
-
-            HoverHandler {
-                id: expandHover
-            }
-
-            Tooltip {
-                target: expandButton
-                text: bar.expanded ? "Back to the normal size" : "Expand to the work area"
-                hovered: expandHover.hovered
-            }
+        BosunIconButton {
+            text: BosunLook.collapse
+            tip: "Shrink to the overview"
+            onClicked: bar.overviewClicked()
         }
     }
 
@@ -136,47 +129,5 @@ Item {
         width: parent.width
         height: 1
         color: Theme.tint(0.08)
-    }
-
-    // A glyph, a number and a word.
-    component Count: Row {
-        id: count
-
-        property string glyph
-        property color glyphColor: Theme.foregroundMuted
-        // A spinner in the glyph's place, whose box keeps the count's width.
-        property bool spinning: false
-        property int n
-        property string word
-
-        anchors.verticalCenter: parent.verticalCenter
-        spacing: 6
-
-        BarText {
-            anchors.verticalCenter: parent.verticalCenter
-            text: count.glyph
-            color: count.spinning ? "transparent" : count.glyphColor
-            font.pixelSize: 14
-
-            BosunSpinner {
-                anchors.centerIn: parent
-                visible: count.spinning
-                color: count.glyphColor
-                size: 12
-            }
-        }
-
-        BarText {
-            anchors.verticalCenter: parent.verticalCenter
-            text: `${count.n}`
-            font.pixelSize: 14
-        }
-
-        BarText {
-            anchors.verticalCenter: parent.verticalCenter
-            text: count.word
-            color: Theme.foregroundMuted
-            font.pixelSize: 14
-        }
     }
 }

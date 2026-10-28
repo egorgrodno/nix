@@ -18,8 +18,6 @@ Item {
     // The selected decision once it no longer waits on the user, which its
     // row keeps showing until the selection moves.
     property var held: null
-    // While the panel fills the work area, where the Log has its own table.
-    property bool expanded: false
     // Lights the selected row's edge while the keyboard is here.
     readonly property bool focused: activeFocus
     property bool scrollRestored: false
@@ -30,24 +28,6 @@ Item {
         if (!held || mine.some(d => d.id === held.id))
             return mine;
         return [...mine, held].sort((a, b) => Number(a.id) - Number(b.id));
-    }
-    // The master and its workers, depth first, each session under its parent,
-    // as `bosun status` prints it.
-    readonly property var tree: {
-        const children = new Map();
-        for (const s of Bosun.sessions.filter(s => s.node !== "desk")) {
-            const parent = s.parent ?? "";
-            children.set(parent, [...(children.get(parent) ?? []), s]);
-        }
-        const rows = [];
-        const walk = parent => {
-            for (const s of children.get(parent) ?? []) {
-                rows.push(s);
-                walk(s.node);
-            }
-        };
-        walk("");
-        return rows;
     }
     readonly property var rows: {
         if (!Bosun.connected)
@@ -63,6 +43,11 @@ Item {
                     name: name
                 });
         const rows = [head("Waiting on you")];
+        if (waiting.length === 0)
+            rows.push({
+                key: "nothing",
+                type: "nothing"
+            });
         for (const d of waiting)
             rows.push({
                 key: `decision:${d.id}`,
@@ -73,7 +58,7 @@ Item {
             key: "desk",
             type: "desk"
         }, head("Fleet"));
-        for (const s of tree)
+        for (const s of Bosun.tree)
             rows.push({
                 key: `session:${s.node}`,
                 type: "session",
@@ -90,11 +75,11 @@ Item {
                     entry: e
                 })) : []
     // What the movement keys step through, in order.
-    readonly property var keys: [...rows, ...logRows].filter(r => !["head", "none"].includes(r.type)).map(r => r.key)
+    readonly property var keys: [...rows, ...logRows].filter(r => !["head", "none", "nothing"].includes(r.type)).map(r => r.key)
 
     signal chosen(string key)
-    // The Log header's expand glyph, which expands the panel onto the Log.
-    signal logExpanded
+    // The Log's header, which opens the Log.
+    signal logOpened
 
     function reveal(key) {
         const index = rows.findIndex(r => r.key === key);
@@ -185,6 +170,8 @@ Item {
                     return deskRow;
                 case "session":
                     return sessionRow;
+                case "nothing":
+                    return nothing;
                 }
                 return none;
             }
@@ -220,6 +207,19 @@ Item {
                 SessionRow {
                     rowKey: slot.modelData.key
                     node: slot.modelData.node
+                }
+            }
+
+            // In place of rows, so the header never looks like a button.
+            Component {
+                id: nothing
+
+                Caption {
+                    leftPadding: 20
+                    topPadding: 4
+                    bottomPadding: 4
+                    text: "Nothing waits on you"
+                    color: Theme.foregroundFaint
                 }
             }
 
@@ -271,16 +271,21 @@ Item {
         }
     }
 
-    // A section's name, and for Waiting on you how many wait, yellow while any
-    // does. The Log's has a glyph that expands the panel onto it.
+    // A section's name, and for Waiting on you how many wait while any does.
+    // The Log's says how many entries came today and opens the Log, and is lit
+    // while the Log shows.
     component Header: Item {
         id: head
 
         required property string name
         readonly property bool waiting: name === "Waiting on you"
         readonly property int count: Bosun.mine.length
+        readonly property bool log: name === "Log"
+        // While the pane beside shows the Log.
+        readonly property bool lit: log && sidebar.selected.startsWith("log:")
+        readonly property color textColor: lit || logHover.hovered ? Theme.foregroundStrong : Theme.foregroundMuted
 
-        height: head.name === "Waiting on you" ? 32 : 44
+        height: head.waiting ? 32 : 44
 
         Caption {
             id: headText
@@ -289,81 +294,36 @@ Item {
             anchors.bottom: parent.bottom
             anchors.bottomMargin: 6
             text: head.name
-            color: head.waiting && head.count > 0 ? Theme.yellow : Theme.foregroundMuted
+            color: head.textColor
+            font.weight: head.lit ? Font.DemiBold : Font.Normal
+        }
+
+        BosunBadge {
+            anchors.right: parent.right
+            anchors.rightMargin: 20
+            anchors.verticalCenter: headText.verticalCenter
+            visible: head.waiting && head.count > 0
+            count: head.count
         }
 
         Caption {
             anchors.right: parent.right
             anchors.rightMargin: 20
             anchors.baseline: headText.baseline
-            visible: head.waiting
-            text: `${head.count}`
-            color: headText.color
+            visible: head.log
+            text: `${Bosun.logToday} today${head.lit ? "" : "  ›"}`
+            color: head.textColor
         }
 
-        BarText {
-            id: expandGlyph
+        HoverHandler {
+            id: logHover
 
-            anchors.right: parent.right
-            anchors.rightMargin: 20
-            anchors.verticalCenter: headText.verticalCenter
-            visible: head.name === "Log" && !sidebar.expanded
-            text: BosunLook.expand
-            color: expandHover.hovered ? Theme.foregroundStrong : Theme.foregroundMuted
-            font.pixelSize: 14
-
-            HoverHandler {
-                id: expandHover
-            }
-
-            TapHandler {
-                onTapped: sidebar.logExpanded()
-            }
-
-            Tooltip {
-                target: expandGlyph
-                text: "The whole Log, expanded to the work area"
-                hovered: expandHover.hovered
-            }
-        }
-    }
-
-    // What a session does: its tool's glyph and the call in monospace, or the
-    // start of its last message. The glyph font's ink sits about 4.5 px above
-    // its baseline at this size, the call's x-height centre 4 px above its own
-    // and the message's 3.5 px, so the baselines are aligned and the glyph
-    // drops 1 px beside the message.
-    component ActivityLine: Item {
-        id: line
-
-        required property var activity
-        required property color tint
-        readonly property bool mono: BosunLook.activityMono(activity)
-        readonly property real lineBase: Math.max(lineText.baselineOffset, lineGlyph.baselineOffset - drop)
-        readonly property real drop: mono ? 0 : 1
-
-        height: 18
-
-        BarText {
-            id: lineGlyph
-
-            y: line.lineBase + line.drop - baselineOffset
-            text: line.activity ? BosunLook.activityGlyph(line.activity) : ""
-            color: line.tint
-            font.pixelSize: 12
+            enabled: head.log
         }
 
-        BarText {
-            id: lineText
-
-            x: lineGlyph.width + 6
-            y: line.lineBase - baselineOffset
-            width: parent.width - x
-            elide: Text.ElideRight
-            text: line.activity ? BosunLook.activityText(line.activity) : ""
-            color: line.tint
-            font.family: line.mono ? Theme.fontMono : Theme.fontUI
-            font.pixelSize: 12
+        TapHandler {
+            enabled: head.log
+            onTapped: sidebar.logOpened()
         }
     }
 
@@ -569,7 +529,7 @@ Item {
             text: [row.session?.model, row.session?.effort].filter(part => part).join(" ")
         }
 
-        ActivityLine {
+        BosunActivityLine {
             visible: row.activityLine !== ""
             x: deskName.x
             y: 30
@@ -666,7 +626,7 @@ Item {
 
         // What the session does, under its name: its tool's glyph and the call
         // in monospace, or the start of its last message. Blue in its turn.
-        ActivityLine {
+        BosunActivityLine {
             visible: row.activityLine !== ""
             x: nameText.x
             y: 30

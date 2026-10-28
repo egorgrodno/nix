@@ -3,7 +3,8 @@ import QtQuick
 // A row of a list that selects: filled while it is `current`, filled less
 // under the pointer, with a 2 px edge at its left that is blue while the
 // keyboard is in the list. A tap emits `tapped`; what the row holds is the
-// caller's.
+// caller's. An `inert` row, an entry with nothing behind it, takes no hover
+// fill or tap, though `hovered` still reports the pointer for a tooltip.
 Item {
     id: row
 
@@ -18,6 +19,7 @@ Item {
     property real edgeOffset: 0
     // The fill eases between states, which a long list does not need.
     property bool fades: false
+    property bool inert: false
     readonly property bool hovered: hover.hovered
 
     signal tapped
@@ -27,7 +29,7 @@ Item {
         anchors.leftMargin: row.inset
         anchors.rightMargin: row.inset
         radius: Theme.radius - 4
-        color: row.lit ? Theme.tint(0.12) : row.hovered ? Theme.tint(0.08) : "transparent"
+        color: row.lit ? Theme.tint(0.12) : row.hovered && !row.inert ? Theme.tint(0.08) : "transparent"
 
         Rectangle {
             x: row.edgeOffset
@@ -52,6 +54,7 @@ Item {
     }
 
     TapHandler {
+        enabled: !row.inert
         onTapped: row.tapped()
     }
 }

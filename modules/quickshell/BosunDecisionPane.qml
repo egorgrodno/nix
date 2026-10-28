@@ -259,8 +259,12 @@ BosunPane {
                     keys: [Host.directions.down, Host.directions.up],
                     text: "next decision"
                 };
+                const side = {
+                    keys: ["["],
+                    text: "sidebar"
+                };
                 if (!pane.live)
-                    return [move];
+                    return [move, side];
                 if (pane.kind === "permission")
                     return [
                         {
@@ -279,7 +283,8 @@ BosunPane {
                             keys: ["Tab"],
                             text: "write a note"
                         },
-                        move];
+                        move,
+                        side];
                 if (pane.kind === "question")
                     return [
                         {
@@ -290,8 +295,9 @@ BosunPane {
                             keys: ["Ctrl", "Enter"],
                             text: "send"
                         },
-                        move];
-                return [move];
+                        move,
+                        side];
+                return [move, side];
             }
         }
     ]

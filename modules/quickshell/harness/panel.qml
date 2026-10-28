@@ -35,10 +35,49 @@ ShellRoot {
             return Bosun.panelsOpen;
         }
 
+        // The screen's size, as "1440x900".
+        function screenSize(): string {
+            return `${bar.screen?.width}x${bar.screen?.height}`;
+        }
+
         // The seq of the first log entry of `kind`, for `select log:<seq>`.
         function logSeq(kind: string): string {
             const entry = Bosun.log.find(e => e.kind === kind);
             return entry ? `${entry.seq}` : "";
+        }
+
+        // The fleet with `count` more workers, as the daemon's sessions event
+        // sends it.
+        function fleet(count: int): string {
+            Bosun.receive(JSON.stringify({
+                event: {
+                    kind: "sessions",
+                    sessions: data.fleet(count)
+                }
+            }));
+            return "ok";
+        }
+
+        // A decision `id` from `node` comes to wait on the user.
+        function decide(id: string, node: string): string {
+            Bosun.receive(JSON.stringify({
+                event: {
+                    kind: "decision",
+                    decision: data.decision(id, node)
+                }
+            }));
+            return "ok";
+        }
+
+        // The decision `id` is settled, however.
+        function settle(id: string): string {
+            Bosun.receive(JSON.stringify({
+                event: {
+                    kind: "settled",
+                    id
+                }
+            }));
+            return "ok";
         }
 
         // Shows or clears the pause banner and the error strip.

@@ -251,6 +251,11 @@ let
   # line up with it at the sides.
   outerGap = 10;
 
+  # Hyprland draws a window's border outside the window, inside the outer gap,
+  # and rounds its corners. The bosun panel covers the border with both.
+  borderSize = 2;
+  rounding = 10;
+
   wallpaperDir = u: "${u.homedir}/Pictures/Wallpapers";
 
   # Centre of each module a window docks to, in px from the screen's right
@@ -489,7 +494,12 @@ in
     my.zsh.enable = true;
     my.quickshell = {
       enable = true;
-      inherit barHeight outerGap;
+      inherit
+        barHeight
+        outerGap
+        borderSize
+        rounding
+        ;
       firstDayOfWeek = "monday";
       worldClocks = [ "Europe/Minsk" ];
     };
@@ -1008,14 +1018,14 @@ in
             general = {
               gaps_in = 5;
               gaps_out = outerGap;
-              border_size = 2;
+              border_size = borderSize;
               resize_on_border = false;
               allow_tearing = false;
               layout = "dwindle";
             };
 
             decoration = {
-              rounding = 10;
+              inherit rounding;
               active_opacity = 1.0;
               inactive_opacity = 1.0;
               shadow = {

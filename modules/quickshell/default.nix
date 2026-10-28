@@ -44,6 +44,10 @@ let
         readonly property int barHeight: ${toString cfg.barHeight}
         // The windows' outer gap, which the segments line up with at the sides.
         readonly property int outerGap: ${toString cfg.outerGap}
+        // Hyprland's window border, drawn outside the window, inside the outer
+        // gap, and the window's corner radius.
+        readonly property int borderSize: ${toString cfg.borderSize}
+        readonly property int rounding: ${toString cfg.rounding}
         readonly property int radius: 8
         // How far panels and tooltips slide out of the bar as they fade in.
         readonly property int slide: 24
@@ -296,6 +300,16 @@ in
     outerGap = lib.mkOption {
       type = lib.types.int;
       description = "Hyprland's outer gap in logical pixels, which the bars' segments line up with at the sides.";
+    };
+
+    borderSize = lib.mkOption {
+      type = lib.types.int;
+      description = "Hyprland's window border in logical pixels, drawn outside the window, inside the outer gap.";
+    };
+
+    rounding = lib.mkOption {
+      type = lib.types.int;
+      description = "Hyprland's window corner radius in logical pixels.";
     };
 
     firstDayOfWeek = lib.mkOption {

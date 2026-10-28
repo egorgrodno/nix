@@ -200,6 +200,10 @@ BosunPane {
                     {
                         keys: ["n"],
                         text: "new worker"
+                    },
+                    {
+                        keys: ["["],
+                        text: "sidebar"
                     }
                 ]);
             }

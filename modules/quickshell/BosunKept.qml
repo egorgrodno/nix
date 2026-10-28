@@ -6,9 +6,9 @@ import Quickshell
 import Quickshell.Io
 
 // Where the bosun panel was when it closed, so it opens there again: the
-// selection, the size, the Log's filters, scroll positions and drafts.
-// LazyLoader destroys the panel on close, so this keeps them, in a file whose
-// place CLAUDE.md explains. A press that armed a button is never kept.
+// selection, the size, the sidebar, the Log's filters, scroll positions and
+// drafts. LazyLoader destroys the panel on close, so this keeps them, in a file
+// whose place CLAUDE.md explains. A press that armed a button is never kept.
 Singleton {
     id: root
 
@@ -21,10 +21,11 @@ Singleton {
     property var held: null
     // The Log entry last selected, which the Log opens on.
     property var logEntry: null
-    property bool expanded: false
-    // While the expanded panel shows the whole sidebar beside the rail.
-    property bool sidebarShown: false
-    // The expanded Log's filters: "all", "decisions", "messages", "sessions"
+    // The full panel, else the overview.
+    property bool full: true
+    // While the full panel shows the sidebar, else its rail.
+    property bool sidebarOpen: true
+    // The Log's filters: "all", "decisions", "messages", "sessions"
     // or "yours"; a session or ""; and text.
     property string logKind: "all"
     property string logSession: ""
@@ -111,8 +112,8 @@ Singleton {
             beforeSpawn: beforeSpawn,
             held: held,
             logEntry: logEntry,
-            expanded: expanded,
-            sidebarShown: sidebarShown,
+            full: full,
+            sidebarOpen: sidebarOpen,
             logKind: logKind,
             logSession: logSession,
             logText: logText,
@@ -130,8 +131,8 @@ Singleton {
     onBeforeSpawnChanged: saving.restart()
     onHeldChanged: saving.restart()
     onLogEntryChanged: saving.restart()
-    onExpandedChanged: saving.restart()
-    onSidebarShownChanged: saving.restart()
+    onFullChanged: saving.restart()
+    onSidebarOpenChanged: saving.restart()
     onLogKindChanged: saving.restart()
     onLogSessionChanged: saving.restart()
     onLogTextChanged: saving.restart()
@@ -148,8 +149,8 @@ Singleton {
         beforeSpawn = kept.beforeSpawn ?? "";
         held = kept.held ?? null;
         logEntry = kept.logEntry ?? null;
-        expanded = kept.expanded === true;
-        sidebarShown = kept.sidebarShown === true;
+        full = kept.full !== false;
+        sidebarOpen = kept.sidebarOpen !== false;
         logKind = kept.logKind ?? "all";
         logSession = kept.logSession ?? "";
         logText = kept.logText ?? "";

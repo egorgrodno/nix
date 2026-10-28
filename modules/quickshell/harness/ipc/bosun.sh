@@ -2,31 +2,12 @@
 # Drives the bosun panel through every call of the `bosun` IPC target, as
 # BOSUN-IPC.md documents them, and checks what each one reports and refuses.
 set -euo pipefail
-
-qs() { "$QS" ipc --path "$QS_CONFIG" "$@"; }
-call() { qs call bosun "$@"; }
-field() { call state | jq -r ".$1"; }
-
-fail() {
-  echo "FAIL: $*"
-  exit 1
-}
-
-# expect <what> <wanted> <found>
-expect() { [[ $2 == "$3" ]] || fail "$1: wanted '$2', found '$3'"; }
-
-# Waits up to 5 s for the state field $1 to be $2.
-await() {
-  for _ in $(seq 25); do
-    [[ $(field "$1") == "$2" ]] && return
-    sleep 0.2
-  done
-  fail "state.$1: wanted '$2', found '$(field "$1")'"
-}
+# shellcheck source=lib.bash
+source "$(dirname "${BASH_SOURCE[0]}")/lib.bash"
 
 expect "isOpen before open" false "$(call isOpen)"
 expect "state before open" false "$(field open)"
-for c in "select desk" "focus pane" "mode expanded" "arm pause" geometry; do
+for c in "select desk" "focus pane" "mode full" "sidebar open" "arm pause" geometry; do
   # shellcheck disable=SC2086
   expect "$c with no panel" "error: no panel is open" "$(call $c)"
 done
@@ -36,7 +17,8 @@ await entered true
 expect "isOpen" true "$(call isOpen)"
 expect "opens on the waiting decision" decision:7 "$(field selected)"
 expect "kind" decision "$(field kind)"
-expect "mode" sidebar "$(field mode)"
+expect "mode" full "$(field mode)"
+expect "sidebar" true "$(field sidebarOpen)"
 
 # Selection
 expect "select desk" ok "$(call select desk)"
@@ -60,17 +42,30 @@ for bad in session:nobody decision:99 spawn bogus log:99999 ""; do
   expect "selection after refused '$bad'" decision:7 "$(field selected)"
 done
 
-# Mode
-expect "mode expanded" ok "$(call mode expanded)"
-expect "mode reads expanded" expanded "$(field mode)"
+# Mode and sidebar
+full=$(call geometry)
 expect "mode bogus" "error: no mode wide" "$(call mode wide)"
-expand=$(call geometry)
-expect "mode sidebar" ok "$(call mode sidebar)"
-expect "mode reads sidebar" sidebar "$(field mode)"
-side=$(call geometry)
-echo "geometry expanded: $expand"
-echo "geometry sidebar: $side"
-(($(jq .width <<<"$expand") >= $(jq .width <<<"$side"))) || fail "expanded is narrower"
+expect "sidebar closed" ok "$(call sidebar closed)"
+expect "sidebar reads closed" false "$(field sidebarOpen)"
+await focus rail
+expect "sidebar toggle" ok "$(call sidebar toggle)"
+expect "sidebar reads open" true "$(field sidebarOpen)"
+expect "sidebar bogus" "error: no sidebar ajar" "$(call sidebar ajar)"
+expect "mode overview" ok "$(call mode overview)"
+expect "mode reads overview" overview "$(field mode)"
+expect "kind overview" overview "$(field kind)"
+over=$(call geometry)
+echo "geometry full: $full"
+echo "geometry overview: $over"
+expect "overview width" 440 "$(jq .width <<<"$over")"
+(($(jq .width <<<"$full") > 440)) || fail "the full panel is not wider"
+expect "sidebar in the overview" "error: the overview has no sidebar" "$(call sidebar open)"
+expect "focus pane in the overview" "error: no place pane in the overview" "$(call focus pane)"
+expect "focus list in the overview" ok "$(call focus list)"
+expect "focus in the overview" rows "$(field focus)"
+expect "approve in the overview" "error: approve is not on offer here" "$(call arm approve)"
+expect "select from the overview" ok "$(call select decision:7)"
+expect "select opens the full panel" full "$(field mode)"
 
 # Focus
 expect "focus pane" ok "$(call focus pane)"

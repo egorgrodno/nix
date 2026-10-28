@@ -154,6 +154,10 @@ BosunPane {
                         keys: ["C", "C"],
                         text: "clear"
                     });
+                hints.push({
+                    keys: ["["],
+                    text: "sidebar"
+                });
                 return hints;
             }
         }

@@ -82,6 +82,15 @@ Singleton {
         })
     // The titlebar counts them in this order.
     readonly property var stateOrder: ["working", "blocked", "paused", "limited", "idle", "stopped", "killed"]
+    // The fleet's sessions, the desk left out, counted by state in that
+    // order: each state any is in, with `key` and `n`.
+    readonly property var fleetCounts: {
+        const fleet = Bosun.sessions.filter(s => s.node !== "desk").map(s => stateOf(s));
+        return stateOrder.map(key => ({
+                    key: key,
+                    n: fleet.filter(k => k === key).length
+                })).filter(c => c.n > 0);
+    }
 
     // A key of `states`. Claude Code's "waiting" is a session blocked in its
     // own prompt. One an open decision names is blocked too, whoever holds
@@ -478,7 +487,7 @@ Singleton {
         return detail ? `${logTitle(entry)}: ${detail}` : logTitle(entry);
     }
 
-    // Who acted, as the expanded Log's Who column names them: "you", "master",
+    // Who acted, as the Log's Who column names them: "you", "master",
     // "front desk", "bosun" or the session, and for a tell or a message whom
     // it reached.
     function logWho(entry) {
@@ -523,7 +532,7 @@ Singleton {
         return `${verb[ing ? 1 : 0]} ${detail}`;
     }
 
-    // What happened, after Who, on one line: the expanded Log's What column.
+    // What happened, after Who, on one line: the Log's What column.
     function logWhat(entry) {
         const line = text => (text ?? "").replace(/\s+/g, " ").trim();
         const after = text => line(text) ? `: ${line(text)}` : "";
@@ -606,7 +615,7 @@ Singleton {
         return `Stopped in its turn${after(entry.text)}`;
     }
 
-    // The expanded Log's kind filter an entry falls under besides All:
+    // The Log's kind filter an entry falls under besides All:
     // "decisions", "messages", "sessions", or "" for one bosun cannot show.
     function logGroup(entry) {
         if (!knows(entry))
