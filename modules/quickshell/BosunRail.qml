@@ -172,12 +172,14 @@ Item {
         property string tip
         property Component tipContent: null
 
-        x: 8
-        width: 60
+        // As wide as the rail, its fill inset: ListView puts a delegate at
+        // x 0.
+        width: rail.width
         height: label !== "" ? 50 : 40
+        inset: 8
         focused: rail.focused
         // The edge sits at the rail's own left.
-        edgeOffset: -8
+        edgeOffset: -inset
 
         BosunStateGlyph {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -189,9 +191,9 @@ Item {
         }
 
         BarText {
-            x: 2
+            x: tile.inset + 2
             y: 30
-            width: parent.width - 4
+            width: parent.width - 2 * x
             visible: tile.label !== ""
             horizontalAlignment: Text.AlignHCenter
             elide: Text.ElideRight
@@ -201,14 +203,14 @@ Item {
         }
 
         BosunBadge {
-            x: 36
+            x: tile.inset + 36
             y: 3
             count: tile.count
             pixelSize: 10
         }
 
         Rectangle {
-            x: 40
+            x: tile.inset + 40
             y: 5
             visible: tile.dot.a > 0
             width: 7
