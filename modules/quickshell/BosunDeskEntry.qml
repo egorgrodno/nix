@@ -350,12 +350,9 @@ Item {
                     font.pixelSize: 14
                 }
 
-                SelectableText {
+                BosunYouSaid {
                     width: parent.width
-                    wrapMode: TextEdit.Wrap
-                    text: `You said: “${given.input.words}”`
-                    color: Theme.foregroundMuted
-                    font.pixelSize: 14
+                    words: given.input.words
                 }
 
                 BosunLink {

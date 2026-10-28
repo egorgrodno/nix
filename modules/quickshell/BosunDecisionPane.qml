@@ -155,37 +155,10 @@ BosunPane {
 
     // Why the master passed it on, first: it may say the decision needs no
     // answer. A notice's note is its text.
-    Rectangle {
-        width: parent.width
-        visible: pane.decision?.kind !== "notice" && (pane.decision?.note ?? "") !== ""
-        height: noteColumn.implicitHeight + 24
-        radius: Theme.radius - 4
-        color: Theme.alpha(Theme.blue, 0.12)
-        border.width: 1
-        border.color: Theme.alpha(Theme.blue, 0.4)
+    BosunWhyNote {
+        visible: pane.decision?.kind !== "notice" && text !== ""
+        text: pane.decision?.note ?? ""
         opacity: pane.live ? 1 : 0.6
-
-        Column {
-            id: noteColumn
-
-            x: 12
-            y: 12
-            width: parent.width - 2 * x
-            spacing: 6
-
-            BosunFact {
-                glyph: BosunLook.master
-                glyphColor: Theme.blue
-                text: "Why the master passed it to you"
-            }
-
-            SelectableText {
-                width: parent.width
-                wrapMode: TextEdit.Wrap
-                font.pixelSize: 16
-                text: pane.decision?.note ?? ""
-            }
-        }
     }
 
     BosunBanner {

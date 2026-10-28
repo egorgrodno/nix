@@ -320,6 +320,8 @@ QtObject {
         }
     ]
 
+    // Decision 7 carries the master's note and what reserved it, and a command
+    // long enough to wrap, with a path that cannot break at a space.
     readonly property var decisions: [
         {
             id: "7",
@@ -327,24 +329,18 @@ QtObject {
             node: "select-lag",
             kind: "permission",
             tool: "Bash",
+            note: "It runs the suite the worker already ran once. Nothing in it writes outside the worktree, so approve it unless you want the run held back.",
+            reserved: "a command that runs the project's own test suite",
+            refused: "make test, as it also runs the slow integration tests",
             input: {
-                command: "make test"
+                command: "make test ARGS='--race --count=1 --timeout=10m ./modules/quickshell/harness/scenarios/very/long/path/that/does/not/break/anywhere/at/all/file.go' && echo done"
             }
         }
     ]
 
     readonly property var answered: [
         {
-            decision: {
-                id: "7",
-                holder: "user",
-                node: "select-lag",
-                kind: "permission",
-                tool: "Bash",
-                input: {
-                    command: "make test"
-                }
-            },
+            decision: decisions[0],
             behavior: "allow",
             words: "yes, go ahead"
         }
@@ -387,6 +383,19 @@ QtObject {
                 instruction: number
             });
         }
+        // A decision's life, as the Log keeps it.
+        put("decision", "bosun", "select-lag", {
+            decision: decisions[0]
+        });
+        put("escalated", "master", "select-lag", {
+            decision: decisions[0],
+            text: decisions[0].note
+        });
+        put("settled", "desk", "select-lag", {
+            decision: decisions[0],
+            behavior: "allow",
+            words: "yes, go ahead"
+        });
         // A tell the desk has not taken, which shows as pending.
         put("tell", "user", "desk", {
             text: "A message the desk has not read yet."

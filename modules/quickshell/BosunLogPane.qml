@@ -66,22 +66,9 @@ BosunPane {
     ]
 
     // What the master passed on with an escalated decision.
-    Column {
-        width: parent.width
-        visible: pane.known && pane.entry.kind === "escalated" && (pane.entry.text ?? "") !== ""
-        spacing: 4
-
-        BosunFact {
-            glyph: BosunLook.master
-            text: "Why the master passed it to you"
-        }
-
-        SelectableText {
-            width: parent.width
-            wrapMode: TextEdit.Wrap
-            font.pixelSize: 14
-            text: pane.entry?.text ?? ""
-        }
+    BosunWhyNote {
+        visible: pane.known && pane.entry.kind === "escalated" && text !== ""
+        text: pane.entry?.text ?? ""
     }
 
     SelectableText {
@@ -110,13 +97,10 @@ BosunPane {
         text: `Failed: ${pane.entry?.error ?? ""}`
     }
 
-    SelectableText {
+    BosunYouSaid {
         width: parent.width
-        visible: (pane.entry?.words ?? "") !== ""
-        wrapMode: TextEdit.Wrap
-        color: Theme.foregroundMuted
-        font.pixelSize: 14
-        text: `You said: “${pane.entry?.words ?? ""}”`
+        visible: words !== ""
+        words: pane.entry?.words ?? ""
     }
 
     // The decision as it stood then.

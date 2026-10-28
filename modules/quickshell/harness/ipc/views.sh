@@ -25,7 +25,8 @@ for _ in $(seq 25); do
 done
 call mode expanded
 
-for row in decision:7 desk session:select-lag session:panel-ipc log; do
+# log:32 and log:33 are the escalated and the settled entry of decision 7.
+for row in decision:7 desk session:select-lag session:panel-ipc log:32 log:33 log; do
   call select "$row" >/dev/null
   shot "${row%%:*}-${row##*:}"
 done
