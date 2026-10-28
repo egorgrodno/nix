@@ -5,10 +5,12 @@ import QtQuick
 // `press`, and a PASS or FAIL note says what each key did. Runs on the
 // session pane only.
 QtObject {
-    property int frames: 8
+    property int frames: 11
     property var view: null
     property var overview: null
     property var kept: ({})
+    property var tell: null
+    property string tellKept
 
     function key(code, text) {
         return {
@@ -75,6 +77,36 @@ QtObject {
             overview.forceActiveFocus();
             overview.press(key(0, "f"));
             check(h, BosunKept.full, "f in the overview opens the full panel");
+            break;
+        // The overview's field: Up and Down that its TextEdit passes on at
+        // its first or last line stay in it, and a long line wraps clear of
+        // the send glyph as the field grows.
+        case 7:
+            h.walk(overview, it => {
+                if (it.draftKey === "tell")
+                    tell = it;
+            });
+            tellKept = tell.text;
+            tell.focusIn();
+            overview.focusRows();
+            overview.press(key(Qt.Key_Down));
+            const on = overview.current;
+            tell.focusIn();
+            check(h, tell.press?.(key(Qt.Key_Down)) === true && tell.press(key(Qt.Key_Up)) === true && overview.current === on, `Up and Down stay in the overview's field, on ${overview.current}`);
+            tell.text = "A line to the desk long enough to wrap twice in the overview's field, past where the send glyph sits at its right, and on.";
+            break;
+        case 9:
+            let input = null;
+            let glyph = null;
+            h.walk(tell, it => {
+                if (it.cursorPosition !== undefined)
+                    input = it;
+                else if (it.text === BosunLook.send)
+                    glyph = it;
+            });
+            const right = input.mapToItem(tell, input.width, 0).x;
+            check(h, tell.height > 40 && right <= glyph.x, `a long line wraps clear of the send glyph: ${Math.round(tell.height)} tall, text to ${Math.round(right)}, glyph at ${Math.round(glyph.x)}`);
+            tell.text = tellKept;
             break;
         }
     }

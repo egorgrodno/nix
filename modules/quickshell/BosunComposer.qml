@@ -74,6 +74,12 @@ Rectangle {
         input.forceActiveFocus();
     }
 
+    // The keys the TextEdit passed on, which a list around the field would
+    // take: Up and Down at the first or last line stay in the field.
+    function press(event) {
+        return event.key === Qt.Key_Up || event.key === Qt.Key_Down;
+    }
+
     // Takes the keyboard back, with its cursor, if it had it when the panel
     // closed. Once the open animation has ended, and the grab with it: until
     // then Hyprland may hand the keyboard to the window underneath.
@@ -99,6 +105,7 @@ Rectangle {
     color: Theme.tint(0.06)
     border.color: input.activeFocus ? Theme.blue : Theme.tint(0.12)
     border.width: 1
+    Keys.onPressed: event => event.accepted = press(event)
 
     FontMetrics {
         id: metrics

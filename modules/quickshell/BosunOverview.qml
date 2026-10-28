@@ -7,7 +7,7 @@ import Quickshell
 // The bosun panel's small size, a dropdown under the bar's module: the fleet
 // counted by state, with Pause all and the full panel; the decisions waiting
 // on the user, each with Approve, Deny and Open; the fleet's rows; and the
-// desk's latest line, with a line to tell it something. A row, or Open, opens
+// desk's latest line, with a field to tell it something. A row, or Open, opens
 // the full panel on it. Tab takes the keyboard to the rows, where the
 // movement keys move and Enter opens, and on to the field. Pause all takes a
 // second click within three seconds, as in the full panel.
@@ -418,9 +418,7 @@ Item {
 
                 visible: Bosun.connected
                 width: parent.width
-                height: 38
-                oneLine: true
-                sendGlyph: true
+                maxLines: 4
                 placeholder: Bosun.desk ? "Tell the desk…" : "Tell the master…"
                 draftKey: "tell"
                 onSent: text => Bosun.tell(text)
@@ -438,6 +436,10 @@ Item {
                     {
                         keys: ["Tab"],
                         text: "rows"
+                    },
+                    {
+                        keys: ["Ctrl", "Enter"],
+                        text: "send"
                     },
                     {
                         keys: ["Esc"],
