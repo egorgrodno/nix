@@ -362,18 +362,29 @@ QtObject {
                 by,
                 node
             }, extra));
-        for (let i = 2; i < n; i += 9) {
+        // The two instructions of each round overlap: the second is told before
+        // the master acts on the first, and its act lands first. Each entry
+        // carries its instruction's number, which links it to its tell.
+        let number = 1;
+        for (let i = 2; i < n; i += 9, number += 2) {
             put("tell", "desk", "master", {
-                text: `Instruction ${i}: spawn panel-ipc for egor/nix#88.`
+                text: `Instruction ${i}: spawn panel-ipc for egor/nix#88.`,
+                instruction: number
             });
-            put("spawned", "master", "panel-ipc");
+            put("tell", "desk", "master", {
+                text: `Instruction ${i + 1}: merge select-lag.`,
+                instruction: number + 1
+            });
+            put("merged", "master", "select-lag", {
+                instruction: number + 1
+            });
+            put("spawned", "master", "panel-ipc", {
+                instruction: number
+            });
             put("tell", "master", "desk", {
-                text: "Spawned panel-ipc."
+                text: "Spawned panel-ipc.",
+                instruction: number
             });
-            put("tell", "desk", "master", {
-                text: `Instruction ${i + 1}: merge select-lag.`
-            });
-            put("merged", "master", "select-lag");
         }
         // A tell the desk has not taken, which shows as pending.
         put("tell", "user", "desk", {
