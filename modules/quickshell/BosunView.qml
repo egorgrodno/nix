@@ -167,7 +167,6 @@ Item {
         if (selected !== "spawn") {
             BosunKept.beforeSpawn = selected;
             select("spawn");
-            spawnPane.findRepos();
         }
         Qt.callLater(focusPane);
     }

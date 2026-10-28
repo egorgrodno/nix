@@ -199,13 +199,11 @@ FloatingWindow {
     }
 
     // The New worker form, which holds a draft of its own, in place of a
-    // conversation.
+    // conversation, and lists the repositories run.sh's .claude.json trusts.
     Component {
         id: spawnView
 
-        BosunSpawnPane {
-            repos: ["/etc/nixos", "/home/egor/Projects/bosun"]
-        }
+        BosunSpawnPane {}
     }
 
     Component {

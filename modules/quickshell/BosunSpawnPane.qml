@@ -56,6 +56,10 @@ BosunPane {
     onRepoChanged: keepForm()
     onModelChanged: keepForm()
     onEffortChanged: keepForm()
+    // Each time the form shows. A full panel built with the form selected, as
+    // after the overview, shows it from the start, with no change to signal.
+    onVisibleChanged: if (visible)
+        findRepos()
     Component.onCompleted: {
         const kept = BosunKept.draft("spawn") || {};
         nameField.text = kept.name ?? "";
@@ -64,6 +68,8 @@ BosunPane {
         model = kept.model ?? "";
         effort = kept.effort ?? "";
         restored = true;
+        if (visible)
+            findRepos();
     }
 
     function findRepos() {

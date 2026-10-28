@@ -156,7 +156,10 @@ cp "$here/shell.qml" "$here/panel.qml" "$here/HarnessData.qml" "$config"/
 for name in "${frames[@]}"; do
   cp "$here/scenarios/$name.qml" "$config/scn-$name.qml"
 done
-mkdir "$work/state"
+mkdir "$work/state" "$work/home"
+# Claude Code's state as the New worker form reads it, trusting /etc/nixos and
+# this worktree, so the form never lists the user's own repositories.
+printf '{"projects":{"/etc/nixos":{"hasTrustDialogAccepted":true},"%s":{"hasTrustDialogAccepted":true}}}\n' "$worktree" >"$work/home/.claude.json"
 
 # Starts the compositor `$@` with its log in `$work`, and waits for its socket
 # `$display`. Weston draws the timed frames; it has no layer shell, which the
@@ -180,7 +183,7 @@ compositor() {
 # the harness's own, logging to `$2`; its PID is left in `$qs_pid`.
 launch() {
   env -u HYPRLAND_INSTANCE_SIGNATURE -u DISPLAY -u DBUS_SESSION_BUS_ADDRESS \
-    XDG_RUNTIME_DIR="$runtime" XDG_STATE_HOME="$work/state" WAYLAND_DISPLAY="$display" \
+    XDG_RUNTIME_DIR="$runtime" XDG_STATE_HOME="$work/state" HOME="$work/home" WAYLAND_DISPLAY="$display" \
     QT_QPA_PLATFORM=wayland LIBGL_ALWAYS_SOFTWARE=1 QS_DISABLE_CRASH_HANDLER=1 \
     PANE="${pane:-}" SCENARIOS="$scenario_list" N="$entries" STEPS="$steps" SNAPS="$snaps" \
     timeout "$timeout_s" "$quickshell/bin/quickshell" -p "$config/$1" --no-color >"$2" 2>&1 &
