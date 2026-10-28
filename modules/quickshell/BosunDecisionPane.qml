@@ -233,7 +233,7 @@ BosunPane {
 
                 width: parent.width - denyButton.width - approveButton.width - 2 * parent.spacing
                 height: 34
-                sendGlyph: false
+                oneLine: true
                 placeholder: "Deny with what to do instead (optional)"
                 draftKey: pane.decisionId ? "deny:" + pane.decisionId : ""
                 onSent: pane.deny()

@@ -29,7 +29,7 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `Tooltip` | The hover tip under or over a module |
 | `OverlayScrollBar` | The scroll bar of every view that scrolls, attached as `ScrollBar.vertical` or `ScrollBar.horizontal` |
 | `BosunDropdown` | A button showing the current value that opens a menu of the others, inside the panel's window |
-| `BosunComposer` | Text input that grows to a few lines and sends on Ctrl+Enter; `sendGlyph: false` makes it a one-line field that Return sends |
+| `BosunComposer` | Every text field of the panel: grows to a few lines and sends on Ctrl+Enter; `oneLine` makes it a line that Return submits; `sends: false` makes a submit emit `accepted` and keep the text |
 | `BosunMarkdown` | An assistant's text as Markdown, selectable a block at a time |
 | `SelectableText` | `BarText`'s look in a read-only `TextEdit` the mouse selects, for `MouseSelection` to copy |
 | `SelectableMarkdown` | Todoist-style Markdown the mouse selects, built on `SelectableText` |

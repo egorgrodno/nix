@@ -46,7 +46,7 @@ QtObject {
 }
 ```
 
-`h` is `shell.qml`'s window: `conv` and `list` for the conversation and its `ListView`, `show(i)` to scroll to a row, `rowIndex(pred)` to find one, `find(pred)` and `inView(item)` for items, `note(text)` and `snap(name)` for a line or a PNG (`-o DIR`). `scenarios/select-reply.qml` shows a mouse drag through `press` and `drag`; `snap.qml` writes PNGs, which compare looks without the live screen. The shell runs a scenario once per pane, and one that fits a single pane returns false from `step` on the other.
+`h` is `shell.qml`'s window: `conv` and `list` for the conversation and its `ListView`, `show(i)` to scroll to a row, `rowIndex(pred)` to find one, `find(pred)` and `inView(item)` for items, `note(text)` and `snap(name)` for a line or a PNG (`-o DIR`). `scenarios/select-reply.qml` shows a mouse drag through `press` and `drag`; `snap.qml` writes PNGs, which compare looks without the live screen. The shell runs a scenario once per pane, and one that fits a single pane returns false from `step` on the other. `-p spawn` shows the New worker form on a long draft instead of a conversation, for `snap-spawn.qml`.
 
 ## Driving a live panel
 

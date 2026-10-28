@@ -34,7 +34,7 @@ FloatingWindow {
     property var times: []
     property bool skipped: false
 
-    implicitWidth: 560
+    implicitWidth: pane === "spawn" ? 900 : 560
     implicitHeight: 800
     color: Theme.backgroundRaised
 
@@ -193,7 +193,17 @@ FloatingWindow {
             id: loader
 
             anchors.fill: parent
-            sourceComponent: win.pane === "desk" ? deskView : sessionView
+            sourceComponent: win.pane === "desk" ? deskView : win.pane === "spawn" ? spawnView : sessionView
+        }
+    }
+
+    // The New worker form, which holds a draft of its own, in place of a
+    // conversation.
+    Component {
+        id: spawnView
+
+        BosunSpawnPane {
+            repos: ["/etc/nixos", "/home/egor/Projects/bosun"]
         }
     }
 
@@ -245,6 +255,23 @@ FloatingWindow {
                 answered: data.answered,
                 log: data.log(win.n)
             }));
+            if (win.pane === "spawn") {
+                // A draft the form takes as it is built again.
+                BosunKept.keepDraft("spawn", {
+                    name: "my-worker",
+                    repo: "/etc/nixos",
+                    model: "opus",
+                    effort: "",
+                    prompt: Array.from({
+                        length: parseInt(Quickshell.env("TASK_LINES") ?? "") || 24
+                    }, (_, i) => `Line ${i + 1} of the task, which is long enough to wrap on a narrow form, and so grows the field.`).join("\n")
+                });
+                loader.active = false;
+                loader.active = true;
+                console.log("HARNESS injected a spawn draft");
+                settle.start();
+                return;
+            }
             const feed = win.conv.feed;
             const entries = win.pane === "desk" ? data.desk(win.n) : data.session(win.n);
             feed.receive(JSON.stringify({

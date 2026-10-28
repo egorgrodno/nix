@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import QtQuick.Controls.Basic
 import Quickshell
 import Quickshell.Io
 
@@ -33,9 +32,9 @@ BosunPane {
     // To the name, or once it is typed, the task.
     function focusIn() {
         if (nameField.text === "")
-            nameField.forceActiveFocus();
+            nameField.focusIn();
         else
-            promptField.forceActiveFocus();
+            promptField.focusIn();
         return true;
     }
 
@@ -134,32 +133,17 @@ BosunPane {
         label: "Name"
         hint: "Lowercase letters, digits and hyphens"
 
-        TextField {
+        BosunComposer {
             id: nameField
 
             width: Math.min(parent.width, 420)
             height: 34
-            leftPadding: 10
-            rightPadding: 10
-            topPadding: 0
-            bottomPadding: 0
-            verticalAlignment: TextInput.AlignVCenter
-            color: Theme.foregroundStrong
-            selectionColor: Theme.blue
-            selectedTextColor: Theme.backgroundMain
-            font.family: Theme.fontUI
-            font.pixelSize: 14
+            oneLine: true
+            sends: false
+            next: promptField
             onTextChanged: pane.keepForm()
-            onAccepted: promptField.forceActiveFocus()
-            Keys.onTabPressed: promptField.forceActiveFocus()
-            Keys.onEscapePressed: pane.cancelled()
-
-            background: Rectangle {
-                radius: Theme.radius - 4
-                color: Theme.tint(0.06)
-                border.width: 1
-                border.color: nameField.activeFocus ? Theme.blue : Theme.tint(0.12)
-            }
+            onAccepted: promptField.focusIn()
+            onLeave: pane.cancelled()
         }
     }
 
@@ -199,34 +183,17 @@ BosunPane {
     Field {
         label: "Its task"
 
-        TextArea {
+        BosunComposer {
             id: promptField
 
             width: parent.width
-            height: Math.max(200, implicitHeight)
-            padding: 12
-            wrapMode: TextEdit.Wrap
-            color: Theme.foregroundStrong
-            selectionColor: Theme.blue
-            selectedTextColor: Theme.backgroundMain
-            font.family: Theme.fontUI
-            font.pixelSize: 14
+            sends: false
+            minHeight: 200
+            maxLines: 14
+            next: nameField
             onTextChanged: pane.keepForm()
-            Keys.onTabPressed: nameField.forceActiveFocus()
-            Keys.onEscapePressed: pane.cancelled()
-            Keys.onPressed: event => {
-                if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter) && event.modifiers & Qt.ControlModifier) {
-                    pane.start();
-                    event.accepted = true;
-                }
-            }
-
-            background: Rectangle {
-                radius: Theme.radius - 4
-                color: Theme.tint(0.06)
-                border.width: 1
-                border.color: promptField.activeFocus ? Theme.blue : Theme.tint(0.12)
-            }
+            onAccepted: pane.start()
+            onLeave: pane.cancelled()
         }
     }
 

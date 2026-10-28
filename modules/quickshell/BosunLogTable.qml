@@ -209,58 +209,20 @@ Item {
             }
         }
 
-        Rectangle {
+        BosunComposer {
             id: field
 
             anchors.right: parent.right
             width: Math.max(120, Math.min(260, header.wraps ? header.beside : header.room))
             height: 28
-            radius: Theme.radius - 4
-            color: Theme.tint(0.06)
-            border.width: 1
-            border.color: filterInput.activeFocus ? Theme.blue : Theme.tint(0.12)
-
-            BarText {
-                id: filterGlyph
-
-                x: 10
-                anchors.verticalCenter: parent.verticalCenter
-                text: BosunLook.filter
-                color: Theme.foregroundMuted
-                font.pixelSize: 14
-            }
-
-            TextInput {
-                id: filterInput
-
-                anchors.left: filterGlyph.right
-                anchors.leftMargin: 8
-                anchors.right: parent.right
-                anchors.rightMargin: 10
-                anchors.verticalCenter: parent.verticalCenter
-                clip: true
-                text: table.text
-                color: Theme.foregroundStrong
-                selectionColor: Theme.blue
-                selectByMouse: true
-                font.family: Theme.fontUI
-                font.pixelSize: 13
-                font.hintingPreference: Font.PreferFullHinting
-                renderType: Text.CurveRendering
-                onTextEdited: BosunKept.logText = text
-                Keys.onReturnPressed: table.forceActiveFocus()
-                Keys.onEnterPressed: table.forceActiveFocus()
-                Keys.onTabPressed: table.forceActiveFocus()
-                Keys.onEscapePressed: table.forceActiveFocus()
-
-                BarText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: filterInput.text === ""
-                    text: "Filter the log"
-                    color: Theme.foregroundMuted
-                    font.pixelSize: 13
-                }
-            }
+            oneLine: true
+            sends: false
+            leadGlyph: BosunLook.filter
+            placeholder: "Filter the log"
+            text: table.text
+            onTextChanged: BosunKept.logText = text
+            onAccepted: table.forceActiveFocus()
+            onLeave: table.forceActiveFocus()
         }
     }
 
