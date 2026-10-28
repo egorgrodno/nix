@@ -111,7 +111,7 @@ Item {
 
                     model: BosunDesk.links(entry.item.text ?? "")
 
-                    Link {
+                    BosunLink {
                         required property var modelData
 
                         text: `${modelData.text}  ${BosunLook.chevronRight}`
@@ -358,32 +358,12 @@ Item {
                     font.pixelSize: 14
                 }
 
-                Link {
+                BosunLink {
                     visible: given.decision !== null
                     text: `Open decision ${given.input.id}  ${BosunLook.chevronRight}`
                     onClicked: entry.conversation.opened(`decision:${given.input.id}`, given.decision)
                 }
             }
-        }
-    }
-
-    // Blue text that opens what it names.
-    component Link: BarText {
-        id: link
-
-        signal clicked
-
-        color: linkHover.hovered ? Theme.foregroundStrong : Theme.blue
-        font.pixelSize: 14
-
-        HoverHandler {
-            id: linkHover
-
-            cursorShape: Qt.PointingHandCursor
-        }
-
-        TapHandler {
-            onTapped: link.clicked()
         }
     }
 

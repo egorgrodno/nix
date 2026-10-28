@@ -357,7 +357,7 @@ Item {
         width: ListView.view.width
         height: 36
         onTapped: {
-            if (linkHover.hovered)
+            if (linkText.hovered)
                 return;
             table.chosen(entry);
             table.forceActiveFocus();
@@ -398,7 +398,7 @@ Item {
             font.pixelSize: 13
         }
 
-        BarText {
+        BosunLink {
             id: linkText
 
             anchors.right: parent.right
@@ -406,18 +406,8 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             visible: row.link !== null
             text: row.link?.text ?? ""
-            color: linkHover.hovered ? Theme.foregroundStrong : Theme.blue
             font.pixelSize: 13
-
-            HoverHandler {
-                id: linkHover
-
-                cursorShape: Qt.PointingHandCursor
-            }
-
-            TapHandler {
-                onTapped: table.opened(row.link.key, row.link.item)
-            }
+            onClicked: table.opened(row.link.key, row.link.item)
         }
     }
 }
