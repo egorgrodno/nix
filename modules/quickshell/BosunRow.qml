@@ -2,7 +2,7 @@ import QtQuick
 
 // A row of a list that selects: filled while it is `current`, filled less
 // under the pointer, with a 2 px edge at its left that is blue while the
-// keyboard is in the list. A tap emits `tapped`; what the row holds is the
+// keyboard is in the list and a fainter blue while it is elsewhere. A tap emits `tapped`; what the row holds is the
 // caller's. An `inert` row, an entry with nothing behind it, takes no hover
 // fill or tap, though `hovered` still reports the pointer for a tooltip.
 Item {
@@ -36,7 +36,7 @@ Item {
             width: 2
             height: parent.height
             visible: row.current
-            color: row.focused ? Theme.blue : Theme.foregroundFaint
+            color: row.focused ? Theme.blue : Theme.alpha(Theme.blue, 0.45)
         }
 
         Behavior on color {

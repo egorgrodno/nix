@@ -35,7 +35,7 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 | `SelectableText` | `BarText`'s look in a read-only `TextEdit` the mouse selects, for `MouseSelection` to copy |
 | `SelectableMarkdown` | Todoist-style Markdown the mouse selects, built on `SelectableText` |
 | `BosunLine` | A line that opens at a click: chevron, glyph, label and an aside, with `open` and `toggled` for the caller to wire |
-| `BosunRow` | A row that selects: fill while current, a lighter one on hover, a 2 px edge blue while the keyboard is in the list; `inert` for an entry with nothing behind it, which takes no hover or click |
+| `BosunRow` | A row that selects: fill while current, a lighter one on hover, a 2 px edge blue while the keyboard is in the list and faint blue elsewhere; `inert` for an entry with nothing behind it, which takes no hover or click |
 | `BosunLink` | Blue text that opens what it names, strong on hover, with `clicked` |
 | `BosunBanner` | A glyph and wrapped text on a tint of its colour, a note in a pane or with `strip` a band across the panel |
 | `BosunCodeBox` | Selectable text in a box on a tint: a tool's input and result and a message's fenced code, which break at a space where they can and anywhere else |
