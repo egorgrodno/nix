@@ -30,6 +30,21 @@ for row in decision:7 desk session:select-lag session:panel-ipc log; do
   shot "${row%%:*}-${row##*:}"
 done
 
+# The pointer over a Log row and over a rail button.
+"$WLRCTL" pointer move -4000 -4000
+"$WLRCTL" pointer move 400 330
+shot log-hover
+"$WLRCTL" pointer move -400 -141
+shot rail-hover
+
+# The sidebar beside the rail, on a session, with the pointer over another row.
+call mode sidebar
+call select session:select-lag >/dev/null
+"$WLRCTL" pointer move -4000 -4000
+"$WLRCTL" pointer move 200 415
+shot sidebar-hover
+call mode expanded
+
 # The New worker form, by its button in the title bar.
 "$WLRCTL" pointer move -4000 -4000
 "$WLRCTL" pointer move 1157 85
@@ -41,6 +56,14 @@ shot spawn
 "$WLRCTL" pointer move 160 449
 "$WLRCTL" pointer click left
 shot spawn-model
+"$WLRCTL" pointer move -4000 -4000
 "$WLRCTL" pointer move 600 300
 "$WLRCTL" pointer click left
+
+# Leaves the panel gone, not mid-close, for the next script.
+call close
+for _ in $(seq 25); do
+  [[ $(qs call harness panels) == 0 ]] && break
+  sleep 0.2
+done
 echo "views captured in $SNAPS"

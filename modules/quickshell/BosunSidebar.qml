@@ -369,44 +369,14 @@ Item {
 
     // What every row shares: the selected one's fill and edge, a hover, and
     // a click that selects it.
-    component RowBase: Item {
-        id: base
-
+    component RowBase: BosunRow {
         required property string rowKey
-        readonly property bool current: sidebar.selected === rowKey
-        readonly property bool hovered: hover.hovered
 
+        current: sidebar.selected === rowKey
+        focused: sidebar.focused
+        inset: 8
         height: 36
-
-        Rectangle {
-            anchors.fill: parent
-            anchors.leftMargin: 8
-            anchors.rightMargin: 8
-            radius: Theme.radius - 4
-            color: base.current ? Theme.tint(0.07) : hover.hovered ? Theme.tint(0.04) : "transparent"
-
-            Rectangle {
-                width: 2
-                height: parent.height
-                visible: base.current
-                color: sidebar.focused ? Theme.blue : Theme.foregroundFaint
-            }
-
-            Behavior on color {
-                ColorAnimation {
-                    duration: 150
-                    easing.type: Easing.OutQuad
-                }
-            }
-        }
-
-        HoverHandler {
-            id: hover
-        }
-
-        TapHandler {
-            onTapped: sidebar.chosen(base.rowKey)
-        }
+        onTapped: sidebar.chosen(rowKey)
     }
 
     // Its kind's glyph, the session, the tool or "asks", whether it is

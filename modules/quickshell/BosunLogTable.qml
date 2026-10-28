@@ -345,28 +345,22 @@ Item {
 
     // An entry: its time, its glyph, who acted, what happened, and the link
     // to what it names.
-    component EntryRow: Item {
+    component EntryRow: BosunRow {
         id: row
 
         required property var modelData
         readonly property var entry: modelData
-        readonly property bool current: entry.seq === table.selectedSeq
         readonly property var link: BosunLook.logLink(entry)
 
+        current: entry.seq === table.selectedSeq
+        focused: table.focused
         width: ListView.view.width
         height: 36
-
-        Rectangle {
-            anchors.fill: parent
-            radius: Theme.radius - 4
-            color: row.current ? Theme.tint(0.07) : rowHover.hovered ? Theme.tint(0.04) : "transparent"
-
-            Rectangle {
-                width: 2
-                height: parent.height
-                visible: row.current
-                color: table.focused ? Theme.blue : Theme.foregroundFaint
-            }
+        onTapped: {
+            if (linkHover.hovered)
+                return;
+            table.chosen(entry);
+            table.forceActiveFocus();
         }
 
         BarText {
@@ -402,19 +396,6 @@ Item {
             elide: Text.ElideRight
             text: BosunLook.logWhat(row.entry)
             font.pixelSize: 13
-        }
-
-        HoverHandler {
-            id: rowHover
-        }
-
-        TapHandler {
-            onTapped: {
-                if (linkHover.hovered)
-                    return;
-                table.chosen(row.entry);
-                table.forceActiveFocus();
-            }
         }
 
         BarText {

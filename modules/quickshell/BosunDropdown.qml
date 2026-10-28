@@ -213,7 +213,7 @@ Item {
                     width: ListView.view.width
                     height: dropdown.rowHeight
                     radius: Theme.radius - 5
-                    color: entry.index === dropdown.index ? Theme.tint(0.12) : "transparent"
+                    color: entry.index === dropdown.index ? Theme.tint(0.08) : "transparent"
 
                     BarText {
                         x: 8

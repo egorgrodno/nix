@@ -63,7 +63,7 @@ Item {
     }
 
     // A section's glyph, with a yellow count while any waits, or a blue dot.
-    component RailButton: Rectangle {
+    component RailButton: BosunRow {
         id: button
 
         property string name
@@ -71,23 +71,16 @@ Item {
         property string tip
         property int count: 0
         property bool dot: false
-        readonly property bool current: name !== "" && rail.section === name
-        property bool lit: current
 
         signal clicked
 
+        current: name !== "" && rail.section === name
+        focused: rail.focused
+        // The edge sits at the rail's own left.
+        edgeOffset: -8
         width: 40
         height: 40
-        radius: Theme.radius - 4
-        color: lit ? Theme.tint(0.1) : hover.hovered ? Theme.tint(0.05) : "transparent"
-
-        Rectangle {
-            x: -8
-            width: 2
-            height: parent.height
-            visible: button.current
-            color: rail.focused ? Theme.blue : Theme.foregroundFaint
-        }
+        onTapped: name !== "" ? rail.picked(name) : clicked()
 
         BarText {
             anchors.centerIn: parent
@@ -126,18 +119,10 @@ Item {
             color: Theme.blue
         }
 
-        HoverHandler {
-            id: hover
-        }
-
-        TapHandler {
-            onTapped: button.name !== "" ? rail.picked(button.name) : button.clicked()
-        }
-
         Tooltip {
             target: button
             text: button.tip
-            hovered: hover.hovered
+            hovered: button.hovered
         }
     }
 }

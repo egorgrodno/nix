@@ -27,7 +27,13 @@ click() {
 
 shot() { [[ -z ${SNAPS:-} ]] || "$GRIM" "$SNAPS/$1.png"; }
 
-qs call bosun open
+# From a closed panel, whatever an earlier script left.
+call close
+for _ in $(seq 25); do
+  [[ $(qs call harness panels) == 0 ]] && break
+  sleep 0.2
+done
+call open
 for _ in $(seq 25); do
   [[ $(field entered) == true ]] && break
   sleep 0.2
