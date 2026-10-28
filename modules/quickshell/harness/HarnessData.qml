@@ -309,6 +309,7 @@ QtObject {
         },
         {
             node: "select-lag",
+            id: "abc",
             status: "busy",
             parent: "master"
         },
