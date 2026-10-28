@@ -50,4 +50,4 @@ QtObject {
 
 ## Driving a live panel
 
-A script `ipc/<name>.sh` runs against a real bar module: `panel.qml` opens the Agents pill in a `PanelWindow` on labwc, with the same fake daemon data, and the script calls `quickshell ipc`. `run.sh` sets `QS` and `QS_CONFIG`; `ipc/toggle.sh` shows the calls. The script prints what it found and exits non-zero to fail. With no Hyprland there is no focused monitor, so the scratch copy of `Agents.qml` has its screen test replaced by `true`.
+A script `ipc/<name>.sh` runs against a real bar module: `panel.qml` opens the Agents pill in a `PanelWindow` on labwc, with the same fake daemon data, and the script calls `quickshell ipc`. `run.sh` sets `QS` and `QS_CONFIG`; `ipc/toggle.sh` shows the calls. A script that needs a click or a picture uses `WLRCTL` and `GRIM`, which drive and capture the harness compositor's own pointer and screen; `ipc/log-menu.sh` shows both. The script prints what it found and exits non-zero to fail. With no Hyprland there is no focused monitor, so the scratch copy of `Agents.qml` has its screen test replaced by `true`.

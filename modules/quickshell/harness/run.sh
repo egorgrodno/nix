@@ -105,6 +105,8 @@ home="$attr.config.home-manager.users.$user"
 built=$(nix build --no-link --print-out-paths \
   "$attr.pkgs.weston" \
   "$attr.pkgs.labwc" \
+  "$attr.pkgs.grim" \
+  "$attr.pkgs.wlrctl" \
   "$home.programs.quickshell.package" \
   "$home.xdg.configFile.\"quickshell/Theme.qml\".source" \
   "$home.xdg.configFile.\"quickshell/Programs.qml\".source" \
@@ -113,12 +115,14 @@ built=$(nix build --no-link --print-out-paths \
   failed=1
   exit 1
 }
-weston= labwc= quickshell=
+weston= labwc= grim= wlrctl= quickshell=
 generated=()
 while read -r path; do
   case $path in
   *-weston-*) weston=$path ;;
-  *-labwc-*-man) ;;
+  *-man) ;;
+  *-grim-*) grim=$path ;;
+  *-wlrctl-*) wlrctl=$path ;;
   *-labwc-*) labwc=$path ;;
   *-quickshell-*) quickshell=$path ;;
   *) generated+=("$path") ;;
@@ -233,7 +237,7 @@ if ((${#scripts[@]} > 0)); then
     for name in "${scripts[@]}"; do
       # The scripts find the instance by its config, in the harness's runtime
       # directory, where no `quickshell` of the live session can answer.
-      if out=$(env -u HYPRLAND_INSTANCE_SIGNATURE -u DISPLAY XDG_RUNTIME_DIR="$runtime" WAYLAND_DISPLAY="$display" QS="$quickshell/bin/quickshell" QS_CONFIG="$config/panel.qml" SNAPS="$snaps" \
+      if out=$(env -u HYPRLAND_INSTANCE_SIGNATURE -u DISPLAY XDG_RUNTIME_DIR="$runtime" WAYLAND_DISPLAY="$display" GRIM="$grim/bin/grim" WLRCTL="$wlrctl/bin/wlrctl" QS="$quickshell/bin/quickshell" QS_CONFIG="$config/panel.qml" SNAPS="$snaps" \
         timeout 120 bash "$here/ipc/$name.sh" 2>&1); then
         sed "s/^/ipc $name: /" <<<"$out"
       else

@@ -195,42 +195,17 @@ Item {
                 }
             }
 
-            TextButton {
-                id: sessionButton
-
+            BosunDropdown {
                 anchors.verticalCenter: parent.verticalCenter
                 // At most 180, so a long session name cannot push the row
                 // past the header.
-                width: Math.min(180, sessionName.implicitWidth + 8 + sessionChevron.implicitWidth + 20)
-                height: 26
-                lit: picker.visible
-                onClicked: {
-                    const at = mapToItem(table, 0, height + 4);
-                    picker.x = Math.min(at.x, table.width - picker.width - 12);
-                    picker.y = at.y;
-                    picker.visible = !picker.visible;
-                }
-
-                BarText {
-                    id: sessionName
-
-                    x: 10
-                    width: sessionChevron.x - 8 - x
-                    anchors.verticalCenter: parent.verticalCenter
-                    elide: Text.ElideRight
-                    text: table.session || "Any session"
-                    font.pixelSize: 14
-                }
-
-                BarText {
-                    id: sessionChevron
-
-                    anchors.right: parent.right
-                    anchors.rightMargin: 10
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: BosunLook.chevronDown
-                    font.pixelSize: 14
-                }
+                maxWidth: 180
+                menuWidth: 220
+                values: table.sessions
+                current: table.session
+                fallback: "Any session"
+                resettable: true
+                onPicked: value => BosunKept.logSession = value
             }
         }
 
@@ -406,70 +381,6 @@ Item {
                 text: "open what it names"
             }
         ]
-    }
-
-    // Closes the session list at a press anywhere else in the table.
-    MouseArea {
-        anchors.fill: parent
-        visible: picker.visible
-        onPressed: picker.visible = false
-    }
-
-    // The sessions the filter can pick, under its button.
-    Rectangle {
-        id: picker
-
-        width: 220
-        height: Math.min(pickList.contentHeight + 12, table.height - y - 20)
-        visible: false
-        radius: Theme.radius - 4
-        color: Theme.backgroundRaised
-        border.width: 1
-        border.color: Theme.tint(0.12)
-
-        ListView {
-            id: pickList
-
-            anchors.fill: parent
-            anchors.margins: 6
-            clip: true
-            boundsBehavior: Flickable.StopAtBounds
-            model: [""].concat(table.sessions)
-
-            ScrollBar.vertical: OverlayScrollBar {}
-
-            delegate: Rectangle {
-                id: choice
-
-                required property string modelData
-
-                width: ListView.view.width
-                height: 28
-                radius: Theme.radius - 6
-                color: choiceHover.hovered ? Theme.tint(0.08) : table.session === modelData ? Theme.tint(0.05) : "transparent"
-
-                BarText {
-                    x: 10
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: parent.width - 2 * x
-                    elide: Text.ElideRight
-                    text: choice.modelData || "Any session"
-                    color: table.session === choice.modelData ? Theme.foregroundStrong : Theme.foregroundMuted
-                    font.pixelSize: 13
-                }
-
-                HoverHandler {
-                    id: choiceHover
-                }
-
-                TapHandler {
-                    onTapped: {
-                        BosunKept.logSession = choice.modelData;
-                        picker.visible = false;
-                    }
-                }
-            }
-        }
     }
 
     // An entry: its time, its glyph, who acted, what happened, and the link
