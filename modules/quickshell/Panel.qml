@@ -37,6 +37,13 @@ PanelWindow {
     property bool entered: false
     // Between the box's edge and the content.
     property int padding: 20
+    readonly property real boxHeight: column.implicitHeight + 2 * padding
+    // Where the box ends up on its screen, whatever the open animation or a
+    // change of height has reached.
+    readonly property rect boxRect: {
+        const edge = Theme.barHeight + Theme.outerGap;
+        return Qt.rect(boxX, upward ? (screen?.height ?? 0) - edge - boxHeight : edge, boxWidth, boxHeight);
+    }
     // Where the keyboard goes from a text field a press lands outside, unless
     // an item around the field sets its own.
     property Item keyboardHome: box
@@ -153,7 +160,7 @@ PanelWindow {
             readonly property bool windowActive: Window.active
 
             width: parent.width
-            height: column.implicitHeight + 2 * panel.padding
+            height: panel.boxHeight
             // Starting under the bar's edge.
             y: panel.open ? 0 : panel.upward ? Theme.slide : -Theme.slide
             opacity: panel.open ? 1 : 0

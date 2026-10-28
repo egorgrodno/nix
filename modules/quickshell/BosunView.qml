@@ -22,6 +22,8 @@ Item {
     // the list beside the pane.
     readonly property Item keyboardHome: logShown ? logTable : sidebar.visible ? sidebar : rail
 
+    // The panel's window, a Panel.
+    readonly property var window: QsWindow.window
     // BosunKept holds what the panel shows, so it opens where it closed.
     readonly property string selected: BosunKept.selected
     readonly property var held: BosunKept.held
@@ -220,6 +222,21 @@ Item {
         return true;
     }
 
+    // Whether the key's two-press action is on offer, as the key and a click
+    // both need.
+    function armable(key) {
+        switch (key) {
+        case "y":
+        case "d":
+            return decisionLive && Bosun.kindOf(decision) === "permission";
+        case "p":
+            return Bosun.connected && Bosun.fleetOp === "";
+        case "C":
+            return clearable;
+        }
+        return false;
+    }
+
     function pause() {
         if (armed !== "p") {
             arm("p", "click");
@@ -257,14 +274,115 @@ Item {
             clearNow();
     }
 
+    function armKill(node) {
+        killing = node;
+        disarm.restart();
+    }
+
     function kill(node) {
         if (killing !== node) {
-            killing = node;
-            disarm.restart();
+            armKill(node);
             return;
         }
         killing = "";
         Bosun.kill(node);
+    }
+
+    // What Bosun's IpcHandler asks of the panel for a script. It moves the
+    // selection, the size and the keyboard and arms a two-press action, and
+    // reaches no function that sends, interrupts, answers, kills or pauses.
+    // Each returns "" when done, else why it did nothing.
+
+    // The sidebar row `key`, or "log" for the Log, as a click on it chooses.
+    function selectRow(key) {
+        if (key === "log") {
+            if (Bosun.log.length === 0)
+                return "the Log is empty";
+            openLog();
+            return "";
+        }
+        if (!sidebar.keys.includes(key) && !(key.startsWith("log:") && BosunKept.liveItem(key)))
+            return `no row ${key}`;
+        select(key);
+        return "";
+    }
+
+    // The first press of `action`, which only arms it: the second stays the
+    // user's, within three seconds.
+    function armAction(action) {
+        if (action === "kill") {
+            if (!sessionPane.visible || !sessionPane.killable)
+                return "no worker is selected to kill";
+            armed = "";
+            armKill(session.node);
+            return "";
+        }
+        const key = ({
+                approve: "y",
+                deny: "d",
+                pause: "p",
+                clear: "C"
+            })[action];
+        if (key === undefined)
+            return `no action ${action}`;
+        if (!armable(key))
+            return `${action} is not on offer here`;
+        killing = "";
+        arm(key, "key");
+        return "";
+    }
+
+    function focusAt(where) {
+        switch (where) {
+        case "pane":
+            focusPane();
+            return "";
+        case "list":
+            keyboardHome.forceActiveFocus();
+            return "";
+        }
+        return `no place ${where}`;
+    }
+
+    // Where the keyboard is: "sidebar", "rail", "table", "pane", a "field" of
+    // the pane's, or "".
+    function focusName() {
+        const places = {
+            sidebar: sidebar,
+            rail: rail,
+            table: logTable,
+            pane: paneKeys
+        };
+        for (const name of Object.keys(places))
+            if (places[name].activeFocus)
+                return name;
+        return view.Window.activeFocusItem ? "field" : "";
+    }
+
+    function panelState() {
+        return {
+            entered: window?.entered === true,
+            kind: paneKind,
+            focus: focusName(),
+            armed: killing !== "" ? "kill" : armed
+        };
+    }
+
+    // The box at rest in the compositor's layout, where a screenshot crops.
+    function geometry() {
+        const box = window?.boxRect;
+        const screen = window?.screen;
+        return {
+            screen: {
+                name: screen?.name ?? "",
+                x: screen?.x ?? 0,
+                y: screen?.y ?? 0
+            },
+            x: Math.round((screen?.x ?? 0) + box.x),
+            y: Math.round((screen?.y ?? 0) + box.y),
+            width: Math.round(box.width),
+            height: Math.round(box.height)
+        };
     }
 
     // Once the user's answer from the panel settles the selected decision, to
@@ -331,9 +449,9 @@ Item {
         // h j k l g a e o, in either case.
         switch (event.text) {
         case "y":
-            return live === "permission" && twice("y", was, () => decisionPane.approve());
+            return armable("y") && twice("y", was, () => decisionPane.approve());
         case "d":
-            return live === "permission" && twice("d", was, () => decisionPane.deny());
+            return armable("d") && twice("d", was, () => decisionPane.deny());
         case "D":
             decisionPane.focusNote();
             return live === "permission";
@@ -349,9 +467,7 @@ Item {
             openSpawn();
             return true;
         case "p":
-            if (!Bosun.connected || Bosun.fleetOp !== "")
-                return false;
-            return twice("p", was, () => Bosun.paused ? Bosun.unpause() : Bosun.pause());
+            return armable("p") && twice("p", was, () => Bosun.paused ? Bosun.unpause() : Bosun.pause());
         case "m":
             return currentPane()?.openModel?.() ?? false;
         case "c":
@@ -360,7 +476,7 @@ Item {
             compact();
             return true;
         case "C":
-            return clearable && twice("C", was, clearNow);
+            return armable("C") && twice("C", was, clearNow);
         case "f":
             setExpanded(!expanded);
             return true;
@@ -375,13 +491,13 @@ Item {
         killing = "";
     }
     Component.onCompleted: {
-        Bosun.panelsOpen++;
+        Bosun.views = [...Bosun.views, view];
         if (selected === "")
             select(defaultKey());
         keyboardHome.forceActiveFocus();
     }
     Component.onDestruction: {
-        Bosun.panelsOpen--;
+        Bosun.views = Bosun.views.filter(v => v !== view);
         BosunKept.save();
     }
 

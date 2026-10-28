@@ -8,7 +8,7 @@ The bar and everything drawn with it: panels, notifications, OSD, launcher, lock
 
 **State.** The bar's own state lives under `Quickshell.statePath`. State shared with scripts (the color scheme, the night light) sits in `$XDG_STATE_HOME`. The bosun panel's state (`BosunKept.qml`) is the exception: it must survive a restart of the bar but not a logout, which `Quickshell.statePath` outlasts. It sits in `$XDG_RUNTIME_DIR`, in a file named after `HYPRLAND_INSTANCE_SIGNATURE`, so it starts fresh on each login even with lingering on.
 
-**IPC.** Hyprland's binds and scripts reach the bar through `quickshell ipc call <target> <function>`, each target an `IpcHandler`. Renaming a target or function breaks its callers: the binds in `modules/desktop/default.nix`, and `lockCommand` and the desktop entries in `default.nix`.
+**IPC.** Hyprland's binds and scripts reach the bar through `quickshell ipc call <target> <function>`, each target an `IpcHandler`. Renaming a target or function breaks its callers: the binds in `modules/desktop/default.nix`, and `lockCommand` and the desktop entries in `default.nix`. Scripts drive the bosun panel through its target, never by keystrokes: see `BOSUN-IPC.md`. That target **must not** gain a call that sends, interrupts, answers, kills or pauses, or that completes a two-press action.
 
 **Layers.** Hyprland's `layer_rule`s in `modules/desktop/default.nix` match the bar's surfaces by `WlrLayershell.namespace`. Renaming a namespace drops its rules.
 

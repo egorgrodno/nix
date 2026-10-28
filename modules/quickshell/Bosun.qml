@@ -56,8 +56,15 @@ Singleton {
     // The node whose model switch has not finished.
     property string switching: ""
     readonly property ShellScreen screen: Quickshell.screens.find(s => s.name === Hyprland.focusedMonitor?.name) ?? null
-    // How many bosun panels show, one per screen at most.
-    property int panelsOpen: 0
+    // The BosunView of each panel that shows, one per screen at most.
+    property var views: []
+    readonly property int panelsOpen: views.length
+    // The one a script's IPC call reaches: the open panel on the focused
+    // screen, else the newest.
+    readonly property var view: {
+        const open = views.filter(v => v.window?.open === true);
+        return open.find(v => v.window.screen === screen) ?? open[open.length - 1] ?? null;
+    }
     // The desk's latest reply, its `activity` text and when, which a
     // notification told of or the snapshot already held.
     property string deskReply: ""
@@ -611,11 +618,69 @@ Singleton {
         font.pixelSize: 14
     }
 
+    // What `act` returns for the panel that shows, "ok" if it returns "", else
+    // "error: " and why. Without a panel, the same.
+    function drive(act) {
+        const why = view ? act(view) : "no panel is open";
+        return why === "" ? "ok" : `error: ${why}`;
+    }
+
+    // For scripts, in place of keystrokes that land in whatever window has the
+    // focus. Nothing here sends, interrupts or answers, and an action with two
+    // presses stops at the first: those stay the user's. BosunView holds the
+    // panel's side.
     IpcHandler {
         target: "bosun"
 
         function toggle(): void {
             root.toggleRequested();
+        }
+
+        function open(): void {
+            root.openRequested();
+        }
+
+        function close(): void {
+            for (const v of root.views)
+                v.window?.close();
+        }
+
+        function isOpen(): bool {
+            return root.view !== null;
+        }
+
+        function select(row: string): string {
+            return root.drive(v => v.selectRow(row));
+        }
+
+        function focus(where: string): string {
+            return root.drive(v => v.focusAt(where));
+        }
+
+        function mode(name: string): string {
+            return root.drive(v => {
+                if (!["expanded", "sidebar"].includes(name))
+                    return `no mode ${name}`;
+                v.setExpanded(name === "expanded");
+                return "";
+            });
+        }
+
+        function arm(action: string): string {
+            return root.drive(v => v.armAction(action));
+        }
+
+        function state(): string {
+            return JSON.stringify(Object.assign({
+                open: root.view !== null,
+                selected: BosunKept.selected,
+                mode: BosunKept.expanded ? "expanded" : "sidebar",
+                sidebarShown: BosunKept.sidebarShown
+            }, root.view?.panelState()));
+        }
+
+        function geometry(): string {
+            return root.view ? JSON.stringify(root.view.geometry()) : "error: no panel is open";
         }
     }
 }
