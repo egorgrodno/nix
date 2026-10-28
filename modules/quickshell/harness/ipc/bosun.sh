@@ -114,4 +114,10 @@ call close
 expect "isOpen after close" false "$(call isOpen)"
 expect "state after close" false "$(field open)"
 expect "kept selection" desk "$(field selected)"
+# Leaves the panel gone, not mid-close, for the next script.
+for _ in $(seq 25); do
+  [[ $(qs call harness panels) == 0 ]] && break
+  sleep 0.2
+done
+expect "panels after close" 0 "$(qs call harness panels)"
 echo "every bosun IPC call answered as documented"

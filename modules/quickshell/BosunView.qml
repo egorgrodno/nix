@@ -222,6 +222,14 @@ Item {
         return true;
     }
 
+    // The two-press actions by name, other than Kill, which keeps `killing`.
+    readonly property var armKeys: ({
+            approve: "y",
+            deny: "d",
+            pause: "p",
+            clear: "C"
+        })
+
     // Whether the key's two-press action is on offer, as the key and a click
     // both need.
     function armable(key) {
@@ -317,12 +325,7 @@ Item {
             armKill(session.node);
             return "";
         }
-        const key = ({
-                approve: "y",
-                deny: "d",
-                pause: "p",
-                clear: "C"
-            })[action];
+        const key = armKeys[action];
         if (key === undefined)
             return `no action ${action}`;
         if (!armable(key))
