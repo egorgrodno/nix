@@ -120,7 +120,6 @@ BosunPane {
             width: parent.width
             visible: Bosun.connected
             suggestion: conversationView.feed.suggestion
-            placeholder: "Ask about the run, or tell the fleet what to do"
             draftKey: "tell"
             onSent: text => Bosun.tell(text)
             onLeave: pane.leave()

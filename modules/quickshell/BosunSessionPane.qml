@@ -151,15 +151,6 @@ BosunPane {
             width: parent.width
             visible: pane.tells || pane.sayable
             suggestion: conversationView.feed.suggestion
-            placeholder: {
-                if (pane.tells)
-                    return "Tell the master";
-                if (conversationView.inTurn)
-                    return `Message ${pane.node} as you. It reads it between tool calls, mid-turn too.`;
-                if (pane.session?.status === "stopped")
-                    return `Message ${pane.node} as you. It resumes with it.`;
-                return `Message ${pane.node} as you`;
-            }
             draftKey: pane.tells ? "tell:master" : `say:${pane.node}`
             onSent: text => pane.tells ? Bosun.tell(text) : Bosun.say(pane.node, text)
             onLeave: pane.leave()
