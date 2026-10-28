@@ -217,6 +217,10 @@ if ((${#frames[@]} > 0)); then
     wait "$qs_pid" || true
     sed -n 's/.*HARNESS //p' "$log" | grep -v '^injected '
     problems "$log" "$pane"
+    if grep -q 'HARNESS note [^:]*: FAIL' "$log"; then
+      failed=1
+      status=1
+    fi
     if ! grep -qE "HARNESS $pane .*(frames=|skipped)" "$log"; then
       echo "$pane: no results; the end of its log:" >&2
       tail -n 8 "$log" >&2
