@@ -1266,8 +1266,6 @@ in
           let
             lua = generators.toLua { };
             splitKey = if config.base.keyboard.layout == "hallmack" then "L" else "E";
-            # hallmack puts a direction key on A, so the bosun panel moves to Z
-            bosunKey = if config.base.keyboard.layout == "hallmack" then "Z" else "A";
 
             startup = [
               "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
@@ -1366,7 +1364,7 @@ in
             hl.bind(mod .. " + SHIFT + S", exec("quickshell ipc call monitors toggle"))
             hl.bind(mod .. " + SHIFT + W", exec("quickshell ipc call wallpapers toggle"))
             hl.bind(mod .. " + SHIFT + T", exec("quickshell ipc call todoist toggle"))
-            hl.bind(mod .. " + ${bosunKey}", exec("quickshell ipc call bosun toggle"))
+            hl.bind(mod .. " + Z", exec("quickshell ipc call bosun toggle"))
             hl.bind(mod .. " + R", hl.dsp.submap("resize"))
             hl.bind(mod .. " + 0", exec("quickshell ipc call session toggle"))
 
