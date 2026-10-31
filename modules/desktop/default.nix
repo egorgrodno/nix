@@ -745,6 +745,7 @@ in
 
         arduino
         blender
+        uv
         discord
         freecad
         galculator
