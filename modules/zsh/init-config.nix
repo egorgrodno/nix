@@ -3,9 +3,9 @@
 ''
   # Left prompt
   if [[ $UID == 0 || $EUID == 0 ]]; then
-    PROMPT_BASE="%F{1}%3~ %(1j.%j .)#%f"
+    PROMPT_BASE="%F{1}%n@%m %3~ %(1j.%j .)#%f"
   else
-    PROMPT_BASE="%F{3}%3~ %(1j.%F{1}%j .)%F{4}$%f"
+    PROMPT_BASE="%F{8}%n@%m %F{3}%3~ %(1j.%F{1}%j .)%F{4}$%f"
   fi
 
   function set-prompt {
