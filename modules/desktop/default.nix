@@ -413,7 +413,14 @@ let
             # again on the wake.
             exec 9>"$XDG_RUNTIME_DIR/idle-suspend.lock"
             flock -n 9 || exit 0
-            while systemd-inhibit --list --json=short | ${lib.getExe pkgs.jq} -e 'any(.[]; .mode == "block" and (.what | split(":") | index("sleep")))' >/dev/null; do
+            sleep_locked() {
+              systemd-inhibit --list --json=short | ${lib.getExe pkgs.jq} -e 'any(.[]; .mode == "block" and (.what | split(":") | index("sleep")))' >/dev/null
+            }
+            # The screens go off while the lock holds the suspend back.
+            if sleep_locked; then
+              hyprctl dispatch 'hl.dsp.dpms({ action = "off" })'
+            fi
+            while sleep_locked; do
               sleep 5
             done
             systemctl ${suspendVerb}
