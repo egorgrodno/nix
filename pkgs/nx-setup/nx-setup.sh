@@ -50,12 +50,16 @@ step() {
 }
 
 sshDir() {
-  if [[ $(stat -c %a "$HOME/.ssh" 2>/dev/null) == 700 && -e $HOME/.ssh/config.local ]]; then
-    skip "$HOME/.ssh and its config.local are in place"
+  local ssh=$HOME/.ssh file
+  if [[ $(stat -c %a "$ssh" "$ssh/config.local" "$ssh/authorized_keys" 2>/dev/null | tr '\n' ' ') == "700 600 600 " ]]; then
+    skip "$ssh, its config.local and authorized_keys are in place"
   fi
-  mkdir -p "$HOME/.ssh"
-  chmod 700 "$HOME/.ssh"
-  [[ -e $HOME/.ssh/config.local ]] || install -m 600 /dev/null "$HOME/.ssh/config.local"
+  mkdir -p "$ssh"
+  chmod 700 "$ssh"
+  for file in config.local authorized_keys; do
+    touch "$ssh/$file"
+    chmod 600 "$ssh/$file"
+  done
 }
 
 # Trusted on first use, so the fingerprints are printed for a look.

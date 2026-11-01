@@ -31,7 +31,7 @@ nx-setup
 
 | Step | Effect |
 |---|---|
-| SSH directory | `~/.ssh` at mode 700, and an empty `~/.ssh/config.local` for private hosts, which the generated `~/.ssh/config` includes. |
+| SSH directory | `~/.ssh` at mode 700, with `authorized_keys` and `config.local` at mode 600, created empty when missing. `config.local` holds private hosts, which the generated `~/.ssh/config` includes. |
 | SSH known hosts | Scans `github.com` and `forgejo.home:30143` into `~/.ssh/known_hosts` and prints the fingerprints. |
 | Git identity | `user.name` and `user.email` in `~/.config/git/config.local`, which the git module includes. |
 | GitHub | `gh auth login` with the SSH protocol, which offers to generate `~/.ssh/id_ed25519` and upload it. |
