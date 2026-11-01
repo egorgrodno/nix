@@ -782,7 +782,14 @@ in
         showtime
         snapshot
 
-        (writeShellScriptBin "cps" "2>/dev/null 1>/dev/null kitty -d $PWD & disown")
+        (writeShellScriptBin "cps" ''
+          if [[ -n ''${SSH_CONNECTION-} ]]; then
+            echo "cps: this shell runs over SSH; open the terminal on the machine you sit at" >&2
+            exit 1
+          fi
+          kitty -d "$PWD" &>/dev/null &
+          disown
+        '')
         nxe
       ];
 
