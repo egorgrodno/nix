@@ -96,6 +96,10 @@ Panel {
         clip: true
         spacing: 12
         boundsBehavior: Flickable.StopAtBounds
+        // Builds every group: a ListView guesses an unbuilt group's height from
+        // the built ones, and groups run from one card to a dozen, so the
+        // guess and the scroll bar swing.
+        cacheBuffer: 1000000
 
         ScrollBar.vertical: OverlayScrollBar {}
         // Keys rather than the groups themselves: ScriptModel keeps the old
