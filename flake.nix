@@ -155,6 +155,7 @@
           modules = [
             ./modules/neovim/hm.nix
             ./modules/git/hm.nix
+            ./modules/direnv/hm.nix
             {
               home = {
                 inherit username homeDirectory;

@@ -1,9 +1,10 @@
 { ... }:
 
 {
-  # nix-direnv supplies the cached `use flake` and pins a GC root, so a project's
-  # dev shell survives `nix-collect-garbage`. Zsh integration is injected
-  # automatically because programs.zsh.enable is set for every user.
+  # nix-direnv caches `use flake` and `use nix` and pins a GC root, so a dev shell
+  # survives `nix-collect-garbage`. home-manager hooks only a shell whose rc file
+  # it owns: zsh on the hosts, none in the standalone `neovim-*` profiles, which
+  # the README tells to add the hook by hand.
   programs.direnv = {
     enable = true;
     nix-direnv.enable = true;

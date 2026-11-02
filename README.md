@@ -60,7 +60,7 @@ nixos-enter --root /mnt -c 'NIXOS_INSTALL_BOOTLOADER=1 /nix/var/nix/profiles/sys
 
 ## Standalone Neovim
 
-The `neovim-qwerty` and `neovim-hallmack` home-manager profiles install this neovim configuration, together with git, on any non-NixOS machine that has Nix and home-manager:
+The `neovim-qwerty` and `neovim-hallmack` home-manager profiles install this neovim configuration, together with git and direnv, on any non-NixOS machine that has Nix and home-manager:
 
 ```bash
 home-manager switch --impure --flake github:egorgrodno/nix#neovim-qwerty    # qwerty layout
@@ -70,6 +70,16 @@ home-manager switch --impure --flake github:egorgrodno/nix#neovim-hallmack  # ha
 `--impure` is **required**: the profile reads `$USER` and `$HOME` to place itself on whatever account invokes it, and pure evaluation aborts with a message naming the variable. The alternative is to set `mkNeovimHome`'s `username` and `homeDirectory` explicitly in `flake.nix`.
 
 The profile is self-contained: the neovim module bundles its own runtime tools and language servers (`ripgrep`, `fd`, `nodejs`, the LSP servers). Its plugins are not: Packer fetches them, so `:PackerSync` **must** be run once after the first `nvim` start.
+
+### direnv on a non-NixOS machine
+
+The profile installs `direnv` and nix-direnv but hooks no shell. home-manager writes the hook only into an rc file it owns, and the profile owns none. Add the hook once, at the **end** of the rc file:
+
+```bash
+eval "$(direnv hook bash)"   # or: direnv hook zsh
+```
+
+A project then opts in with an `.envrc` and one `direnv allow`: `use nix` for a `shell.nix`, `use flake` for a `flake.nix`.
 
 ## Common Commands
 
