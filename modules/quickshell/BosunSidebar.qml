@@ -156,6 +156,10 @@ Item {
         anchors.bottomMargin: logArea.visible ? 0 : 8
         clip: true
         boundsBehavior: Flickable.StopAtBounds
+        // Builds every row: a ListView guesses an unbuilt row's height from the
+        // built ones, and rows run from a header to a decision, so the guess
+        // and the scroll bar swing.
+        cacheBuffer: 1000000
         onContentYChanged: if (sidebar.scrollRestored)
             BosunKept.keepScroll("sidebar", contentY)
         model: ScriptModel {
