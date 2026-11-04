@@ -1074,6 +1074,8 @@ in
               disable_hyprland_logo = true;
               disable_splash_rendering = true;
               allow_session_lock_restore = true;
+              # The cap on a `render_unfocused` window's frame callbacks.
+              render_unfocused_fps = 120;
             };
 
             # No donation or update-news windows at login.
@@ -1223,6 +1225,18 @@ in
                 name = "firefox-workspace";
                 match.class = "^(firefox)$";
                 workspace = "1 silent";
+              }
+              # Bevy sets no app id. Hidden on workspace 4, a vsynced game gets
+              # frame callbacks only from `render_unfocused`, at 15-35 fps here
+              # whatever its cap, and none while the screens are off.
+              {
+                name = "townward-workspace";
+                match = {
+                  class = "^$";
+                  initial_title = "^townward$";
+                };
+                workspace = "4 silent";
+                render_unfocused = true;
               }
               # XWayland reports WM_CLASS's second field, and Hyprland matches
               # case-sensitively, so the class is `Slack`.
