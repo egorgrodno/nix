@@ -1,0 +1,36 @@
+--- a/sound/soc/amd/ps/pci-ps.c
++++ b/sound/soc/amd/ps/pci-ps.c
+@@ -207,20 +207,27 @@
+ 	 * Bit by bit checking of IRQ field is implemented.
+ 	 */
+ 	ext_intr_stat = readl(adata->acp63_base + ACP_EXTERNAL_INTR_STAT);
++	/* All ones: the ACP is powered off, as during a hibernation restore. */
++	if (ext_intr_stat == U32_MAX)
++		return IRQ_NONE;
+ 	if (ext_intr_stat & ACP_SDW0_STAT) {
+ 		writel(ACP_SDW0_STAT, adata->acp63_base + ACP_EXTERNAL_INTR_STAT);
+-		amd_manager = dev_get_drvdata(&adata->sdw->pdev[0]->dev);
+-		if (amd_manager)
+-			schedule_work(&amd_manager->amd_sdw_irq_thread);
++		if (adata->sdw) {
++			amd_manager = dev_get_drvdata(&adata->sdw->pdev[0]->dev);
++			if (amd_manager)
++				schedule_work(&amd_manager->amd_sdw_irq_thread);
++		}
+ 		irq_flag = 1;
+ 	}
+ 
+ 	ext_intr_stat1 = readl(adata->acp63_base + ACP_EXTERNAL_INTR_STAT1);
+ 	if (ext_intr_stat1 & ACP_SDW1_STAT) {
+ 		writel(ACP_SDW1_STAT, adata->acp63_base + ACP_EXTERNAL_INTR_STAT1);
+-		amd_manager = dev_get_drvdata(&adata->sdw->pdev[1]->dev);
+-		if (amd_manager)
+-			schedule_work(&amd_manager->amd_sdw_irq_thread);
++		if (adata->sdw) {
++			amd_manager = dev_get_drvdata(&adata->sdw->pdev[1]->dev);
++			if (amd_manager)
++				schedule_work(&amd_manager->amd_sdw_irq_thread);
++		}
+ 		irq_flag = 1;
+ 	}
+ 

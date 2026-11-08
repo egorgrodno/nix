@@ -1,4 +1,9 @@
-{ pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 
 {
   imports = [
@@ -67,6 +72,15 @@
   # which covers PSR1 and PSR-SU; 0x400 is DC_DISABLE_REPLAY, since Panel Replay
   # is a separate DMCUB path that DCN 3.1.4 enables by default.
   boot.kernelParams = [ "amdgpu.dcdebugmask=0x410" ];
+
+  # snd_pci_ps panicked in acp63_irq_handler on an interrupt that came while
+  # the audio coprocessor was still off after a hibernation restore: the status
+  # reads all ones and the handler dereferences adata->sdw, NULL without
+  # SoundWire. Unfixed in 6.18.56 and in master as of 2026-11. Drop the patch,
+  # snd-pci-ps.nix and this line once acp63_irq_handler in
+  # sound/soc/amd/ps/pci-ps.c checks either; the patch failing to apply after a
+  # kernel bump is the cue to look.
+  boot.extraModulePackages = [ (config.boot.kernelPackages.callPackage ./snd-pci-ps.nix { }) ];
 
   # 176 is sync (16) + remount read-only (32) + reboot (128), so a hang can end
   # with Alt+SysRq S, U, B and keep the journal's last lines.
