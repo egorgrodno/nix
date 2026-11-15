@@ -23,6 +23,7 @@ in
     nodejs
     gcc
     openssh
+    skopeo
     xclip
 
     (writeShellScriptBin "showsrc" "cat $(which $1)")
