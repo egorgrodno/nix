@@ -872,6 +872,9 @@ in
         # Inconsolata LGC 3.x cut its line height from 1.48 em to 1.11 em; this
         # restores the 1.x spacing.
         modify_font = "cell_height 133%";
+        # With no file, kitty on Wayland leaves the bell to the compositor, and
+        # Hyprland plays no sound.
+        bell_path = "${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/bell.oga";
       };
       # kitty follows the portal's `color-scheme`, which `color-scheme` sets,
       # and tells the programs inside, Neovim among them. Each file replaces
