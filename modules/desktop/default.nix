@@ -889,6 +889,7 @@ in
         "ctrl+shift+`" = "no_op";
         "ctrl+shift+w" = "no_op";
       };
+      programs.kitty.extraConfig = "mouse_map middle release ungrabbed no_op";
 
       xdg.desktopEntries.nvim-gui = {
         name = "Neovim";
@@ -1077,6 +1078,7 @@ in
               disable_hyprland_logo = true;
               disable_splash_rendering = true;
               allow_session_lock_restore = true;
+              middle_click_paste = false;
               # The cap on a `render_unfocused` window's frame callbacks.
               render_unfocused_fps = 120;
             };
@@ -1592,6 +1594,7 @@ in
             font-name = "${gtk.font.name} ${toString gtk.font.size}";
             cursor-theme = gtk.cursorTheme.name;
             cursor-size = gtk.cursorTheme.size;
+            gtk-enable-primary-paste = false;
           };
       };
 
@@ -1614,6 +1617,7 @@ in
           # Chromium clients draw their own buttons but read this, so it is what
           # strips minimize and maximize from Vivaldi.
           "gtk-decoration-layout" = "appmenu:close";
+          "gtk-enable-primary-paste" = false;
         };
         # Desktop is left out: pcmanfm already lists it under Places.
         gtk3.bookmarks =
