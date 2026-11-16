@@ -14,6 +14,7 @@ let
     zip
     unzip
     file
+    config.boot.kernelPackages.perf
   ];
 in
 {
