@@ -13,7 +13,6 @@ in
   home.packages = [
     fd
     jq
-    nodejs
     gcc
     skopeo
 
