@@ -37,7 +37,7 @@ A pre-commit hook in `.githooks/` rejects a commit whose staged files are not fo
 
 ### Entry point
 
-`flake.nix` builds one `nixosConfiguration` per directory in `hosts/`, named after it, which also sets `networking.hostName`. `nixosConfigurations.rescue` is the rescue stick, not a host: its `specialArgs` hold only `inputs`, and it has no home-manager. Each host's `host.nix` supplies its users and `system.stateVersion`. Every host passes the same `specialArgs` — `theme`, `fontPackages`, `users`, `forAllUsers`, `inputs` — to every module. Home-manager is integrated as a NixOS module, not standalone. `homeConfigurations.neovim` is a standalone profile for non-NixOS machines.
+`flake.nix` builds one `nixosConfiguration` per directory in `hosts/`, named after it, which also sets `networking.hostName`. `nixosConfigurations.rescue` is the rescue stick, not a host: its `specialArgs` hold only `inputs`, and it has no home-manager. Each host's `host.nix` supplies its users and `system.stateVersion`. Every host passes the same `specialArgs` — `theme`, `users`, `forAllUsers`, `inputs` — to every module. Home-manager is integrated as a NixOS module, not standalone. `homeConfigurations.neovim` is a standalone profile for non-NixOS machines.
 
 ### Layer structure
 
@@ -106,7 +106,7 @@ The layout, `qwerty` or `hallmack`, is the machine's runtime state, not an optio
 
 ### Theme
 
-`theme` is defined in `flake.nix` and reaches modules as a module argument: two fonts, and the `dark` (One Dark) and `light` (One Light) palettes. The palettes **must** hold the same color names: `Theme.qml` takes each name from `dark` and looks it up in `light`, so a name missing from `light` fails evaluation and one only in `light` is dropped. `color-scheme light|dark|toggle` switches between them at runtime.
+`theme` is defined in `lib/theme.nix` and reaches modules as a module argument: two fonts, and the `dark` (One Dark) and `light` (One Light) palettes. The palettes **must** hold the same color names: `Theme.qml` takes each name from `dark` and looks it up in `light`, so a name missing from `light` fails evaluation and one only in `light` is dropped. `color-scheme light|dark|toggle` switches between them at runtime.
 
 ### Hosts
 

@@ -4,7 +4,6 @@
   pkgs,
   forAllUsers,
   theme,
-  fontPackages,
   ...
 }:
 
@@ -611,7 +610,10 @@ in
     };
 
     fonts.fontDir.enable = true;
-    fonts.packages = fontPackages ++ [
+    # The first two are `theme.fontMono` and `theme.fontUI`.
+    fonts.packages = [
+      pkgs.nerd-fonts.inconsolata-lgc
+      pkgs.nerd-fonts.overpass
       pkgs.nerd-fonts.noto
       pkgs.nerd-fonts.blex-mono
       pkgs.inter
