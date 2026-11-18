@@ -1,13 +1,21 @@
 {
   config,
+  lib,
+  pkgs,
   isDesktop,
   ...
 }:
 
 {
+  # The `y` alias's clipboard off the desktop.
+  home.packages = lib.optional (!isDesktop) pkgs.xclip;
+
   programs.zsh = {
     enable = true;
     enableCompletion = true;
+    autosuggestion.enable = true;
+    # Escape reaches vi's command mode without waiting for a key sequence.
+    localVariables.KEYTIMEOUT = 1;
     syntaxHighlighting.enable = true;
     dotDir = "${config.xdg.configHome}/zsh";
     defaultKeymap = "viins";

@@ -16,7 +16,6 @@ in
     nodejs
     gcc
     skopeo
-    xclip
 
     (writeShellScriptBin "showsrc" "cat $(which $1)")
 
