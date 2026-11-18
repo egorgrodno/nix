@@ -96,7 +96,7 @@
 
       packages.${system} = {
         # Run from a NixOS ISO: `nix run github:egorgrodno/nix#<name>`.
-        install = pkgs.callPackage ./pkgs/install { };
+        nx-install = pkgs.callPackage ./pkgs/nx-install { };
         repair-boot = pkgs.callPackage ./pkgs/repair-boot { };
         # The overlay's: installed for every user by modules/nixtools.
         gum = pkgs.gum;

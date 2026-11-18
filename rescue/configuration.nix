@@ -18,12 +18,6 @@ let
   # The layout `nvim` reads, as on the hosts, for every user until the next boot.
   layoutFile = "/var/lib/keyboard-layout";
 
-  # The flake's `install` would shadow coreutils' install.
-  nxInstall = pkgs.runCommand "nx-install" { } ''
-    mkdir -p $out/bin
-    ln -s ${lib.getExe flakePackages.install} $out/bin/nx-install
-  '';
-
   # vi and vim as well, as on the hosts, over the ISO's own vim.
   nvim = lib.hiPrio (
     pkgs.runCommand "nvim" { } ''
@@ -108,7 +102,7 @@ in
 
   environment.systemPackages = [
     flakePackages.repair-boot
-    nxInstall
+    flakePackages.nx-install
     rescueHelp
     nvim
     nvimLayout

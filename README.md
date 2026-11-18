@@ -9,7 +9,7 @@ Nix flakes and home-manager configuration for the `fractal` desktop and the `thi
 Boot a NixOS ISO in UEFI mode, connect to the network, and run:
 
 ```bash
-sudo nix --extra-experimental-features 'nix-command flakes' run github:egorgrodno/nix#install
+sudo nix --extra-experimental-features 'nix-command flakes' run github:egorgrodno/nix#nx-install
 ```
 
 It asks every question first. The host is either one from `hosts/` to reinstall or a new one, for which it asks the hardware and users, proposing the hardware it detects. It then writes and evaluates the host, and only after that asks for the disk:

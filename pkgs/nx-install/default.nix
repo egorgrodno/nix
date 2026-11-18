@@ -19,7 +19,7 @@
 }:
 
 writeShellApplication {
-  name = "install";
+  name = "nx-install";
   # No nix: the ISO's own, which nixos-install also calls, so one version
   # writes its store.
   runtimeInputs = [
@@ -40,5 +40,5 @@ writeShellApplication {
     systemd
     util-linux
   ];
-  text = builtins.readFile ./install.sh;
+  text = builtins.readFile ./nx-install.sh;
 }

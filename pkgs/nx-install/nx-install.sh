@@ -2,7 +2,7 @@
 # question is asked, and the configuration evaluated, before any disk is
 # touched.
 #
-# Usage: install [repository], which defaults to the GitHub repository.
+# Usage: nx-install [repository], which defaults to the GitHub repository.
 
 repo=${1:-https://github.com/egorgrodno/nix.git}
 mnt=/mnt
@@ -17,7 +17,7 @@ msReservedType=e3c9e316-0b5c-4db8-817d-f92df00215ae
 hibernateLocation=/sys/firmware/efi/efivars/HibernateLocation-8cf2644b-4b0b-428f-9387-6d876050dc67
 
 die() {
-  echo "install: $*" >&2
+  echo "nx-install: $*" >&2
   exit 1
 }
 
@@ -328,4 +328,4 @@ for u in "${users[@]}"; do
 done
 nixos-enter --root "$mnt" -c "chown -R $admin:users /etc/nixos"
 
-echo "install: done, remove the ISO and reboot"
+echo "nx-install: done, remove the ISO and reboot"
