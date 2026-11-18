@@ -6,5 +6,4 @@
   ];
 
   base.isHeadless = true;
-  base.keyboard.layout = "qwerty";
 }

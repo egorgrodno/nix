@@ -15,8 +15,8 @@ let
     self.shortRev or self.dirtyShortRev or "an unknown revision"
   } (${lib.concatStringsSep "-" (builtins.match "(....)(..)(..).*" self.lastModifiedDate)})";
 
-  # Which nvim-<layout> `nvim` opens, for every user until the next boot.
-  layoutFile = "/run/nvim-layout";
+  # The layout `nvim` reads, as on the hosts, for every user until the next boot.
+  layoutFile = "/var/lib/keyboard-layout";
 
   # The flake's `install` would shadow coreutils' install.
   nxInstall = pkgs.runCommand "nx-install" { } ''
@@ -29,10 +29,7 @@ let
     pkgs.runCommand "nvim" { } ''
       mkdir -p $out/bin
       for name in nvim vi vim; do
-        ln -s ${pkgs.writeShellScript "nvim" ''
-          layout=$(cat ${layoutFile} 2>/dev/null)
-          exec nvim-''${layout:-qwerty} "$@"
-        ''} $out/bin/$name
+        ln -s ${pkgs.callPackage ../modules/neovim/standalone.nix { }}/bin/nvim $out/bin/$name
       done
     ''
   );
@@ -115,8 +112,6 @@ in
     rescueHelp
     nvim
     nvimLayout
-    (pkgs.callPackage ../modules/neovim/standalone.nix { layout = "qwerty"; })
-    (pkgs.callPackage ../modules/neovim/standalone.nix { layout = "hallmack"; })
     claude
     pkgs.gh
     pkgs.gum

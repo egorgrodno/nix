@@ -50,7 +50,6 @@ askNewHost() {
   [[ $host =~ ^[a-z][a-z0-9-]*$ ]] || die "a hostname is lowercase letters, digits and dashes"
   [[ ! -e $clone/hosts/$host ]] || die "hosts/$host exists; reinstall it instead"
 
-  layout=$(gum choose --header "Keyboard layout" qwerty hallmack)
   if gum confirm "Swap Caps Lock and Escape?"; then swapCaps=true; else swapCaps=false; fi
 
   case $(cat /sys/class/dmi/id/chassis_type 2>/dev/null || true) in
@@ -116,10 +115,7 @@ EOF
     [[ $form == pc ]] || printf '\n  base.isLaptop = true;\n'
     cat <<EOF
 
-  base.keyboard = {
-    layout = "$layout";
-    swapCapsEscape = $swapCaps;
-  };
+  base.keyboard.swapCapsEscape = $swapCaps;
 
   hardware.enableRedistributableFirmware = true;
 EOF

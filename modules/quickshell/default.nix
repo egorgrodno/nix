@@ -140,8 +140,6 @@ let
     "saturday"
   ];
 
-  dirs = import ../../lib/direction-keys.nix config.base.keyboard.layout;
-
   # What the host can do and how it is set up, from its NixOS configuration.
   hostQml = pkgs.writeText "Host.qml" ''
     pragma Singleton
@@ -156,15 +154,18 @@ let
           toString (lib.lists.findFirstIndex (d: d == cfg.firstDayOfWeek) null weekdays)
         }
         readonly property var worldClocks: ${builtins.toJSON cfg.worldClocks}
-        // The layout's direction keys, as Hyprland binds them, in lowercase.
+        // Each layout's direction keys, as Hyprland binds them, in lowercase.
         readonly property var directions: ${
           builtins.toJSON (
-            lib.mapAttrs (_: lib.toLower) {
-              left = dirs.l;
-              down = dirs.d;
-              up = dirs.u;
-              right = dirs.r;
-            }
+            lib.mapAttrs (
+              _: dirs:
+              lib.mapAttrs (_: lib.toLower) {
+                left = dirs.l;
+                down = dirs.d;
+                up = dirs.u;
+                right = dirs.r;
+              }
+            ) (import ../../lib/direction-keys.nix)
           )
         }
     }

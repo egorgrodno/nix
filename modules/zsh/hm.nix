@@ -1,6 +1,5 @@
 {
   config,
-  keyboardLayout,
   isDesktop,
   ...
 }:
@@ -40,11 +39,7 @@
       };
 
     initContent =
-      (import ./init-config.nix {
-        config = {
-          base.keyboard.layout = keyboardLayout;
-        };
-      })
+      import ./init-config.nix
       # Inside a kitty window, use the ssh kitten (it copies terminfo and shell
       # integration to the remote); everywhere else — e.g. under `sudo su`, where
       # kitty's environment is stripped — fall back to the real ssh binary.

@@ -256,7 +256,7 @@ BosunPane {
         BosunHints {
             model: {
                 const move = {
-                    keys: [Host.directions.down, Host.directions.up],
+                    keys: [KeyboardLayout.directions.down, KeyboardLayout.directions.up],
                     text: "next decision"
                 };
                 const side = {

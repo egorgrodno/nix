@@ -117,18 +117,41 @@ let
       '';
   };
 
-  # Hyprland's directional keys: focus, move, and the resize submap.
-  dirs = import ../../lib/direction-keys.nix config.base.keyboard.layout;
+  # Under each layout `kb-layout` saves: the keymap, and Hyprland's direction
+  # keys and split key.
+  layouts = mapAttrs (
+    name: dirs:
+    dirs
+    // {
+      split = if name == "hallmack" then "L" else "E";
+      input = {
+        kb_layout = if name == "hallmack" then "us" else "us,ru";
+        kb_options = concatStringsSep "," (
+          optional (name != "hallmack") "grp:win_space_toggle"
+          ++ optional config.base.keyboard.swapCapsEscape "caps:swapescape"
+        );
+      };
+    }
+  ) (import ../../lib/direction-keys.nix);
+
+  # Lua defining `layouts`, and `savedLayout()`, which names the one
+  # `kb-layout` saved: qwerty while none is. The greeter and the session apply it.
+  layoutsLua = ''
+    local layouts = ${generators.toLua { } layouts}
+    local function savedLayout()
+      local file = io.open("/var/lib/keyboard-layout")
+      local name = file and file:read("l")
+      if file then
+        file:close()
+      end
+      return layouts[name] and name or "qwerty"
+    end
+  '';
 
   # The keyboard and pointer, at the greeter as in the session.
   hyprInput = {
     repeat_delay = 300;
     repeat_rate = 30;
-    kb_layout = if config.base.keyboard.layout == "hallmack" then "us" else "us,ru";
-    kb_options = concatStringsSep "," (
-      optional (config.base.keyboard.layout != "hallmack") "grp:win_space_toggle"
-      ++ optional config.base.keyboard.swapCapsEscape "caps:swapescape"
-    );
     follow_mouse = 1;
     # Hyprland applies these to every pointer, the touchpad included;
     # scoping them to the mouse would take a per-device section, whose
@@ -193,6 +216,9 @@ let
           animations.enabled = false;
         }
       })
+
+      ${layoutsLua}
+      hl.config({ input = layouts[savedLayout()].input })
 
       hl.on("hyprland.start", function()
         hl.exec_cmd(${lua "${getExe pkgs.quickshell} -p ${config.my.quickshell.greeter}; ${hyprctl} dispatch 'hl.dsp.exit()'"})
@@ -1299,7 +1325,6 @@ in
         extraConfig =
           let
             lua = generators.toLua { };
-            splitKey = if config.base.keyboard.layout == "hallmack" then "L" else "E";
 
             startup = [
               "dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP"
@@ -1388,7 +1413,6 @@ in
             hl.bind(mod .. " + SHIFT + SPACE", float_here)
             hl.bind(mod .. " + CTRL + SPACE", exec("hypr-window-class"))
             hl.bind(mod .. " + P", hl.dsp.window.pseudo())
-            hl.bind(mod .. " + ${splitKey}", hl.dsp.layout("togglesplit"))
             hl.bind(mod .. " + M", exec("pwvucontrol"))
             hl.bind(mod .. " + W", exec("pcmanfm"))
             hl.bind(mod .. " + SHIFT + R", exec("systemctl --user restart quickshell"))
@@ -1402,18 +1426,16 @@ in
             hl.bind(mod .. " + R", hl.dsp.submap("resize"))
             hl.bind(mod .. " + 0", exec("quickshell ipc call session toggle"))
 
-            -- Focus, and with SHIFT move, by the layout's direction keys and the
-            -- arrows alike.
+            -- Focus, and with SHIFT move, by the arrows; `setKeyboardLayout` binds
+            -- the layout's direction keys.
             for _, keys in ipairs({
-              { "${dirs.l}", "left", "l" },
-              { "${dirs.d}", "down", "d" },
-              { "${dirs.u}", "up", "u" },
-              { "${dirs.r}", "right", "r" },
+              { "left", "l" },
+              { "down", "d" },
+              { "up", "u" },
+              { "right", "r" },
             }) do
-              for _, key in ipairs({ keys[1], keys[2] }) do
-                hl.bind(mod .. " + " .. key, hl.dsp.focus({ direction = keys[3] }))
-                hl.bind(mod .. " + SHIFT + " .. key, hl.dsp.window.move({ direction = keys[3] }))
-              end
+              hl.bind(mod .. " + " .. keys[1], hl.dsp.focus({ direction = keys[2] }))
+              hl.bind(mod .. " + SHIFT + " .. keys[1], hl.dsp.window.move({ direction = keys[2] }))
             end
 
             for i = 1, 9 do
@@ -1488,10 +1510,6 @@ in
 
             hl.define_submap("resize", function()
               for _, step in ipairs({
-                { "${dirs.l}", -0.1, 0 },
-                { "${dirs.d}", 0, 0.1 },
-                { "${dirs.u}", 0, -0.1 },
-                { "${dirs.r}", 0.1, 0 },
                 { "left", -0.1, 0 },
                 { "down", 0, 0.1 },
                 { "up", 0, -0.1 },
@@ -1504,6 +1522,49 @@ in
                 hl.bind(key, hl.dsp.submap("reset"))
               end
             end)
+
+            ${layoutsLua}
+            local applied
+
+            -- Binds the direction keys, in the resize submap too, and the split
+            -- key of the layout `name` in place of the last one's, and switches
+            -- the keymap. Global: the bar calls it through `hyprctl eval` when
+            -- `kb-layout` saves a layout.
+            function setKeyboardLayout(name)
+              local new = layouts[name] or layouts.qwerty
+              if applied then
+                local old = { applied.l, applied.d, applied.u, applied.r }
+                hl.unbind(mod .. " + " .. applied.split)
+                for _, key in ipairs(old) do
+                  hl.unbind(mod .. " + " .. key)
+                  hl.unbind(mod .. " + SHIFT + " .. key)
+                end
+                hl.define_submap("resize", function()
+                  for _, key in ipairs(old) do
+                    hl.unbind(key)
+                  end
+                end)
+              end
+              local dirs = {
+                { new.l, "l", -0.1, 0 },
+                { new.d, "d", 0, 0.1 },
+                { new.u, "u", 0, -0.1 },
+                { new.r, "r", 0.1, 0 },
+              }
+              hl.bind(mod .. " + " .. new.split, hl.dsp.layout("togglesplit"))
+              for _, dir in ipairs(dirs) do
+                hl.bind(mod .. " + " .. dir[1], hl.dsp.focus({ direction = dir[2] }))
+                hl.bind(mod .. " + SHIFT + " .. dir[1], hl.dsp.window.move({ direction = dir[2] }))
+              end
+              hl.define_submap("resize", function()
+                for _, dir in ipairs(dirs) do
+                  hl.bind(dir[1], grow(dir[3], dir[4]), { repeating = true })
+                end
+              end)
+              hl.config({ input = new.input })
+              applied = new
+            end
+            setKeyboardLayout(savedLayout())
           '';
       };
 
@@ -1563,17 +1624,13 @@ in
         extraConfig = ''
           filetype *.pdf,*.jpg,*.jpeg,*.png,*.gif xdg-open %f &
 
-          ${
-            if config.base.keyboard.layout == "hallmack" then
-              ''
-                nnoremap H L
-                nnoremap L H
-                nnoremap j <nop>
-                nnoremap k <nop>
-              ''
-            else
-              ""
-          }
+          " The machine's layout as `kb-layout` saved it, read on start.
+          if system('cat /var/lib/keyboard-layout 2>/dev/null') == 'hallmack'
+            nnoremap H L
+            nnoremap L H
+            nnoremap j <nop>
+            nnoremap k <nop>
+          endif
         '';
       };
 

@@ -194,7 +194,7 @@ BosunPane {
                 }
                 return hints.concat([
                     {
-                        keys: [Host.directions.down, Host.directions.up],
+                        keys: [KeyboardLayout.directions.down, KeyboardLayout.directions.up],
                         text: "move"
                     },
                     {

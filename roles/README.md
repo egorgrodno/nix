@@ -27,7 +27,7 @@ A host **must** import exactly one.
 | Role | Stack |
 |---|---|
 | `role-desktop-config.nix` | Hyprland on Wayland (`modules/desktop`), the Craft apps (`modules/craft`), network, locale, devtools and print, and an account per user through `forAllUsers`. |
-| `role-headless-config.nix` | `base.isHeadless` and `qwerty`, with no GUI and no accounts. No host imports it, so no build checks it. |
+| `role-headless-config.nix` | `base.isHeadless`, with no GUI and no accounts. No host imports it, so no build checks it. |
 
 ## Adding a host
 
@@ -35,5 +35,5 @@ The installer writes a new host; see the root `README.md`. By hand:
 
 1. Create `hosts/<host>/` with `host.nix` (`users`, `stateVersion`), `configuration.nix`, and `hardware-configuration.nix` without `fileSystems`. At least one of the users needs `admin = true` in `users/<name>.nix`, or nobody can sudo.
 2. Import a top-level role from `configuration.nix`. Role selection **must not** live in the flake.
-3. Set `base.keyboard.layout`, which the desktop role defaults to `qwerty`. On a laptop, set `base.isLaptop`.
+3. On a laptop, set `base.isLaptop`. The keyboard layout is no option: `nx-setup` asks for it after the first boot.
 4. `git add` the directory: the flake sees only tracked files.

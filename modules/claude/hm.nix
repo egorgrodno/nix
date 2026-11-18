@@ -1,7 +1,6 @@
 {
   bosunSleepLock,
   bosunSleepLockQuiet,
-  keyboardLayout,
   lib,
   pkgs,
   ...
@@ -21,11 +20,20 @@
       exec ${lib.getExe pkgs.ccusage} statusline --no-offline --context-low-threshold 50 --context-medium-threshold 85
     '')
 
-    pkgs.bosun
+    # `bosun tui` moves by the direction keys of the layout `kb-layout` saved,
+    # read on every start.
+    (pkgs.symlinkJoin {
+      name = "bosun";
+      paths = [ pkgs.bosun ];
+      nativeBuildInputs = [ pkgs.makeWrapper ];
+      postBuild = ''
+        wrapProgram $out/bin/bosun --run '
+          read -r BOSUN_LAYOUT 2>/dev/null </var/lib/keyboard-layout || true
+          export BOSUN_LAYOUT
+        '
+      '';
+    })
   ];
-
-  # `bosun tui` moves by this layout's direction keys.
-  home.sessionVariables.BOSUN_LAYOUT = keyboardLayout;
 
   systemd.user.services.bosun = {
     Unit = {

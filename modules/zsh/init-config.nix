@@ -1,5 +1,3 @@
-{ config }:
-
 ''
   # Left prompt
   if [[ $UID == 0 || $EUID == 0 ]]; then
@@ -110,37 +108,54 @@
   zle -N add-surround surround
   bindkey -M visual "S" add-surround
 
-  ${
-    if config.base.keyboard.layout == "hallmack" then
-      ''
-        # swap h g
-        bindkey -M vicmd -r "^H"
-        bindkey -M vicmd -r "h"
-        bindkey -M vicmd "g" vi-backward-char
-        bindkey -M vicmd -r "G"
+  function _keyboard-layout-hallmack {
+    # swap h g
+    bindkey -M vicmd -r "^H"
+    bindkey -M vicmd -r "h"
+    bindkey -M vicmd "g" vi-backward-char
+    bindkey -M vicmd -r "G"
 
-        # swap j a
-        bindkey -M vicmd "a" down-line-or-history
-        bindkey -M vicmd "A" vi-join
-        bindkey -M vicmd "J" vi-open-line-above
-        bindkey -M vicmd "j" vi-open-line-below
+    # swap j a
+    bindkey -M vicmd "a" down-line-or-history
+    bindkey -M vicmd "A" vi-join
+    bindkey -M vicmd "J" vi-open-line-above
+    bindkey -M vicmd "j" vi-open-line-below
 
-        # swap k e
-        bindkey -M vicmd "e" up-line-or-history
-        bindkey -M vicmd -r "E"
-        bindkey -M vicmd "k" vi-add-next
-        bindkey -M vicmd "K" vi-add-eol
+    # swap k e
+    bindkey -M vicmd "e" up-line-or-history
+    bindkey -M vicmd -r "E"
+    bindkey -M vicmd "k" vi-add-next
+    bindkey -M vicmd "K" vi-add-eol
 
-        # swap l o
-        bindkey -M vicmd "o" vi-forward-char
-        bindkey -M visual "o" vi-forward-char
-        bindkey -M vicmd -r "O"
-        bindkey -M vicmd "l" vi-forward-word-end
-        bindkey -M vicmd "L" vi-forward-blank-word-end
-      ''
-    else
-      ""
+    # swap l o
+    bindkey -M vicmd "o" vi-forward-char
+    bindkey -M visual "o" vi-forward-char
+    bindkey -M vicmd -r "O"
+    bindkey -M vicmd "l" vi-forward-word-end
+    bindkey -M vicmd "L" vi-forward-blank-word-end
   }
+
+  # The hallmack swaps while `kb-layout` has that layout saved, checked before
+  # every prompt so a switch reaches open shells. qwerty restores the keymaps
+  # as they stood at the first prompt, after every other bind.
+  function _keyboard-layout-sync {
+    local layout
+    { read -r layout </var/lib/keyboard-layout } 2>/dev/null
+    [[ $layout == hallmack ]] || layout=qwerty
+    [[ $layout == "$_keyboard_layout" ]] && return
+    if [[ -z $_keyboard_layout ]]; then
+      bindkey -N _qwerty-vicmd vicmd
+      bindkey -N _qwerty-visual visual
+    fi
+    _keyboard_layout=$layout
+    if [[ $layout == hallmack ]]; then
+      _keyboard-layout-hallmack
+    else
+      bindkey -N vicmd _qwerty-vicmd
+      bindkey -N visual _qwerty-visual
+    fi
+  }
+  precmd_functions+=(_keyboard-layout-sync)
 
   zstyle ":completion:*" matcher-list "m:{a-z}={A-Za-z}"
 ''

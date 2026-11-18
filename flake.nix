@@ -123,49 +123,6 @@
         pkgs.nerd-fonts.inconsolata-lgc
         pkgs.nerd-fonts.overpass
       ];
-      # Must throw rather than fall back: under pure evaluation getEnv yields "",
-      # and a default would install the profile under the wrong account's paths,
-      # which home-manager only catches at activation time.
-      requireEnv =
-        var: arg:
-        let
-          value = builtins.getEnv var;
-        in
-        if value != "" then
-          value
-        else
-          throw "mkNeovimHome: \$${var} is empty, which means evaluation is pure. Pass `--impure`, or set `${arg}` explicitly.";
-      mkNeovimHome =
-        {
-          layout,
-          username ? requireEnv "USER" "username",
-          homeDirectory ? (
-            let
-              h = builtins.getEnv "HOME";
-            in
-            if h != "" then h else "/home/${username}"
-          ),
-        }:
-        home-manager.lib.homeManagerConfiguration {
-          inherit pkgs;
-          extraSpecialArgs = {
-            keyboardLayout = layout;
-            isDesktop = false;
-          };
-          modules = [
-            ./modules/neovim/hm.nix
-            ./modules/git/hm.nix
-            ./modules/direnv/hm.nix
-            {
-              home = {
-                inherit username homeDirectory;
-                stateVersion = "24.05";
-              };
-              programs.home-manager.enable = true;
-            }
-          ];
-        };
-
       # Apply a home-manager module (or per-user module function) to every user.
       # `f` may be a plain attrset, or a function `u: attrset` when it needs
       # per-user values like u.homedir.
@@ -247,6 +204,8 @@
         gum = pkgs.gum;
         # The overlay's: every package here and on the hosts gets it as xdg-utils.
         xdg-utils = pkgs.xdg-utils;
+        # Installed for every user by modules/keyboard-layout.
+        kb-layout = pkgs.callPackage ./pkgs/kb-layout { };
         # Installed for every user by modules/nixtools.
         nx-setup = pkgs.callPackage ./pkgs/nx-setup { };
         nx-iso = pkgs.callPackage ./pkgs/nx-iso { };
@@ -269,10 +228,37 @@
       // self.packages.${system};
 
       # Portable editor profiles for non-NixOS machines
-      homeConfigurations = {
-        neovim-qwerty = mkNeovimHome { layout = "qwerty"; };
-        neovim-hallmack = mkNeovimHome { layout = "hallmack"; };
-      };
+      homeConfigurations.neovim =
+        let
+          user = builtins.getEnv "USER";
+          home = builtins.getEnv "HOME";
+          # Must throw rather than fall back: under pure evaluation getEnv yields
+          # "", and a default would install the profile under the wrong account's
+          # paths, which home-manager only catches at activation time.
+          username =
+            if user != "" then
+              user
+            else
+              throw "homeConfigurations.neovim: \$USER is empty, which means evaluation is pure. Pass `--impure`, or set `username` explicitly.";
+          homeDirectory = if home != "" then home else "/home/${username}";
+        in
+        home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          extraSpecialArgs.isDesktop = false;
+          modules = [
+            ./modules/keyboard-layout/hm.nix
+            ./modules/neovim/hm.nix
+            ./modules/git/hm.nix
+            ./modules/direnv/hm.nix
+            {
+              home = {
+                inherit username homeDirectory;
+                stateVersion = "24.05";
+              };
+              programs.home-manager.enable = true;
+            }
+          ];
+        };
 
       # One configuration per directory in hosts/, named after it, and the rescue
       # stick's, whose ISO nx-iso builds. The ISO is no package: `checks` builds

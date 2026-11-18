@@ -1,4 +1,4 @@
-{ pkgs, keyboardLayout, ... }:
+{ pkgs, ... }:
 
 {
   home.packages = with pkgs; [
@@ -32,11 +32,7 @@
 
   xdg.configFile."nvim/snippets/all.lua".source = ./snippets.lua;
 
-  xdg.configFile."nvim/lua/config.lua".text = import ./lua-config.nix {
-    config = {
-      base.keyboard.layout = keyboardLayout;
-    };
-  };
+  xdg.configFile."nvim/lua/config.lua".text = import ./lua-config.nix;
 
   programs.neovim = {
     enable = true;

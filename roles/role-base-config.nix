@@ -58,20 +58,10 @@ in
       };
     };
 
-    keyboard = {
-      layout = mkOption {
-        type = types.enum [
-          "qwerty"
-          "hallmack"
-        ];
-        description = "Keyboard layout";
-      };
-
-      swapCapsEscape = mkOption {
-        type = types.bool;
-        default = false;
-        description = "Whether to swap CapsLock and Escape keys";
-      };
+    keyboard.swapCapsEscape = mkOption {
+      type = types.bool;
+      default = false;
+      description = "Whether to swap CapsLock and Escape keys";
     };
   };
 
@@ -128,7 +118,6 @@ in
     };
 
     home-manager.extraSpecialArgs = {
-      keyboardLayout = cfg.keyboard.layout;
       isDesktop = cfg.isDesktop;
       bosunSleepLock = cfg.bosun.sleepLock;
       bosunSleepLockQuiet = cfg.bosun.sleepLockQuiet;

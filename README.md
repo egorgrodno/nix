@@ -12,7 +12,7 @@ Boot a NixOS ISO in UEFI mode, connect to the network, and run:
 sudo nix --extra-experimental-features 'nix-command flakes' run github:egorgrodno/nix#install
 ```
 
-It asks every question first. The host is either one from `hosts/` to reinstall or a new one, for which it asks the layout, hardware and users, proposing the hardware it detects. It then writes and evaluates the host, and only after that asks for the disk:
+It asks every question first. The host is either one from `hosts/` to reinstall or a new one, for which it asks the hardware and users, proposing the hardware it detects. It then writes and evaluates the host, and only after that asks for the disk:
 
 | Disk mode | Effect |
 |---|---|
@@ -31,6 +31,7 @@ nx-setup
 
 | Step | Effect |
 |---|---|
+| Keyboard layout | The machine's, through `kb-layout`, asked only while none is saved. |
 | SSH directory | `~/.ssh` at mode 700, with `authorized_keys` and `config.local` at mode 600, created empty when missing. `config.local` holds private hosts, which the generated `~/.ssh/config` includes. |
 | SSH known hosts | Scans `github.com` and `forgejo.home:30143` into `~/.ssh/known_hosts` and prints the fingerprints. |
 | Git identity | `user.name` and `user.email` in `~/.config/git/config.local`, which the git module includes. |
@@ -60,14 +61,20 @@ nixos-enter --root /mnt -c 'NIXOS_INSTALL_BOOTLOADER=1 /nix/var/nix/profiles/sys
 
 ## Standalone Neovim
 
-The `neovim-qwerty` and `neovim-hallmack` home-manager profiles install this neovim configuration, together with git and direnv, on any non-NixOS machine that has Nix and home-manager:
+The `neovim` home-manager profile installs this neovim configuration, together with git, direnv and `kb-layout`, on any non-NixOS machine that has Nix and home-manager:
 
 ```bash
-home-manager switch --impure --flake github:egorgrodno/nix#neovim-qwerty    # qwerty layout
-home-manager switch --impure --flake github:egorgrodno/nix#neovim-hallmack  # hallmack layout
+home-manager switch --impure --flake github:egorgrodno/nix#neovim
 ```
 
-`--impure` is **required**: the profile reads `$USER` and `$HOME` to place itself on whatever account invokes it, and pure evaluation aborts with a message naming the variable. The alternative is to set `mkNeovimHome`'s `username` and `homeDirectory` explicitly in `flake.nix`.
+Neovim starts in qwerty. For hallmack, create the layout file once as root, then save the layout:
+
+```bash
+sudo install -m 664 -g "$(id -gn)" /dev/null /var/lib/keyboard-layout
+kb-layout hallmack
+```
+
+`--impure` is **required**: the profile reads `$USER` and `$HOME` to place itself on whatever account invokes it, and pure evaluation aborts with a message naming the variable. The alternative is to set `username` and `homeDirectory` explicitly in `homeConfigurations.neovim` in `flake.nix`.
 
 The profile is self-contained: the neovim module bundles its own runtime tools and language servers (`ripgrep`, `fd`, `nodejs`, the LSP servers). Its plugins are not: Packer fetches them, so `:PackerSync` **must** be run once after the first `nvim` start.
 

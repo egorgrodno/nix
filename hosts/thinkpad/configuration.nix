@@ -15,10 +15,7 @@
 
   base.isLaptop = true;
 
-  base.keyboard = {
-    layout = "qwerty";
-    swapCapsEscape = true;
-  };
+  base.keyboard.swapCapsEscape = true;
 
   # Wifi and Bluetooth firmware, and the AMD microcode the hardware file wires up.
   hardware.enableRedistributableFirmware = true;

@@ -1,6 +1,6 @@
 # Per-user setup after the first boot, for the state Nix leaves to each user:
-# logins, identity, and plugin checkouts. Every step checks before it acts and
-# skips what is done, so a rerun is safe.
+# logins, identity, and plugin checkouts, and the machine's keyboard layout.
+# Every step checks before it acts and skips what is done, so a rerun is safe.
 
 forgejo=http://forgejo.home
 teaLogin=forgejo
@@ -47,6 +47,16 @@ step() {
     failed=1
     ;;
   esac
+}
+
+# The machine's rather than the account's, so the first account set up answers
+# for the rest.
+keyboardLayout() {
+  local layout
+  layout=$(cat /var/lib/keyboard-layout 2>/dev/null || true)
+  [[ -z $layout ]] || skip "this machine types $layout"
+  layout=$(gum choose --header "Keyboard layout of this machine" qwerty hallmack)
+  kb-layout "$layout"
 }
 
 sshDir() {
@@ -241,6 +251,7 @@ nixosPush() {
 
 [[ $EUID -ne 0 ]] || die "run as the user being set up, not as root"
 
+step "Keyboard layout" keyboardLayout
 step "SSH directory" sshDir
 step "SSH known hosts" knownHosts
 step "Git identity" gitIdentity

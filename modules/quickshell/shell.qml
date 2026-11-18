@@ -30,6 +30,16 @@ ShellRoot {
         writes: true
     }
 
+    // Every session's Hyprland follows the layout `kb-layout` saves, whichever
+    // account saved it; Hyprland reads it only on start.
+    Connections {
+        target: KeyboardLayout
+
+        function onLayoutChanged() {
+            Quickshell.execDetached([Programs.hyprctl, "eval", `setKeyboardLayout("${KeyboardLayout.layout}")`]);
+        }
+    }
+
     // On the focused screen, which they follow.
     NotificationPopups {}
 

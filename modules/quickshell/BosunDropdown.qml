@@ -100,9 +100,9 @@ Item {
             return;
         }
         event.accepted = true;
-        if (key === Qt.Key_Down || event.text === Host.directions.down)
+        if (key === Qt.Key_Down || event.text === KeyboardLayout.directions.down)
             index = Math.min(index + 1, entries.length - 1);
-        else if (key === Qt.Key_Up || event.text === Host.directions.up)
+        else if (key === Qt.Key_Up || event.text === KeyboardLayout.directions.up)
             index = Math.max(index - 1, 0);
         else if ([Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space].includes(key))
             pick(entries[index]);

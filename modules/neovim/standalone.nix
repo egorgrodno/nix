@@ -1,16 +1,14 @@
-# The editor without home-manager or packer, as `nvim-<layout>`, for the rescue
-# stick. Of the language servers only nil comes along, as the stick edits Nix.
+# The editor without home-manager or packer, for the rescue stick. Of the
+# language servers only nil comes along, as the stick edits Nix.
 {
   lib,
   vimPlugins,
   neovim-unwrapped,
   wrapNeovimUnstable,
-  writeShellScriptBin,
   fd,
   nil,
   nixfmt,
   ripgrep,
-  layout,
 }:
 
 let
@@ -46,9 +44,7 @@ let
       hop-nvim
       (import ./treesitter.nix vimPlugins)
     ];
-    luaRcContent = import ./lua-config.nix {
-      config.base.keyboard.layout = layout;
-    };
+    luaRcContent = import ./lua-config.nix;
     wrapperArgs = [
       "--suffix"
       "PATH"
@@ -62,4 +58,4 @@ let
     ];
   };
 in
-writeShellScriptBin "nvim-${layout}" ''exec ${nvim}/bin/nvim "$@"''
+nvim

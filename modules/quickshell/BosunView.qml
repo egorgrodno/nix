@@ -396,10 +396,10 @@ Item {
             return true;
         }
         switch (event.text) {
-        case Host.directions.down:
+        case KeyboardLayout.directions.down:
             move(1);
             return true;
-        case Host.directions.up:
+        case KeyboardLayout.directions.up:
             move(-1);
             return true;
         }

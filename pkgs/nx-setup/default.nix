@@ -13,7 +13,8 @@
 
 writeShellApplication {
   name = "nx-setup";
-  # No neovim: the user's configured wrapper comes from PATH.
+  # No neovim or kb-layout: both come from the user's PATH, neovim as its
+  # configured wrapper.
   runtimeInputs = [
     coreutils
     gh

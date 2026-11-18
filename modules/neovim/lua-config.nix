@@ -1,5 +1,3 @@
-{ config }:
-
 ''
   -- standalone.nix loads these from nixpkgs for the rescue stick, which has no
   -- network to sync them over: keep the two lists in step.
@@ -74,16 +72,23 @@
 
   local kmapopts = { silent = true }
 
-  ${
-    if config.base.keyboard.layout == "hallmack" then
-      ''
-        vim.keymap.set('n', '<leader>h', ':set hlsearch!<CR>', { noremap = true })
-      ''
-    else
-      ''
-        vim.keymap.set('n', '<F3>', ':set hlsearch!<CR>', { noremap = true })
-      ''
-  }
+  -- The machine's layout as `kb-layout` saved it, read once: a switch reaches
+  -- the next start.
+  local hallmack = (function()
+    local file = io.open('/var/lib/keyboard-layout')
+    if not file then
+      return false
+    end
+    local layout = file:read('l')
+    file:close()
+    return layout == 'hallmack'
+  end)()
+
+  if hallmack then
+    vim.keymap.set('n', '<leader>h', ':set hlsearch!<CR>', { noremap = true })
+  else
+    vim.keymap.set('n', '<F3>', ':set hlsearch!<CR>', { noremap = true })
+  end
 
   vim.keymap.set('n', '<leader>cd', ':cd %:h<CR>', { noremap = true })
   vim.keymap.set('n', '<leader>w', ':w<CR>', { noremap = true })
@@ -102,90 +107,70 @@
   vim.keymap.del('x', 'an')
   vim.keymap.del('o', 'an')
 
-  ${
-    if config.base.keyboard.layout == "hallmack" then
-      ''
-        vim.keymap.set('n', '<C-g>', ':bp<CR>', kmapopts)
-        vim.keymap.set('n', '<C-o>', ':bn<CR>', kmapopts)
-      ''
-    else
-      ''
-        vim.keymap.set('n', '<C-h>', ':bp<CR>', kmapopts)
-        vim.keymap.set('n', '<C-l>', ':bn<CR>', kmapopts)
-      ''
-  }
+  if hallmack then
+    vim.keymap.set('n', '<C-g>', ':bp<CR>', kmapopts)
+    vim.keymap.set('n', '<C-o>', ':bn<CR>', kmapopts)
+  else
+    vim.keymap.set('n', '<C-h>', ':bp<CR>', kmapopts)
+    vim.keymap.set('n', '<C-l>', ':bn<CR>', kmapopts)
+  end
 
-  ${
-    if config.base.keyboard.layout == "hallmack" then
-      ''
-        vim.keymap.set('n', '<C-A-e>', ':wincmd k<CR>', kmapopts)
-        vim.keymap.set('n', '<C-A-a>', ':wincmd j<CR>', kmapopts)
-        vim.keymap.set('n', '<C-A-g>', ':wincmd h<CR>', kmapopts)
-        vim.keymap.set('n', '<C-A-o>', ':wincmd l<CR>', kmapopts)
-      ''
-    else
-      ''
-        vim.keymap.set('n', '<C-A-k>', ':wincmd k<CR>', kmapopts)
-        vim.keymap.set('n', '<C-A-j>', ':wincmd j<CR>', kmapopts)
-        vim.keymap.set('n', '<C-A-h>', ':wincmd h<CR>', kmapopts)
-        vim.keymap.set('n', '<C-A-l>', ':wincmd l<CR>', kmapopts)
-      ''
-  }
+  if hallmack then
+    vim.keymap.set('n', '<C-A-e>', ':wincmd k<CR>', kmapopts)
+    vim.keymap.set('n', '<C-A-a>', ':wincmd j<CR>', kmapopts)
+    vim.keymap.set('n', '<C-A-g>', ':wincmd h<CR>', kmapopts)
+    vim.keymap.set('n', '<C-A-o>', ':wincmd l<CR>', kmapopts)
+  else
+    vim.keymap.set('n', '<C-A-k>', ':wincmd k<CR>', kmapopts)
+    vim.keymap.set('n', '<C-A-j>', ':wincmd j<CR>', kmapopts)
+    vim.keymap.set('n', '<C-A-h>', ':wincmd h<CR>', kmapopts)
+    vim.keymap.set('n', '<C-A-l>', ':wincmd l<CR>', kmapopts)
+  end
 
-  ${
-    if config.base.keyboard.layout == "hallmack" then
-      ''
-        -- swap h g
-        vim.keymap.set({ 'n', 'x', 'o' }, 'g', 'h', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'G', 'H', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'h', 'g', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'H', 'G', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'hh', 'gg', kmapopts)
+  if hallmack then
+    -- swap h g
+    vim.keymap.set({ 'n', 'x', 'o' }, 'g', 'h', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'G', 'H', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'h', 'g', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'H', 'G', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'hh', 'gg', kmapopts)
 
-        -- ftplugins (e.g. markdown) re-add gO after startup; delete it so g (left) has no ambiguity
-        vim.api.nvim_create_autocmd('FileType', {
-          pattern = '*',
-          callback = function(ev)
-            pcall(vim.keymap.del, 'n', 'gO', { buffer = ev.buf })
-          end
-        })
+    -- ftplugins (e.g. markdown) re-add gO after startup; delete it so g (left) has no ambiguity
+    vim.api.nvim_create_autocmd('FileType', {
+      pattern = '*',
+      callback = function(ev)
+        pcall(vim.keymap.del, 'n', 'gO', { buffer = ev.buf })
+      end
+    })
 
-        -- swap j a
-        vim.keymap.set({ 'n', 'x', 'o' }, 'a', 'j', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'A', 'mzJ`z', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'j', 'o', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'J', 'O', kmapopts)
+    -- swap j a
+    vim.keymap.set({ 'n', 'x', 'o' }, 'a', 'j', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'A', 'mzJ`z', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'j', 'o', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'J', 'O', kmapopts)
 
-        -- swap k e
-        vim.keymap.set({ 'n', 'x', 'o' }, 'e', 'k', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'E', 'K', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'k', 'a', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'K', 'A', kmapopts)
+    -- swap k e
+    vim.keymap.set({ 'n', 'x', 'o' }, 'e', 'k', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'E', 'K', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'k', 'a', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'K', 'A', kmapopts)
 
-        -- swap l o
-        vim.keymap.set({ 'n', 'x', 'o' }, 'o', 'l', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'O', 'L', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'l', 'e', kmapopts)
-        vim.keymap.set({ 'n', 'x', 'o' }, 'L', 'E', kmapopts)
-        vim.keymap.set('v', '<leader>s', 'o', kmapopts)
-        vim.keymap.set('v', '<leader>S', 'O', kmapopts)
-      ''
-    else
-      ""
-  }
+    -- swap l o
+    vim.keymap.set({ 'n', 'x', 'o' }, 'o', 'l', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'O', 'L', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'l', 'e', kmapopts)
+    vim.keymap.set({ 'n', 'x', 'o' }, 'L', 'E', kmapopts)
+    vim.keymap.set('v', '<leader>s', 'o', kmapopts)
+    vim.keymap.set('v', '<leader>S', 'O', kmapopts)
+  end
 
-  ${
-    if config.base.keyboard.layout == "hallmack" then
-      ''
-        vim.keymap.set('v', 'A', ":m '>+1<CR>gv=gv")
-        vim.keymap.set('v', 'E', ":m '<-2<CR>gv=gv")
-      ''
-    else
-      ''
-        vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv")
-        vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv")
-      ''
-  }
+  if hallmack then
+    vim.keymap.set('v', 'A', ":m '>+1<CR>gv=gv")
+    vim.keymap.set('v', 'E', ":m '<-2<CR>gv=gv")
+  else
+    vim.keymap.set('v', 'J', ":m '>+1<CR>gv=gv")
+    vim.keymap.set('v', 'K', ":m '<-2<CR>gv=gv")
+  end
   vim.keymap.set('n', '<C-d>', '<C-d>zz')
   vim.keymap.set('n', '<C-u>', '<C-u>zz')
   vim.keymap.set('x', '<leader>p', '"_dP')
@@ -304,28 +289,23 @@
 
     local bufopts = { noremap = true, silent = true, buffer = bufnr }
 
-    ${
-      if config.base.keyboard.layout == "hallmack" then
-        ''
-          vim.keymap.set('n', '<C-a>', diagnostic_jump(1),          bufopts)
-          vim.keymap.set('n', '<C-e>', diagnostic_jump(-1),         bufopts)
-          vim.keymap.set('n', 'E',     lsp_hover,                   bufopts)
-          vim.keymap.set('n', 'hd',    vim.lsp.buf.definition,      bufopts)
-          vim.keymap.set('n', 'htd',   vim.lsp.buf.type_definition, bufopts)
-          vim.keymap.set('n', 'hi',    vim.lsp.buf.implementation,  bufopts)
-          vim.keymap.set('n', 'hr',    vim.lsp.buf.references,      bufopts)
-        ''
-      else
-        ''
-          vim.keymap.set('n', '<C-j>', diagnostic_jump(1),          bufopts)
-          vim.keymap.set('n', '<C-k>', diagnostic_jump(-1),         bufopts)
-          vim.keymap.set('n', 'K',     lsp_hover,                   bufopts)
-          vim.keymap.set('n', 'gd',    vim.lsp.buf.definition,      bufopts)
-          vim.keymap.set('n', 'gtd',   vim.lsp.buf.type_definition, bufopts)
-          vim.keymap.set('n', 'gi',    vim.lsp.buf.implementation,  bufopts)
-          vim.keymap.set('n', 'gr',    vim.lsp.buf.references,      bufopts)
-        ''
-    }
+    if hallmack then
+      vim.keymap.set('n', '<C-a>', diagnostic_jump(1),          bufopts)
+      vim.keymap.set('n', '<C-e>', diagnostic_jump(-1),         bufopts)
+      vim.keymap.set('n', 'E',     lsp_hover,                   bufopts)
+      vim.keymap.set('n', 'hd',    vim.lsp.buf.definition,      bufopts)
+      vim.keymap.set('n', 'htd',   vim.lsp.buf.type_definition, bufopts)
+      vim.keymap.set('n', 'hi',    vim.lsp.buf.implementation,  bufopts)
+      vim.keymap.set('n', 'hr',    vim.lsp.buf.references,      bufopts)
+    else
+      vim.keymap.set('n', '<C-j>', diagnostic_jump(1),          bufopts)
+      vim.keymap.set('n', '<C-k>', diagnostic_jump(-1),         bufopts)
+      vim.keymap.set('n', 'K',     lsp_hover,                   bufopts)
+      vim.keymap.set('n', 'gd',    vim.lsp.buf.definition,      bufopts)
+      vim.keymap.set('n', 'gtd',   vim.lsp.buf.type_definition, bufopts)
+      vim.keymap.set('n', 'gi',    vim.lsp.buf.implementation,  bufopts)
+      vim.keymap.set('n', 'gr',    vim.lsp.buf.references,      bufopts)
+    end
     vim.keymap.set('n', '<leader>r', vim.lsp.buf.rename,          bufopts)
     -- Visual mode too: the range is what makes extract-to-function offerable.
     vim.keymap.set({ 'n', 'x' }, '<leader>a', function()
@@ -692,18 +672,8 @@
         vim.keymap.set(mode, l, r, opts)
       end
 
-      ${
-        if config.base.keyboard.layout == "hallmack" then
-          ''
-            local hunk_mapping_next = ',a'
-            local hunk_mapping_prev = ',e'
-          ''
-        else
-          ''
-            local hunk_mapping_next = ',j'
-            local hunk_mapping_prev = ',k'
-          ''
-      }
+      local hunk_mapping_next = hallmack and ',a' or ',j'
+      local hunk_mapping_prev = hallmack and ',e' or ',k'
 
       -- Navigation
       mapb('n', hunk_mapping_next, function()
@@ -876,16 +846,11 @@
     vim.keymap.set('n', '<', api.node.navigate.sibling.prev, opts('Previous Sibling'))
     vim.keymap.set('n', '.', api.node.run.cmd, opts('Run Command'))
     vim.keymap.set('n', '-', api.tree.change_root_to_parent, opts('Up'))
-    ${
-      if config.base.keyboard.layout == "hallmack" then
-        ''
-          vim.keymap.set('n', 'j', api.fs.create, opts('Create'))
-        ''
-      else
-        ''
-          vim.keymap.set('n', 'o', api.fs.create, opts('Create'))
-        ''
-    }
+    if hallmack then
+      vim.keymap.set('n', 'j', api.fs.create, opts('Create'))
+    else
+      vim.keymap.set('n', 'o', api.fs.create, opts('Create'))
+    end
     vim.keymap.set('n', 'B', api.tree.toggle_no_buffer_filter, opts('Toggle Filter: No Buffer'))
     vim.keymap.set('n', 'c', api.fs.copy.node, opts('Copy'))
     vim.keymap.set('n', 'C', api.tree.toggle_git_clean_filter, opts('Toggle Filter: Git Clean'))
@@ -946,25 +911,18 @@
     defaults = {
       file_ignore_patterns = { 'node_modules', 'build', 'dist' },
       borderchars = { '─', '│', '─', '│', '┌', '┐', '┘', '└' },
-      mappings = {
-        ${
-          if config.base.keyboard.layout == "hallmack" then
-            ''
-              n = {
-                ['j'] = false,
-                ['k'] = false,
-                ['gg'] = false,
-                ['G'] = false,
-                ['a'] = 'move_selection_next',
-                ['e'] = 'move_selection_previous',
-                ['hh'] = 'move_to_top',
-                ['H'] = 'move_to_bottom'
-              }
-            ''
-          else
-            ""
+      mappings = hallmack and {
+        n = {
+          ['j'] = false,
+          ['k'] = false,
+          ['gg'] = false,
+          ['G'] = false,
+          ['a'] = 'move_selection_next',
+          ['e'] = 'move_selection_previous',
+          ['hh'] = 'move_to_top',
+          ['H'] = 'move_to_bottom'
         }
-      }
+      } or {}
     },
     extensions = {
       fzf = {
@@ -1015,44 +973,39 @@
   vim.keymap.del('n', 'gcc')
   vim.keymap.del('n', 'gx')
 
-  ${
-    if config.base.keyboard.layout == "hallmack" then
-      ''
-        require'Comment'.setup {
-          toggler = {
-            line = 'hcc',
-            block = 'hbc'
-          },
-          opleader = {
-            line = 'hc',
-            block = 'hb'
-          },
-          extra = {
-            above = 'hcA',
-            below = 'hca',
-            eol = 'hcE'
-          },
-        }
-      ''
-    else
-      ''
-        require'Comment'.setup {
-          toggler = {
-            line = 'gcc',
-            block = 'gbc'
-          },
-          opleader = {
-            line = 'gc',
-            block = 'gb'
-          },
-          extra = {
-            above = 'gcO',
-            below = 'gco',
-            eol = 'gcE'
-          }
-        }
-      ''
-  }
+  if hallmack then
+    require'Comment'.setup {
+      toggler = {
+        line = 'hcc',
+        block = 'hbc'
+      },
+      opleader = {
+        line = 'hc',
+        block = 'hb'
+      },
+      extra = {
+        above = 'hcA',
+        below = 'hca',
+        eol = 'hcE'
+      },
+    }
+  else
+    require'Comment'.setup {
+      toggler = {
+        line = 'gcc',
+        block = 'gbc'
+      },
+      opleader = {
+        line = 'gc',
+        block = 'gb'
+      },
+      extra = {
+        above = 'gcO',
+        below = 'gco',
+        eol = 'gcE'
+      }
+    }
+  end
 
   --------------------------------------------------------------------------------
   -- VimSurround

@@ -323,7 +323,7 @@ Item {
         anchors.bottomMargin: 20
         model: [
             {
-                keys: [Host.directions.down, Host.directions.up],
+                keys: [KeyboardLayout.directions.down, KeyboardLayout.directions.up],
                 text: "move"
             },
             {
