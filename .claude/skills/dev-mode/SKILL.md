@@ -92,4 +92,4 @@ nix build --no-link --print-out-paths \
   '.#nixosConfigurations.fractal.config.home-manager.users.egor.xdg.configFile."hypr/hyprland.lua".source'
 ```
 
-Build the other host's file before editing the source and again after, then diff the two. The diff shows exactly the intended change, or nothing when the change belongs to this host's branch alone. The standalone Neovim profiles, `.#homeConfigurations.neovim-qwerty` and `neovim-hallmack`, build the same way with `--impure`, as `mkNeovimHome` reads `$USER`.
+Build the other host's file before editing the source and again after, then diff the two. The diff shows exactly the intended change, or nothing when the change belongs to this host's branch alone. The portable profile, `.#homeConfigurations.portable`, builds the same way with `--impure`, as it reads `$USER`.

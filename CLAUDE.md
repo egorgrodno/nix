@@ -37,7 +37,7 @@ A pre-commit hook in `.githooks/` rejects a commit whose staged files are not fo
 
 ### Entry point
 
-`flake.nix` builds one `nixosConfiguration` per directory in `hosts/`, named after it, which also sets `networking.hostName`. `nixosConfigurations.rescue` is the rescue stick, not a host: its `specialArgs` hold only `inputs`, and it has no home-manager. Each host's `host.nix` supplies its users and `system.stateVersion`. Every host passes the same `specialArgs` — `theme`, `users`, `forAllUsers`, `inputs` — to every module. Home-manager is integrated as a NixOS module, not standalone. `homeConfigurations.neovim` is a standalone profile for non-NixOS machines.
+`flake.nix` builds one `nixosConfiguration` per directory in `hosts/`, named after it, which also sets `networking.hostName`. `nixosConfigurations.rescue` is the rescue stick, not a host: its `specialArgs` hold only `inputs`, and it has no home-manager. Each host's `host.nix` supplies its users and `system.stateVersion`. Every host passes the same `specialArgs` — `theme`, `users`, `forAllUsers`, `inputs` — to every module. Home-manager is integrated as a NixOS module, not standalone. `homeConfigurations.portable` is the hosts' shell and editor setup for a non-NixOS machine.
 
 ### Layer structure
 

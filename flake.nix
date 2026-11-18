@@ -125,8 +125,8 @@
       }
       // self.packages.${system};
 
-      # Portable editor profiles for non-NixOS machines
-      homeConfigurations.neovim =
+      # The hosts' home-manager setup for a non-NixOS machine, without the desktop.
+      homeConfigurations.portable =
         let
           user = builtins.getEnv "USER";
           home = builtins.getEnv "HOME";
@@ -137,17 +137,22 @@
             if user != "" then
               user
             else
-              throw "homeConfigurations.neovim: \$USER is empty, which means evaluation is pure. Pass `--impure`, or set `username` explicitly.";
+              throw "homeConfigurations.portable: \$USER is empty, which means evaluation is pure. Pass `--impure`, or set `username` explicitly.";
           homeDirectory = if home != "" then home else "/home/${username}";
         in
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           extraSpecialArgs.isDesktop = false;
           modules = [
-            ./modules/keyboard-layout/hm.nix
-            ./modules/neovim/hm.nix
-            ./modules/git/hm.nix
+            ./modules/devtools/hm.nix
             ./modules/direnv/hm.nix
+            ./modules/extools/hm.nix
+            ./modules/git/hm.nix
+            ./modules/keyboard-layout/hm.nix
+            ./modules/less/hm.nix
+            ./modules/neovim/hm.nix
+            ./modules/ripgrep/hm.nix
+            ./modules/zsh/hm.nix
             {
               home = {
                 inherit username homeDirectory;

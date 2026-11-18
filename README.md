@@ -59,31 +59,38 @@ mount -o umask=077 /dev/disk/by-label/NIXBOOT /mnt/boot
 nixos-enter --root /mnt -c 'NIXOS_INSTALL_BOOTLOADER=1 /nix/var/nix/profiles/system/bin/switch-to-configuration boot'
 ```
 
-## Standalone Neovim
+## Portable profile
 
-The `neovim` home-manager profile installs this neovim configuration, together with git, direnv and `kb-layout`, on any non-NixOS machine that has Nix and home-manager:
+The `portable` home-manager profile installs the hosts' shell and editor setup on any non-NixOS machine that has Nix and home-manager: neovim, zsh, git, direnv, less, ripgrep, the `devtools` and `extools` commands, and `kb-layout`. It leaves out the desktop, the ssh config and Claude Code.
 
 ```bash
-home-manager switch --impure --flake github:egorgrodno/nix#neovim
+home-manager switch --impure -b backup --flake github:egorgrodno/nix#portable
 ```
 
-Neovim starts in qwerty. For hallmack, create the layout file once as root, then save the layout:
+`-b backup` moves a file home-manager would replace, such as an existing `~/.zshenv`, to `<name>.backup` instead of failing. To make zsh the login shell:
+
+```bash
+command -v zsh | sudo tee -a /etc/shells
+chsh -s "$(command -v zsh)"
+```
+
+The profile starts in qwerty. For hallmack, create the layout file once as root, then save the layout:
 
 ```bash
 sudo install -m 664 -g "$(id -gn)" /dev/null /var/lib/keyboard-layout
 kb-layout hallmack
 ```
 
-`--impure` is **required**: the profile reads `$USER` and `$HOME` to place itself on whatever account invokes it, and pure evaluation aborts with a message naming the variable. The alternative is to set `username` and `homeDirectory` explicitly in `homeConfigurations.neovim` in `flake.nix`.
+`--impure` is **required**: the profile reads `$USER` and `$HOME` to place itself on whatever account invokes it, and pure evaluation aborts with a message naming the variable. The alternative is to set `username` and `homeDirectory` explicitly in `homeConfigurations.portable` in `flake.nix`.
 
 The profile is self-contained: the neovim module bundles its own runtime tools and language servers (`ripgrep`, `fd`, `nodejs`, the LSP servers). Its plugins are not: Packer fetches them, so `:PackerSync` **must** be run once after the first `nvim` start.
 
 ### direnv on a non-NixOS machine
 
-The profile installs `direnv` and nix-direnv but hooks no shell. home-manager writes the hook only into an rc file it owns, and the profile owns none. Add the hook once, at the **end** of the rc file:
+The profile hooks `direnv` and nix-direnv into its zsh. home-manager writes the hook only into an rc file it owns, so another shell needs it added once, at the **end** of its rc file:
 
 ```bash
-eval "$(direnv hook bash)"   # or: direnv hook zsh
+eval "$(direnv hook bash)"
 ```
 
 A project then opts in with an `.envrc` and one `direnv allow`: `use nix` for a `shell.nix`, `use flake` for a `flake.nix`.
