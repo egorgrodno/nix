@@ -15,7 +15,7 @@ Single-concern bundles, imported by a top-level role or directly by a host.
 | `role-locale-config.nix` | `Europe/Amsterdam`, `en_US.UTF-8`. |
 | `role-network-config.nix` | NetworkManager with its OpenVPN plugin, and the firewall. |
 | `role-print.nix` | CUPS (`brlaser`) and Avahi mDNS. |
-| `role-devtools.nix` | `git`, `direnv`, `less`, `neovim`, `devtools`, `ripgrep`, `nixtools`, `extools`, `claude`. |
+| `role-devtools.nix` | `git`, `direnv`, `keyboard-layout`, `less`, `neovim`, `devtools`, `ripgrep`, `ssh`, `nixtools`, `extools`, `claude`. |
 | `role-nextcloud-client.nix` | Nextcloud client and a per-user sync service. |
 | `role-vm-host.nix` | VirtualBox host; blacklists the KVM modules, adds users to `vboxusers`. No host imports it, so no build checks it. |
 | `role-docker.nix` | Docker, with `dockerd` left down at boot; adds `admin` users to `docker`. |

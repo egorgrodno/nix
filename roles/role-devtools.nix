@@ -9,6 +9,7 @@
     ../modules/neovim
     ../modules/devtools
     ../modules/ripgrep
+    ../modules/ssh
     ../modules/nixtools
     ../modules/extools
     ../modules/claude
